@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://docalnahiyan.github.io/sitemap.xml

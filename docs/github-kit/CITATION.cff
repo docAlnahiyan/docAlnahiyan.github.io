@@ -1,0 +1,22 @@
+# Put this file in the root of each research repo. GitHub then shows a "Cite this repository" button.
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper below."
+title: "<Repository / model name>"
+authors:
+  - family-names: Khushbu
+    given-names: Al-Nahiyan
+    orcid: "https://orcid.org/0009-0001-7030-8516"
+    affiliation: "Southwest Jiaotong University"
+repository-code: "https://github.com/docAlnahiyan/<repo>"
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "<Paper title>"
+  authors:
+    - family-names: Khushbu
+      given-names: Al-Nahiyan
+  collection-title: "2024 4th International Conference on Industrial Automation, Robotics and Control Engineering (IARCE)"
+  year: 2024
+  start: 307
+  end: 311
+  doi: "<doi>"
