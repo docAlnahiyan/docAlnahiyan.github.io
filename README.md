@@ -1,16 +1,33 @@
-# React + Vite
+# Al-Nahiyan Khushbu — academic portfolio
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Personal research site: research, publications, projects, blog, CV.
+Built with [Astro](https://astro.build) as static HTML and deployed on Netlify.
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Requires Node 22.12 or newer.
 
-## React Compiler
+```sh
+npm install
+npm run dev       # http://localhost:4321
+npm run build     # static site in dist/
+npm run preview   # serve dist/ locally
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Layout
 
-## Expanding the ESLint configuration
+| Path | What it holds |
+|---|---|
+| `src/pages/` | One file per route |
+| `src/layouts/BaseLayout.astro` | Page shell: SEO tags, theme script, nav, footer |
+| `src/components/` | Small reusable pieces |
+| `src/styles/global.css` | Design tokens (light and dark) and base styles |
+| `src/site.ts` | Site name, default description, nav items |
+| `design-reference/mockup.html` | The design this site follows |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Deploy
+
+Netlify builds from `main` using `netlify.toml`. The site URL used for
+canonical links and the sitemap comes from Netlify's `URL` variable.
+
+The previous React version of the site lives on the `old-react-site` branch.
