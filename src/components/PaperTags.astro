@@ -1,0 +1,34 @@
+---
+// Status, venue and award tags for a paper. Status wording is deliberately
+// plain so unreviewed work is never presented as peer-reviewed.
+import type { Publication } from '../lib/content';
+
+interface Props {
+  status: Publication['data']['status'];
+  publication?: Publication;
+  extra?: string[];
+  /** Render as spans, for use inside <summary> where lists aren't allowed. */
+  inline?: boolean;
+}
+
+const { status, publication, extra = [], inline = false } = Astro.props;
+const List = inline ? 'span' : 'ul';
+const Item = inline ? 'span' : 'li';
+
+const STATUS: Record<Props['status'], { label: string; cls: string }> = {
+  published: { label: 'Published · peer-reviewed', cls: 'pub' },
+  'under-review': { label: 'Under review', cls: 'rev' },
+  preprint: { label: 'Preprint · not peer-reviewed', cls: 'pre' },
+  'in-progress': { label: 'In progress', cls: 'pre' },
+};
+const s = STATUS[status];
+const venue = publication?.data.venue_short;
+const award = publication?.data.award;
+---
+
+<List class="tags">
+  <Item class={`tag ${s.cls}`}>{s.label}</Item>
+  {award && <Item class="tag pub">{award}</Item>}
+  {venue && status !== 'preprint' && <Item class="tag">{venue}</Item>}
+  {extra.map((t) => <Item class="tag">{t}</Item>)}
+</List>

@@ -1,0 +1,53 @@
+---
+// Copies `text` to the clipboard. Without JavaScript the button stays hidden
+// and the text is shown in a collapsible block instead.
+interface Props {
+  text: string;
+  label: string;
+  /** Heading for the no-JavaScript fallback block. */
+  fallbackLabel?: string;
+}
+const { text, label, fallbackLabel = label } = Astro.props;
+---
+
+<button class="btn ghost small copy-btn" type="button" data-copy={text} data-label={label} aria-live="polite" hidden>
+  {label}
+</button>
+<noscript>
+  <details class="copy-fallback">
+    <summary>{fallbackLabel}</summary>
+    <pre>{text}</pre>
+  </details>
+</noscript>
+
+<script>
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('button[data-copy]')) {
+    btn.hidden = false;
+    btn.addEventListener('click', async () => {
+      const label = btn.dataset.label ?? 'Copy';
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+        btn.textContent = 'Copied';
+      } catch {
+        btn.textContent = 'Copy failed';
+      }
+      setTimeout(() => (btn.textContent = label), 2000);
+    });
+  }
+</script>
+
+<style>
+  .copy-btn {
+    min-width: 7.5em;
+    justify-content: center;
+  }
+  .copy-fallback pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+</style>

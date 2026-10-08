@@ -1,0 +1,145 @@
+---
+import type { Publication } from '../lib/content';
+import PaperTags from './PaperTags.astro';
+import CopyButton from './CopyButton.astro';
+import { authorsHtml, doiUrl, fullDate, requestPaperMailto } from '../lib/format';
+
+interface Props {
+  pub: Publication;
+  /** Address for "Request full paper". */
+  requestEmail: string;
+}
+
+const { pub, requestEmail } = Astro.props;
+const d = pub.data;
+const abstractParas = d.abstract ? d.abstract.split(/\n\s*\n/) : [];
+// An open link (e.g. a preprint page) makes a request unnecessary.
+const canRequest = !d.url;
+const when = d.date ? fullDate(d.date) : String(d.year);
+const afterVenue = `${d.pages ? `, ${d.pages}` : ''}, ${when}.`;
+---
+
+<article class="pub" id={pub.id}>
+  <PaperTags status={d.status} publication={pub} />
+  <h3 class="pub-title">{d.title}</h3>
+  <p class="pub-authors" set:html={authorsHtml(d.authors)} />
+  <p class="pub-venue">{d.type === 'preprint' ? d.venue : <i>{d.venue}</i>}{afterVenue}</p>
+  {d.contact_email && (
+    <p class="pub-contact">Correspondence for this paper: <span class="selectable">{d.contact_email}</span></p>
+  )}
+
+  {abstractParas.length > 0 && (
+    <details class="pub-abstract">
+      <summary>Abstract</summary>
+      <div class="pub-abstract-body">
+        {abstractParas.map((p) => <p>{p}</p>)}
+        {d.keywords.length > 0 && (
+          <p class="pub-keywords"><span>Keywords:</span> {d.keywords.join('; ')}</p>
+        )}
+      </div>
+    </details>
+  )}
+  {abstractParas.length === 0 && d.keywords.length > 0 && (
+    <p class="pub-keywords"><span>Keywords:</span> {d.keywords.join('; ')}</p>
+  )}
+
+  <div class="actions">
+    {d.doi && <a class="btn ghost small" href={doiUrl(d.doi)}>DOI</a>}
+    {d.url && <a class="btn ghost small" href={d.url}>Paper</a>}
+    {d.code_url && <a class="btn ghost small" href={d.code_url}>Code</a>}
+    <CopyButton text={d.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />
+    {canRequest && (
+      <a class="btn ghost small" href={requestPaperMailto(requestEmail, d.title)}>Request full paper</a>
+    )}
+  </div>
+</article>
+
+<style>
+  .pub {
+    border-top: 1px solid var(--border);
+    padding: 22px 0 24px;
+    scroll-margin-top: 80px;
+  }
+  .pub:target {
+    background: linear-gradient(var(--accent-wash), transparent 70%);
+  }
+  .pub-title {
+    font-size: 20px;
+    color: var(--ink);
+    margin: 4px 0 8px;
+  }
+  .pub-authors,
+  .pub-venue,
+  .pub-contact,
+  .pub-keywords {
+    margin: 0 0 4px;
+    font-size: 14.5px;
+    color: var(--ink-2);
+  }
+  .pub-authors :global(strong) {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .pub-contact {
+    font-size: 13.5px;
+  }
+  .selectable {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    user-select: all;
+  }
+  .pub-keywords {
+    font-size: 13.5px;
+  }
+  .pub-keywords span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .pub-abstract {
+    margin: 12px 0 4px;
+  }
+  .pub-abstract summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: .03em;
+    color: var(--accent-ink);
+    list-style: none;
+  }
+  .pub-abstract summary::-webkit-details-marker {
+    display: none;
+  }
+  .pub-abstract summary::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(-45deg);
+    transition: transform .2s;
+  }
+  .pub-abstract[open] summary::before {
+    transform: rotate(45deg);
+  }
+  .pub-abstract-body {
+    margin-top: 10px;
+    border-left: 2px solid var(--accent);
+    padding-left: 16px;
+    max-width: 66ch;
+  }
+  .pub-abstract-body p {
+    font-size: 14.5px;
+    color: var(--ink-2);
+    margin: 0 0 10px;
+  }
+  .pub .actions {
+    margin-top: 14px;
+  }
+</style>

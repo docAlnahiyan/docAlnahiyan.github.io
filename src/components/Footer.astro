@@ -1,20 +1,39 @@
 ---
-import { SITE } from '../site';
+import { getProfile } from '../lib/content';
 
+const profile = await getProfile();
+const { links } = profile;
 const year = new Date().getFullYear();
+
+// Only links that have been filled in are shown.
+const external = [
+  { label: 'Google Scholar', href: links.scholar },
+  { label: 'ORCID', href: links.orcid },
+  { label: 'GitHub', href: links.github },
+  { label: 'LinkedIn', href: links.linkedin },
+  { label: 'Upwork', href: links.upwork },
+].filter((l): l is { label: string; href: string } => Boolean(l.href));
 ---
 
 <footer class="footer">
   <div class="wrap footer-inner">
-    <span>© {year} {SITE.name}</span>
-    <slot />
+    <p class="footer-contact">
+      <span class="footer-label">Email</span>
+      <span class="selectable">{links.email}</span>
+    </p>
+    {external.length > 0 && (
+      <ul class="footer-links">
+        {external.map((l) => <li><a href={l.href} rel="me">{l.label}</a></li>)}
+      </ul>
+    )}
+    <p class="footer-copy">© {year} {profile.name}</p>
   </div>
 </footer>
 
 <style>
   .footer {
     border-top: 1px solid var(--border);
-    padding-block: 24px;
+    padding-block: 28px;
     font-family: var(--font-mono);
     font-size: 12.5px;
     color: var(--ink-3);
@@ -22,7 +41,40 @@ const year = new Date().getFullYear();
   .footer-inner {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px 18px;
+    gap: 10px 24px;
     align-items: baseline;
+  }
+  .footer-inner p {
+    margin: 0;
+  }
+  .footer-label {
+    margin-right: 8px;
+  }
+  .selectable {
+    color: var(--ink);
+    user-select: all;
+  }
+  .footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .footer-links a {
+    color: var(--ink-2);
+  }
+  .footer-links a:hover {
+    color: var(--accent-ink);
+  }
+  .footer-copy {
+    margin-left: auto !important;
+  }
+  @media (max-width: 560px) {
+    .footer-copy {
+      margin-left: 0 !important;
+      width: 100%;
+    }
   }
 </style>
