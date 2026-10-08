@@ -79,6 +79,8 @@ const publications = defineCollection({
   loader: glob({ pattern: '**/*.{yml,yaml}', base: './src/content/publications' }),
   schema: z.object({
     title: z.string(),
+    /** Short id used in links (e.g. /publications/#hybridtransmedformer). */
+    slug: optionalText,
     /** IEEE style, e.g. "A.-N. Khushbu, Z. Yang, and X. Zhang". */
     authors: z.string(),
     venue: z.string(),
