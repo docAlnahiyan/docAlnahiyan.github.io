@@ -1,0 +1,271 @@
+# Decap CMS configuration — the forms at /admin.
+# Every save is a commit to the repo; Netlify rebuilds the site from it.
+# Field names here must match src/content.config.ts.
+
+backend:
+  name: github
+  repo: docAlnahiyan/docAlnahiyan.github.io
+  branch: main
+  commit_messages:
+    create: "Admin: add {{collection}} “{{slug}}”"
+    update: "Admin: update {{collection}} “{{slug}}”"
+    delete: "Admin: delete {{collection}} “{{slug}}”"
+    uploadMedia: "Admin: upload {{path}}"
+    deleteMedia: "Admin: delete {{path}}"
+
+# For testing on your own computer only: `npx decap-server` plus `npm run dev`.
+# Ignored on the live site.
+local_backend: true
+
+media_folder: public/uploads
+public_folder: /uploads
+
+logo_url: /favicon.svg
+
+slug:
+  encoding: ascii
+  clean_accents: true
+
+collections:
+  # ------------------------------------------------------------------ research
+  - name: research
+    label: Research
+    label_singular: Research entry
+    description: Your research. Each entry has a summary on the Research page and its own full page.
+    folder: src/content/research
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{title}}"
+    sortable_fields: [order, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: slug
+        label: Web address
+        widget: string
+        hint: "Lowercase letters, numbers and hyphens, e.g. hybridtransmedformer. Becomes /research/<this>/. Don't change it after publishing, or old links break."
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
+      - { name: subtitle, label: One-line subtitle, widget: string, hint: "Shown under the title on the Research page." }
+      - { name: short_summary, label: Short summary, widget: text, hint: "One paragraph, shown when the entry is expanded." }
+      - { name: tags, label: Tags, widget: list, required: false, hint: "Comma-separated, e.g. 3D MRI, Thesis" }
+      - name: status
+        label: Status
+        widget: select
+        options:
+          - { label: Published (peer-reviewed), value: published }
+          - { label: Under review, value: under-review }
+          - { label: Preprint, value: preprint }
+          - { label: In progress, value: in-progress }
+        hint: "Must match the linked publication's status, or the site won't rebuild."
+      - name: publication
+        label: Linked publication
+        widget: relation
+        collection: publications
+        search_fields: [title]
+        value_field: "{{slug}}"
+        display_fields: [title]
+        required: false
+        hint: "The paper this research produced. Its authors, venue, DOI and BibTeX are shown from there."
+      - { name: thumbnail, label: Thumbnail image, widget: image, required: false }
+      - name: metrics
+        label: Key results
+        widget: list
+        required: false
+        summary: "{{fields.value}} {{fields.label}}"
+        fields:
+          - { name: value, label: Value, widget: string, hint: "e.g. 92.34%" }
+          - { name: label, label: Label, widget: string, hint: "e.g. accuracy" }
+      - name: links
+        label: Extra links
+        widget: object
+        required: false
+        collapsed: true
+        hint: "Only for links not already on the linked publication."
+        fields:
+          - { name: doi, label: DOI link, widget: string, required: false }
+          - { name: code, label: Code link, widget: string, required: false }
+          - { name: pdf, label: PDF link, widget: string, required: false }
+      - { name: featured, label: Featured, widget: boolean, default: false, required: false }
+      - name: walkthrough
+        label: Walkthrough key
+        widget: string
+        required: false
+        hint: "Leave empty unless a walkthrough has been built for this entry."
+      - { name: order, label: Sort order, widget: number, value_type: int, default: 100, hint: "Lower numbers appear first." }
+      - { name: body, label: Full page text, widget: markdown, hint: "The first paragraph is shown as the page's abstract." }
+
+  # ------------------------------------------------------------------ projects
+  - name: projects
+    label: Projects
+    label_singular: Project
+    folder: src/content/projects
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{title}}"
+    sortable_fields: [order, date, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: slug
+        label: Web address
+        widget: string
+        hint: "Lowercase letters, numbers and hyphens. Becomes /projects/<this>/."
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
+      - { name: one_liner, label: One-line description, widget: string }
+      - { name: tags, label: Tags, widget: list, required: false }
+      - { name: repo_url, label: GitHub repository, widget: string, required: false, hint: "Full URL. Leave empty if there's no public repo." }
+      - { name: thumbnail, label: Thumbnail image, widget: image, required: false }
+      - name: metrics
+        label: Key results
+        widget: list
+        required: false
+        summary: "{{fields.value}} {{fields.label}}"
+        fields:
+          - { name: value, label: Value, widget: string }
+          - { name: label, label: Label, widget: string }
+      - { name: date, label: Completed, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true }
+      - { name: order, label: Sort order, widget: number, value_type: int, default: 100, hint: "Lower numbers appear first." }
+      - { name: body, label: Description, widget: markdown, hint: "The first paragraph is shown when the project is expanded." }
+
+  # -------------------------------------------------------------- publications
+  - name: publications
+    label: Publications
+    label_singular: Publication
+    description: The only place papers are listed. Be exact about status.
+    folder: src/content/publications
+    extension: yml
+    format: yml
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{year}} · {{title}}"
+    sortable_fields: [year, title]
+    editor: { preview: false }
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: slug
+        label: Short id
+        widget: string
+        hint: "Lowercase letters, numbers and hyphens, e.g. hybridtransmedformer. Used to link research entries to this paper."
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
+      - { name: authors, label: Authors, widget: string, hint: "IEEE style, e.g. A.-N. Khushbu, Z. Yang, and X. Zhang. Your name is bolded automatically." }
+      - { name: venue, label: Venue, widget: string, hint: "Full conference or journal name, or 'Preprint'." }
+      - { name: venue_short, label: Short venue, widget: string, required: false, hint: "e.g. IARCE 2024" }
+      - name: type
+        label: Type
+        widget: select
+        options:
+          - { label: Conference paper, value: conference }
+          - { label: Journal article, value: journal }
+          - { label: Preprint, value: preprint }
+          - { label: Thesis, value: thesis }
+      - { name: year, label: Year, widget: number, value_type: int, hint: "Year published, submitted (under review) or posted (preprint)." }
+      - { name: date, label: Exact date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true, required: false }
+      - name: status
+        label: Status
+        widget: select
+        options:
+          - { label: Published (peer-reviewed), value: published }
+          - { label: Under review, value: under-review }
+          - { label: Preprint (not peer-reviewed), value: preprint }
+          - { label: In progress, value: in-progress }
+      - { name: pages, label: Pages, widget: string, required: false, hint: "e.g. pp. 307–311" }
+      - { name: award, label: Award, widget: string, required: false }
+      - { name: keywords, label: Keywords, widget: list, required: false }
+      - { name: abstract, label: Abstract, widget: text, required: false, hint: "Separate paragraphs with a blank line." }
+      - { name: doi, label: DOI, widget: string, required: false, hint: "Just the DOI, e.g. 10.1109/IARCE64300.2024.00064" }
+      - { name: url, label: Paper link, widget: string, required: false, hint: "Open link to the paper (e.g. a preprint page). Hides 'Request full paper'." }
+      - { name: code_url, label: Code link, widget: string, required: false }
+      - { name: contact_email, label: Contact email for this paper, widget: string, required: false, hint: "Shown only on this entry." }
+      - { name: bibtex, label: BibTeX, widget: text }
+
+  # ---------------------------------------------------------------------- blog
+  - name: blog
+    label: Blog
+    label_singular: Post
+    folder: src/content/blog
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{fields.slug}}"
+    identifier_field: title
+    summary: "{{date}} · {{title}}"
+    sortable_fields: [date, title]
+    fields:
+      - { name: title, label: Title, widget: string }
+      - name: slug
+        label: Web address
+        widget: string
+        hint: "Lowercase letters, numbers and hyphens. Becomes /blog/<this>/."
+        pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
+      - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true }
+      - { name: excerpt, label: Excerpt, widget: text, hint: "One or two sentences for the blog list and link previews." }
+      - { name: cover, label: Cover image, widget: image, required: false }
+      - { name: draft, label: Draft (hidden from the site), widget: boolean, default: false, required: false }
+      - { name: body, label: Post, widget: markdown }
+
+  # -------------------------------------------------------------------- upwork
+  - name: upwork
+    label: Upwork work
+    label_singular: Upwork item
+    description: Kind of work only — no client names or confidential details.
+    folder: src/content/upwork
+    extension: md
+    format: frontmatter
+    create: true
+    slug: "{{slug}}"
+    identifier_field: title
+    summary: "{{title}}"
+    editor: { preview: false }
+    fields:
+      - { name: title, label: Title, widget: string }
+      - { name: summary, label: Summary, widget: text }
+      - { name: skills, label: Skills, widget: list, required: false }
+      - { name: year, label: Year, widget: number, value_type: int, required: false }
+      - { name: order, label: Sort order, widget: number, value_type: int, default: 100 }
+      - { name: draft, label: Draft (hidden from the site), widget: boolean, default: false, required: false }
+
+  # ------------------------------------------------------- profile and pages
+  - name: settings
+    label: Profile & pages
+    editor: { preview: false }
+    files:
+      - name: profile
+        label: Profile
+        file: src/content/site/profile.yml
+        fields:
+          - { name: name, label: Name, widget: string }
+          - { name: role, label: Role line, widget: string, hint: "Shown under your name on the home page." }
+          - { name: bio, label: Bio, widget: text, hint: "Wrap words in **double asterisks** to make them bold." }
+          - { name: photo, label: Photo, widget: image, required: false }
+          - name: links
+            label: Links
+            widget: object
+            hint: "Leave a link empty to hide it."
+            fields:
+              - { name: email, label: Email, widget: string, hint: "Shown as text; also receives 'Request full paper' emails." }
+              - { name: cv, label: CV page, widget: string, required: false, default: /cv/ }
+              - { name: scholar, label: Google Scholar, widget: string, required: false }
+              - { name: orcid, label: ORCID, widget: string, required: false }
+              - { name: github, label: GitHub, widget: string, required: false }
+              - { name: linkedin, label: LinkedIn, widget: string, required: false }
+              - { name: upwork, label: Upwork profile, widget: string, required: false }
+      - name: cv
+        label: CV page
+        file: src/content/pages/cv.md
+        fields:
+          - { name: title, label: Page title, widget: string }
+          - { name: description, label: Search description, widget: text }
+          - { name: pdf, label: CV PDF, widget: file, required: false, media_folder: /public/cv, public_folder: /cv }
+          - { name: body, label: CV text, widget: markdown, hint: "Education, experience and skills. Publications and projects are added automatically." }
+      - name: upwork_page
+        label: Upwork page
+        file: src/content/pages/upwork.md
+        fields:
+          - { name: title, label: Page title, widget: string }
+          - { name: description, label: Search description, widget: text }
+          - { name: body, label: Intro text, widget: markdown }
