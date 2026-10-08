@@ -3,9 +3,9 @@ import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
-// Netlify sets URL to the site's primary address at build time; it feeds
-// canonical links, Open Graph URLs and the sitemap.
-const site = process.env.URL ?? 'http://localhost:4321';
+// The public address, used for canonical links, Open Graph URLs and the
+// sitemap. The site is hosted on GitHub Pages.
+const site = 'https://docalnahiyan.github.io';
 
 export default defineConfig({
   site,

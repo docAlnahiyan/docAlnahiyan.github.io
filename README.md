@@ -1,7 +1,7 @@
 # Al-Nahiyan Khushbu — academic portfolio
 
 Personal research site: research, publications, projects, blog, CV.
-Built with [Astro](https://astro.build) as static HTML and deployed on Netlify.
+Built with [Astro](https://astro.build) as static HTML and hosted on GitHub Pages.
 
 ## Run locally
 
@@ -28,8 +28,8 @@ npm run preview   # serve dist/ locally
 ## Editing content
 
 All content lives in `src/content/` and is edited through the admin at
-`/admin` (Decap CMS). Each save commits to `main`, and Netlify rebuilds the
-site. Only GitHub accounts with write access to this repository can save.
+`/admin` (Decap CMS). Each save commits to `main`, and the deploy workflow
+rebuilds the site. Only GitHub accounts with write access to this repository can save.
 Uploaded images go to `public/uploads/`.
 
 To try the admin on your own computer without logging in:
@@ -43,11 +43,18 @@ Local saves write files directly; nothing is committed until you commit.
 
 If a save leaves content inconsistent (for example, a research entry whose
 status disagrees with its publication), the build stops with a plain message
-and the live site keeps its previous version until the content is fixed.
+and the live site keeps its previous version until the content is fixed
+(the failed run shows in the repo's Actions tab).
 
 ## Deploy
 
-Netlify builds from `main` using `netlify.toml`. The site URL used for
-canonical links and the sitemap comes from Netlify's `URL` variable.
+GitHub Pages serves the site at https://docalnahiyan.github.io. The workflow in
+`.github/workflows/deploy.yml` builds and publishes it on every push to `main`,
+including saves from `/admin`. (Repo Settings → Pages → Source must be
+"GitHub Actions".)
+
+Netlify is used only for the admin's "Login with GitHub": a Netlify site with
+GitHub configured as an OAuth provider. It hosts nothing; its name is set as
+`site_domain` in `public/admin/config.yml`.
 
 The previous React version of the site lives on the `old-react-site` branch.

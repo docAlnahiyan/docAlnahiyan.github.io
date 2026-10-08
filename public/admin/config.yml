@@ -1,11 +1,17 @@
 # Decap CMS configuration — the forms at /admin.
-# Every save is a commit to the repo; Netlify rebuilds the site from it.
-# Field names here must match src/content.config.ts.
+# Every save is a commit to main; a GitHub Action rebuilds and publishes the
+# site. Field names here must match src/content.config.ts.
 
 backend:
   name: github
   repo: docAlnahiyan/docAlnahiyan.github.io
   branch: main
+  # "Login with GitHub" goes through Netlify's OAuth service; the Netlify site
+  # below exists only for that and hosts nothing.
+  base_url: https://api.netlify.com
+  site_domain: NETLIFY_SITE_NAME.netlify.app
+  # The repo is public, so the login token needs access to public repos only.
+  auth_scope: public_repo
   commit_messages:
     create: "Admin: add {{collection}} “{{slug}}”"
     update: "Admin: update {{collection}} “{{slug}}”"
@@ -21,6 +27,8 @@ media_folder: public/uploads
 public_folder: /uploads
 
 logo_url: /favicon.svg
+site_url: https://docalnahiyan.github.io
+display_url: https://docalnahiyan.github.io
 
 slug:
   encoding: ascii
