@@ -1,0 +1,31 @@
+title: Parkinson's Disease Recognition Using Hybrid CNN-Transformer Model
+authors: A. N. Khushbu, Z. Yang, Y. Liu, and X. Zhang
+venue: 2024 4th International Conference on Industrial Automation, Robotics and Control Engineering (IARCE)
+venue_short: IARCE 2024
+type: conference
+year: 2024
+status: published
+pages: pp. 307–311
+award: Best Paper Award
+doi: 10.1109/IARCE64300.2024.00064
+code_url: https://github.com/docAlnahiyan/Parkinson-s-Disease-Recognition-Using-Hybrid-CNN-Transformer-Model
+abstract: >-
+  This paper presents a novel hybrid architecture combining Convolutional Neural Networks
+  (CNNs) with Transformer attention mechanisms for Parkinson's disease classification using
+  2D structural MRI. The proposed model leverages the feature extraction capabilities of CNNs
+  while incorporating the global context modeling of Transformers to achieve improved
+  classification performance. Our lightweight model provides rapid pre-screening capabilities
+  for early PD detection, achieving 80.51% accuracy on structural brain MRI data. The hybrid
+  approach demonstrates the effectiveness of combining local feature extraction with global
+  attention mechanisms for medical image analysis, offering a computationally efficient
+  solution suitable for clinical deployment in resource-constrained settings.
+bibtex: |-
+  @inproceedings{khushbu2024parkinsons,
+    title     = {{P}arkinson's Disease Recognition Using Hybrid {CNN-Transformer} Model},
+    author    = {Khushbu, Al-Nahiyan and Yang, Z. and Liu, Y. and Zhang, X.},
+    booktitle = {2024 4th International Conference on Industrial Automation, Robotics and Control Engineering (IARCE)},
+    pages     = {307--311},
+    year      = {2024},
+    publisher = {IEEE},
+    doi       = {10.1109/IARCE64300.2024.00064}
+  }

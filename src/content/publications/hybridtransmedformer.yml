@@ -1,0 +1,26 @@
+title: "HybridTransMedFormer: A Dual-Path 3D MRI Fusion Framework for Early Parkinson's Disease Recognition"
+# TODO: full author list pending. Replace "et al." with the remaining authors.
+authors: A. N. Khushbu, X. Zhang, et al.
+venue: Artificial Intelligence in Medicine (Elsevier)
+venue_short: Artificial Intelligence in Medicine
+type: journal
+# Year submitted. TODO: confirm the submission year.
+year: 2025
+status: under-review
+pages: ""
+award: ""
+doi: ""
+code_url: ""
+abstract: |-
+  The early detection of Parkinson's disease (PD) at the prodromal stage, when neuroprotective therapies could substantially delay progression, remains a critical challenge in neurology. We introduce HybridTransMedFormer, a dual-path 3D MRI fusion framework that synergizes hierarchical convolutional networks and self-attention transformers to address this gap. Unlike existing hybrids, our architecture employs dynamic cross-pathway fusion to adaptively integrate localized structural details (e.g., substantia nigra atrophy) with global cortical-subcortical dependencies, establishing the first 3D MRI framework for early-stage PD classification without requiring multi-modal data.
+
+  Trained on the Parkinson's Progression Markers Initiative (PPMI) dataset, HybridTransMedFormer overcomes severe class imbalance (Control: 131, PD: 318, Prodromal: 110) via anatomically constrained 3D augmentations (rotation ±10°, intensity shifts, Gaussian noise) and Focal Loss optimization (γ = 2.5), balancing classes to 497 samples each. The model achieves state-of-the-art performance: 92.34% accuracy, 0.984 ROC AUC, and 0.974 PR AUC, surpassing six benchmarks including 3DTransMeD (+4.95% accuracy) and SwinTransformer3D (+18.47% accuracy).
+
+  For prodromal detection—the most clinically critical task—it attains 96.85% accuracy, 95.85% precision, 94.61% recall, and 0.994 ROC AUC, demonstrating unprecedented sensitivity to early-stage neurodegeneration. Grad-CAM visualizations reveal clinically interpretable decision-making, with attention maps localized to PD-pathology regions (substantia nigra, p < 0.001 via McNemar, bootstrapping). By reducing diagnostic delays by 12–18 months, this framework identifies neurodegeneration 2–3 years before motor symptom onset, enabling timely intervention. Code, preprocessing pipelines, and model weights are open-sourced to ensure reproducibility.
+bibtex: |-
+  @unpublished{khushbu2025hybridtransmedformer,
+    title  = {{HybridTransMedFormer}: A Dual-Path {3D MRI} Fusion Framework for Early {P}arkinson's Disease Recognition},
+    author = {Khushbu, Al-Nahiyan and Zhang, X. and others},
+    note   = {Under review at Artificial Intelligence in Medicine},
+    year   = {2025}
+  }
