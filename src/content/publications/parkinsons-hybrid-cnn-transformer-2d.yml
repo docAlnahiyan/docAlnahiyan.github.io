@@ -7,6 +7,7 @@ year: 2024
 status: published
 pages: pp. 307–311
 award: Best Paper Award
+keywords: [Parkinson's disease, CNN-Transformer, medical imaging, deep learning, 2D MRI]
 doi: 10.1109/IARCE64300.2024.00064
 code_url: https://github.com/docAlnahiyan/Parkinson-s-Disease-Recognition-Using-Hybrid-CNN-Transformer-Model
 abstract: >-

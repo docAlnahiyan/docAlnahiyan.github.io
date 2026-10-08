@@ -13,6 +13,7 @@ export type UpworkItem = CollectionEntry<'upwork'>;
 export const STATUS_LABEL: Record<Publication['data']['status'], string> = {
   published: 'Published',
   'under-review': 'Under review',
+  preprint: 'Preprint',
   'in-progress': 'In progress',
 };
 

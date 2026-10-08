@@ -6,9 +6,8 @@ pdf: ""
 
 ## Education
 
-**PhD researcher, Artificial Intelligence** — Southwest Jiaotong University, China
-*In progress.* Research direction: medical imaging and computer vision.
-<!-- TODO: add PhD start year -->
+**PhD, Artificial Intelligence** — Southwest Jiaotong University, China · Sept 2025–present
+Research direction: medical imaging and computer vision.
 
 **MSc, Computer Science and Technology** — Southwest Jiaotong University, China · 2022–2025
 GPA 3.38 / 4.0. Thesis: *Hybrid Deep Learning Frameworks for Early Parkinson's Disease

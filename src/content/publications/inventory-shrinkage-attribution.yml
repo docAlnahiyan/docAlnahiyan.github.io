@@ -1,0 +1,34 @@
+title: "Catching Theft When the Records Lie: Exposure-Based Attribution of Inventory Shrinkage in Pharmaceutical Warehouses"
+authors: M. J. Alam and A.-N. Khushbu
+# TODO: preprint server name once the link is available.
+venue: Preprint
+venue_short: Preprint
+type: preprint
+year: 2026
+date: 2026-09-28
+status: preprint
+pages: ""
+award: ""
+keywords:
+  - inventory shrinkage
+  - pharmaceutical supply chain
+  - fraud attribution
+  - insider threat
+  - positive-unlabelled learning
+  - anomaly detection
+  - collusion detection
+# TODO: paste the abstract from the paper.
+abstract: ""
+doi: ""
+# TODO: preprint URL.
+url: ""
+code_url: ""
+contact_email: ""
+bibtex: |-
+  @misc{alam2026catching,
+    title  = {Catching Theft When the Records Lie: Exposure-Based Attribution of Inventory Shrinkage in Pharmaceutical Warehouses},
+    author = {Alam, M. J. and Khushbu, Al-Nahiyan},
+    year   = {2026},
+    month  = sep,
+    note   = {Preprint}
+  }

@@ -30,7 +30,7 @@ const metrics = z
 const tags = z.array(z.string()).default([]);
 
 /** Shared by research and publications so the two can be checked against each other. */
-export const PAPER_STATUS = ['published', 'under-review', 'in-progress'] as const;
+export const PAPER_STATUS = ['published', 'under-review', 'preprint', 'in-progress'] as const;
 
 const research = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/research' }),
@@ -85,14 +85,22 @@ const publications = defineCollection({
     /** Short venue label for tags, e.g. "IARCE 2024". */
     venue_short: optionalText,
     type: z.enum(['conference', 'journal', 'preprint', 'thesis']),
-    /** Year published, or year submitted while under review. */
+    /** Year published, submitted (under review) or posted (preprint). */
     year: z.number().int().min(2000).max(2100),
+    /** Exact date, when known (e.g. a preprint's posting date). */
+    date: z.preprocess(blankToUndefined, z.coerce.date().optional()),
     status: z.enum(PAPER_STATUS),
     pages: optionalText,
     award: optionalText,
-    abstract: z.string(),
+    keywords: tags,
+    /** Shown on the publication list; leave empty until the text is final. */
+    abstract: optionalText,
     doi: optionalText,
+    /** Link to the paper when there is no DOI, e.g. a preprint server page. */
+    url: optionalUrl,
     code_url: optionalUrl,
+    /** A paper-specific contact address, shown only on this entry. */
+    contact_email: z.preprocess(blankToUndefined, z.email().optional()),
     bibtex: z.string(),
   }),
 });
