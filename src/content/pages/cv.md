@@ -1,7 +1,7 @@
 ---
 title: CV
 description: Curriculum vitae of Al-Nahiyan Khushbu — PhD researcher in artificial intelligence at Southwest Jiaotong University.
-pdf: ""
+pdf: /cv/Al-Nahiyan-Khushbu-CV.pdf
 ---
 
 ## Education

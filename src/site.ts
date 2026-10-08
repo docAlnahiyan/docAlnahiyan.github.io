@@ -5,8 +5,10 @@ export const SITE = {
   name: 'Al-Nahiyan Khushbu',
   shortName: 'Al-Nahiyan',
   description:
-    "Al-Nahiyan Khushbu — medical AI researcher building hybrid CNN–Transformer models for early Parkinson's disease detection from MRI.",
+    'Al-Nahiyan Khushbu — PhD researcher in artificial intelligence at Southwest Jiaotong University, working on medical imaging and computer vision.',
   locale: 'en_US',
+  ogImage: '/og-image.png',
+  ogImageAlt: 'Al-Nahiyan Khushbu — PhD researcher in artificial intelligence, Southwest Jiaotong University',
 };
 
 export const NAV = [

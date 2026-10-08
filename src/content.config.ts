@@ -79,7 +79,7 @@ const publications = defineCollection({
   loader: glob({ pattern: '**/*.{yml,yaml}', base: './src/content/publications' }),
   schema: z.object({
     title: z.string(),
-    /** IEEE style, e.g. "A. N. Khushbu, Z. Yang, and X. Zhang". */
+    /** IEEE style, e.g. "A.-N. Khushbu, Z. Yang, and X. Zhang". */
     authors: z.string(),
     venue: z.string(),
     /** Short venue label for tags, e.g. "IARCE 2024". */

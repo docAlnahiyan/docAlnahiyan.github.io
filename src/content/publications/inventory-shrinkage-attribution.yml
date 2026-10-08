@@ -17,8 +17,12 @@ keywords:
   - positive-unlabelled learning
   - anomaly detection
   - collusion detection
-# TODO: paste the abstract from the paper.
-abstract: ""
+abstract: |-
+  Pharmaceutical warehouses lose a substantial quantity of stock to theft each year, and a large part of that loss is not the work of a single employee but of small groups who coordinate to remove goods and to keep the paperwork consistent with what they have taken. Conventional controls inspect records for inconsistencies, yet this defence fails precisely when it is most needed: when the people who commit the theft are also the people who author the records. This study reframes the task from record auditing to actor attribution. Instead of asking whether a document is internally consistent, it asks which employees are associated with unexplained loss more often than their legitimate access to the warehouse would predict.
+
+  To make this question answerable and reproducible where real labelled theft data is unavailable, a calibrated simulation of a medicine warehouse is developed, spanning six zones, hundreds of stock items, and a workforce with distinct operational roles. The simulator produces a fully honest baseline year and a set of corrupted years in which adversaries steal through six distinct mechanisms that range from purely physical removal to record editing, while a sealed ground-truth channel records exactly who took what. Routine inventory counts are converted into supervision through a loss-window labelling procedure under a positive-unlabelled assumption that never asserts an employee's innocence. Attribution then proceeds through two complementary channels: one measures each actor's presence in loss windows relative to that same actor's baseline access, and the other measures peer-relative anomalies in authority actions such as write-offs. The system ranks employees for review and never issues an accusation.
+
+  Across simulated scenarios that vary the adversary profile and the theft intensity, the two channels place every true actor at the top of the review list in eight of nine worlds at no false-accusation cost, while a count-based audit alone recovers fewer than one in five record-editing thefts. Repeated trials show solo adversaries recovered reliably and a colluding picker-approver pair as the harder case. Run unchanged on a real transaction dataset of roughly 1.07 million records, the method raises no false alarms on legitimate activity and recovers every injected thief, with the record-editing thief writing off several times the value of any honest peer. Validation on real operational data and a neural extension of the attribution score are identified as the immediate next steps. The simulation framework, the labelling procedure, and the attribution method are described in full so that the results can be reproduced and extended.
 doi: ""
 # TODO: preprint URL.
 url: ""
