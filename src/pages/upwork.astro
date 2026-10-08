@@ -1,12 +1,73 @@
 ---
+import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPage, getProfile, getUpworkItems } from '../lib/content';
+
+const page = await getPage('upwork');
+const { Content } = await render(page);
+const profile = await getProfile();
+const items = await getUpworkItems();
 ---
 
-<BaseLayout title="Upwork" description="Applied machine learning and data project work available through Upwork.">
+<BaseLayout title={page.data.title} description={page.data.description}>
   <div class="wrap view">
     <header class="page-head">
-      <h1>Upwork</h1>
-      <p>This page is being rebuilt.</p>
+      <h1>{page.data.title}</h1>
     </header>
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    {items.length > 0 && (
+      <ul class="work">
+        {items.map((i) => (
+          <li>
+            <h2>{i.data.title}{i.data.year && <span class="yr">{i.data.year}</span>}</h2>
+            <p>{i.data.summary}</p>
+            {i.data.skills.length > 0 && (
+              <ul class="tags">{i.data.skills.map((s) => <li class="tag">{s}</li>)}</ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {profile.links.upwork && (
+      <p class="actions"><a class="btn" href={profile.links.upwork}>View my Upwork profile</a></p>
+    )}
   </div>
 </BaseLayout>
+
+<style>
+  .work {
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .work > li {
+    border-top: 1px solid var(--border);
+    padding: 20px 0;
+  }
+  .work > li:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .work h2 {
+    font-size: 19px;
+    margin-bottom: 6px;
+  }
+  .yr {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-left: 10px;
+  }
+  .work p {
+    margin: 0 0 10px;
+    color: var(--ink-2);
+    font-size: 15px;
+  }
+  .actions {
+    margin-top: 28px;
+  }
+</style>

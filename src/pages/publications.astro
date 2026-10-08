@@ -1,12 +1,76 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PublicationItem from '../components/PublicationItem.astro';
+import { getProfile, getPublications } from '../lib/content';
+
+const profile = await getProfile();
+const pubs = await getPublications();
+
+// Grouped by review status so unreviewed work is never mixed in with
+// peer-reviewed papers.
+const groups = [
+  { id: 'published', title: 'Peer-reviewed', items: pubs.filter((p) => p.data.status === 'published') },
+  {
+    id: 'under-review',
+    title: 'Under review',
+    note: 'Submitted to a journal or conference; not yet accepted.',
+    items: pubs.filter((p) => p.data.status === 'under-review'),
+  },
+  {
+    id: 'preprints',
+    title: 'Preprints',
+    note: 'Publicly posted; not peer-reviewed.',
+    items: pubs.filter((p) => p.data.status === 'preprint'),
+  },
+].filter((g) => g.items.length > 0);
 ---
 
-<BaseLayout title="Publications" description="Peer-reviewed publications and papers under review by Al-Nahiyan Khushbu.">
+<BaseLayout
+  title="Publications"
+  description="Publications by Al-Nahiyan Khushbu: peer-reviewed papers, papers under review and preprints, with abstracts, DOIs and BibTeX."
+>
   <div class="wrap view">
     <header class="page-head">
       <h1>Publications</h1>
-      <p>This page is being rebuilt.</p>
+      <p>Peer-reviewed work first, then papers under review and preprints. Each entry has its abstract, links and a BibTeX citation.</p>
     </header>
+
+    {groups.map((g) => (
+      <section class="group" aria-labelledby={`g-${g.id}`}>
+        <div class="group-head">
+          <h2 id={`g-${g.id}`}>{g.title} <span class="count">{g.items.length}</span></h2>
+          {g.note && <p>{g.note}</p>}
+        </div>
+        {g.items.map((p) => <PublicationItem pub={p} requestEmail={profile.links.email} />)}
+      </section>
+    ))}
   </div>
 </BaseLayout>
+
+<style>
+  .group + .group {
+    margin-top: 48px;
+  }
+  .group-head {
+    margin-bottom: 4px;
+  }
+  .group-head h2 {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    color: var(--ink);
+  }
+  .count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-3);
+    margin-left: 6px;
+  }
+  .group-head p {
+    margin: 2px 0 12px;
+    font-size: 13.5px;
+    color: var(--ink-3);
+  }
+</style>

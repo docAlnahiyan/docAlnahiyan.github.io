@@ -1,12 +1,100 @@
 ---
+import { render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPage, getProfile, getProjects, getPublications, STATUS_LABEL } from '../lib/content';
+import { authorsHtml, monthYear } from '../lib/format';
+
+const page = await getPage('cv');
+const { Content } = await render(page);
+const profile = await getProfile();
+const [pubs, projects] = await Promise.all([getPublications(), getProjects()]);
+// Publications and projects are listed from their own collections, so the CV
+// can never disagree with the Publications and Projects pages.
 ---
 
-<BaseLayout title="CV" description="Curriculum vitae of Al-Nahiyan Khushbu.">
+<BaseLayout title={page.data.title} description={page.data.description}>
   <div class="wrap view">
-    <header class="page-head">
-      <h1>CV</h1>
-      <p>This page is being rebuilt.</p>
+    <header class="page-head cv-head">
+      <div>
+        <h1>{profile.name}</h1>
+        <p class="role">{profile.role}</p>
+        <p class="contact"><span class="selectable">{profile.links.email}</span></p>
+      </div>
+      {page.data.pdf && (
+        <a class="btn ghost" href={page.data.pdf} download>Download PDF</a>
+      )}
     </header>
+
+    <div class="prose cv">
+      <Content />
+
+      <h2>Publications</h2>
+      <ol class="cv-list">
+        {pubs.map((p) => (
+          <li>
+            <span set:html={authorsHtml(p.data.authors)} />,{' '}
+            “<a href={`/publications/#${p.id}`}>{p.data.title}</a>,”{' '}
+            <i>{p.data.venue_short ?? p.data.venue}</i>, {p.data.year}.{' '}
+            <span class="status">{STATUS_LABEL[p.data.status]}{p.data.award && ` · ${p.data.award}`}</span>
+          </li>
+        ))}
+      </ol>
+
+      <h2>Projects</h2>
+      <ul class="cv-list">
+        {[...projects].sort((a, b) => +b.data.date - +a.data.date).map((p) => (
+          <li>
+            <a href={`/projects/${p.id}/`}>{p.data.title}</a> — {p.data.one_liner}{' '}
+            <span class="status">{monthYear(p.data.date)}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   </div>
 </BaseLayout>
+
+<style>
+  .cv-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .role {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    margin: 0 0 4px !important;
+  }
+  .contact {
+    font-size: 14px;
+  }
+  .selectable {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    user-select: all;
+  }
+  .cv :global(h2) {
+    font-size: 15px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  .cv-list li {
+    margin-bottom: 8px;
+  }
+  .cv-list :global(strong) {
+    color: var(--ink);
+  }
+  .status {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+</style>

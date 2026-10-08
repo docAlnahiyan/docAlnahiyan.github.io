@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts } from '../../lib/content';
+import { fullDate, isoDate } from '../../lib/format';
+
+const posts = await getPosts();
+---
+
+<BaseLayout title="Blog" description="Writing by Al-Nahiyan Khushbu on medical AI, computer vision and research.">
+  <div class="wrap view">
+    <header class="page-head">
+      <h1>Blog</h1>
+      <p>Notes on medical AI, computer vision and research.</p>
+    </header>
+
+    {posts.length === 0 ? (
+      <p class="empty">No posts yet.</p>
+    ) : (
+      <ol class="posts">
+        {posts.map((p) => (
+          <li class="post">
+            <time datetime={isoDate(p.data.date)}>{fullDate(p.data.date)}</time>
+            <h2><a href={`/blog/${p.id}/`}>{p.data.title}</a></h2>
+            <p>{p.data.excerpt}</p>
+          </li>
+        ))}
+      </ol>
+    )}
+  </div>
+</BaseLayout>
+
+<style>
+  .posts {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .post {
+    border-top: 1px solid var(--border);
+    padding: 22px 0;
+  }
+  .post:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .post time {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .post h2 {
+    font-size: 21px;
+    margin: 4px 0 6px;
+  }
+  .post h2 a {
+    color: var(--ink);
+  }
+  .post h2 a:hover {
+    color: var(--accent-ink);
+  }
+  .post p {
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 15px;
+    max-width: 62ch;
+  }
+</style>

@@ -1,0 +1,56 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Metrics from '../../components/Metrics.astro';
+import { getProjects, type Project } from '../../lib/content';
+import { isoDate, monthYear } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const items = await getProjects();
+  return items.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: Project };
+const d = entry.data;
+const { Content } = await render(entry);
+---
+
+<BaseLayout title={d.title} description={d.one_liner} type="article" image={d.thumbnail}>
+  <article class="wrap view">
+    <a class="back" href="/projects/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+      All projects
+    </a>
+    <ul class="tags">
+      {d.tags.map((t) => <li class="tag">{t}</li>)}
+    </ul>
+    <h1 class="detail-title">{d.title}</h1>
+    <p class="detail-meta"><time datetime={isoDate(d.date)}>{monthYear(d.date)}</time> · {d.one_liner}</p>
+
+    {d.thumbnail && <img class="cover" src={d.thumbnail} alt="" />}
+
+    <div class="prose">
+      <Content />
+    </div>
+
+    <Metrics items={d.metrics} />
+
+    {d.repo_url && (
+      <div class="actions">
+        <a class="btn ghost" href={d.repo_url}>Code on GitHub</a>
+      </div>
+    )}
+  </article>
+</BaseLayout>
+
+<style>
+  .prose {
+    margin-bottom: 24px;
+  }
+  .cover {
+    display: block;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin: 0 0 24px;
+  }
+</style>

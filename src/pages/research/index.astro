@@ -1,0 +1,44 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ExpandItem from '../../components/ExpandItem.astro';
+import PaperTags from '../../components/PaperTags.astro';
+import Metrics from '../../components/Metrics.astro';
+import { getResearch } from '../../lib/content';
+import { getEntry } from 'astro:content';
+
+const items = await Promise.all(
+  (await getResearch()).map(async (r) => ({
+    entry: r,
+    pub: r.data.publication ? await getEntry(r.data.publication) : undefined,
+  })),
+);
+
+const iconFor = (tags: string[]) =>
+  tags.some((t) => /3d/i.test(t)) ? 'brain' : tags.some((t) => /2d|mri/i.test(t)) ? 'slices' : 'brain';
+---
+
+<BaseLayout
+  title="Research"
+  description="Research by Al-Nahiyan Khushbu on hybrid CNN–Transformer models for early Parkinson's disease detection from brain MRI."
+>
+  <div class="wrap view">
+    <header class="page-head">
+      <h1>Research</h1>
+      <p>Each entry opens with a short summary. <b>Dig deeper</b> leads to the full page, with a walkthrough of how the model works.</p>
+    </header>
+
+    {items.map(({ entry, pub }) => (
+      <ExpandItem
+        href={`/research/${entry.id}/`}
+        title={entry.data.title}
+        subtitle={entry.data.subtitle}
+        icon={iconFor(entry.data.tags)}
+        thumbnail={entry.data.thumbnail}
+      >
+        <PaperTags slot="tags" inline status={entry.data.status} publication={pub} extra={entry.data.tags} />
+        <p>{entry.data.short_summary}</p>
+        <Metrics items={entry.data.metrics} />
+      </ExpandItem>
+    ))}
+  </div>
+</BaseLayout>

@@ -1,0 +1,69 @@
+---
+import { getEntry, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PaperTags from '../../components/PaperTags.astro';
+import Metrics from '../../components/Metrics.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import { WALKTHROUGHS } from '../../components/walkthroughs/registry';
+import { getProfile, getResearch, type Research } from '../../lib/content';
+import { authorsHtml, doiUrl, requestPaperMailto } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const items = await getResearch();
+  return items.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: Research };
+const d = entry.data;
+const pub = d.publication ? await getEntry(d.publication) : undefined;
+const profile = await getProfile();
+const { Content } = await render(entry);
+const Walkthrough = d.walkthrough ? WALKTHROUGHS[d.walkthrough] : undefined;
+
+const doi = pub?.data.doi;
+const paperUrl = pub?.data.url ?? d.links.pdf;
+const code = pub?.data.code_url ?? d.links.code;
+const meta = pub
+  ? `${authorsHtml(pub.data.authors)} · ${pub.data.venue_short ?? pub.data.venue} · ${pub.data.year}`
+  : undefined;
+---
+
+<BaseLayout title={d.title} description={d.subtitle} type="article" image={d.thumbnail}>
+  <article class="wrap view">
+    <a class="back" href="/research/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+      All research
+    </a>
+    <PaperTags status={d.status} publication={pub} extra={d.tags} />
+    <h1 class="detail-title">{d.title}</h1>
+    {meta && <p class="detail-meta" set:html={meta} />}
+
+    <div class="prose lede-first">
+      <Content />
+    </div>
+
+    {Walkthrough && <Walkthrough />}
+
+    <Metrics items={d.metrics} />
+
+    <div class="actions">
+      {doi && <a class="btn ghost" href={doiUrl(doi)}>DOI</a>}
+      {paperUrl && <a class="btn ghost" href={paperUrl}>Paper</a>}
+      {code && <a class="btn ghost" href={code}>Code</a>}
+      {pub && <a class="btn ghost" href={`/publications/#${pub.id}`}>Citation details</a>}
+      {pub && <CopyButton text={pub.data.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />}
+      {pub && !pub.data.url && (
+        <a class="btn ghost" href={requestPaperMailto(profile.links.email, pub.data.title)}>Request full paper</a>
+      )}
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .prose {
+    margin-bottom: 28px;
+  }
+  .detail-meta {
+    max-width: 70ch;
+  }
+</style>

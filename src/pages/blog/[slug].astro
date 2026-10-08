@@ -1,0 +1,39 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts, type Post } from '../../lib/content';
+import { fullDate, isoDate } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+}
+
+const { entry } = Astro.props as { entry: Post };
+const d = entry.data;
+const { Content } = await render(entry);
+---
+
+<BaseLayout title={d.title} description={d.excerpt} type="article" image={d.cover}>
+  <article class="wrap view">
+    <a class="back" href="/blog/">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+      All posts
+    </a>
+    <h1 class="detail-title">{d.title}</h1>
+    <p class="detail-meta"><time datetime={isoDate(d.date)}>{fullDate(d.date)}</time></p>
+    {d.cover && <img class="cover" src={d.cover} alt="" />}
+    <div class="prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>
+
+<style>
+  .cover {
+    display: block;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    margin: 0 0 28px;
+  }
+</style>

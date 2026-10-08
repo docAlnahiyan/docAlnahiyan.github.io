@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ExpandItem from '../../components/ExpandItem.astro';
+import Metrics from '../../components/Metrics.astro';
+import { getProjects } from '../../lib/content';
+import { firstParagraph, monthYear } from '../../lib/format';
+
+const projects = await getProjects();
+---
+
+<BaseLayout
+  title="Projects"
+  description="Machine learning and computer vision projects by Al-Nahiyan Khushbu, from emotion recognition to medical image analysis."
+>
+  <div class="wrap view">
+    <header class="page-head">
+      <h1>Projects</h1>
+      <p>Machine learning and computer vision work outside the research papers. Expand an entry for a summary; <b>Dig deeper</b> for the full page.</p>
+    </header>
+
+    {projects.map((p) => (
+      <ExpandItem
+        href={`/projects/${p.id}/`}
+        title={p.data.title}
+        subtitle={p.data.one_liner}
+        icon="code"
+        thumbnail={p.data.thumbnail}
+      >
+        <span slot="tags" class="tags">
+          <span class="tag">{monthYear(p.data.date)}</span>
+          {p.data.tags.map((t) => <span class="tag">{t}</span>)}
+        </span>
+        {firstParagraph(p.body) && <p>{firstParagraph(p.body)}</p>}
+        <Metrics items={p.data.metrics} />
+        {p.data.repo_url && (
+          <a slot="actions" class="btn ghost" href={p.data.repo_url}>Code on GitHub</a>
+        )}
+      </ExpandItem>
+    ))}
+  </div>
+</BaseLayout>
