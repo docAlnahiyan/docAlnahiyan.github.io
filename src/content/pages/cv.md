@@ -6,14 +6,14 @@ pdf: ""
 
 ## Education
 
-**PhD, Artificial Intelligence** — Southwest Jiaotong University, China · Sept 2025–present
+**PhD, Artificial Intelligence** — Southwest Jiaotong University, China · Sep 2025–present\
 Research direction: medical imaging and computer vision.
 
-**MSc, Computer Science and Technology** — Southwest Jiaotong University, China · 2022–2025
+**MSc, Computer Science and Technology** — Southwest Jiaotong University, China · 2022–2025\
 GPA 3.38 / 4.0. Thesis: *Hybrid Deep Learning Frameworks for Early Parkinson's Disease
 Recognition: Bridging 2D and 3D MRI Innovations* (May 2025).
 
-**BEng, Software Engineering** — Sichuan University, China · 2017–2021
+**BEng, Software Engineering** — Sichuan University, China · 2017–2021\
 GPA 3.02 / 4.0. Thesis: *Bird Species Identification using Deep Neural Networks* (May 2021).
 
 ## Experience

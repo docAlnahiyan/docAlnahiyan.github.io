@@ -6,7 +6,7 @@ short_summary: >-
   Combines CNN and Transformer features to classify Parkinson's disease from 2D MRI slices.
   It is designed to be fast and cheap enough to serve as a first-pass screening tool in
   resource-constrained clinical settings.
-tags: [2D MRI, Best paper]
+tags: [2D MRI, Thesis]
 status: published
 publication: parkinsons-hybrid-cnn-transformer-2d
 thumbnail: ""
