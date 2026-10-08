@@ -119,6 +119,15 @@ const { href, title, subtitle, icon = 'code', thumbnail, open = false } = Astro.
   .r-expand-inner {
     padding: 16px 0 4px 82px;
   }
+  .r-item[open] .r-expand-inner {
+    animation: reveal .3s ease;
+  }
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
   .r-expand-inner :global(p) {
     margin: 0 0 14px;
     color: var(--ink-2);

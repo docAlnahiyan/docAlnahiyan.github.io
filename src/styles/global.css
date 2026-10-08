@@ -1,4 +1,5 @@
-/* Design tokens — values match design-reference/mockup.html.
+/* Design tokens — values match design-reference/mockup.html, except --ink-3
+   and --warn-ink, adjusted (same hue) so small text passes WCAG AA contrast.
    Light palette on :root; the dark palette applies either from the OS
    preference (unless the visitor chose light) or from an explicit choice. */
 :root {
@@ -7,13 +8,14 @@
   --surface-2: #f0f3f2;
   --ink: #16201c;
   --ink-2: #48564f;
-  --ink-3: #7a877f;
+  --ink-3: #65706a;
   --border: #e2e7e4;
   --border-strong: #cfd6d1;
   --accent: #0c7a57;
   --accent-ink: #0a5f44;
   --accent-wash: #e8f3ee;
   --warn: #b7791f;
+  --warn-ink: #966319;
   --warn-wash: #fbf3e2;
   --on-accent: #ffffff;
   --radius: 10px;
@@ -31,13 +33,14 @@
     --surface-2: #1b2420;
     --ink: #e8eeea;
     --ink-2: #a9b5ae;
-    --ink-3: #77837b;
+    --ink-3: #818d85;
     --border: #273029;
     --border-strong: #36423a;
     --accent: #43c79a;
     --accent-ink: #6ad6b0;
     --accent-wash: #132a22;
     --warn: #e0a94a;
+    --warn-ink: #e0a94a;
     --warn-wash: #2a2213;
     --on-accent: #06130e;
     color-scheme: dark;
@@ -50,13 +53,14 @@
   --surface-2: #1b2420;
   --ink: #e8eeea;
   --ink-2: #a9b5ae;
-  --ink-3: #77837b;
+  --ink-3: #818d85;
   --border: #273029;
   --border-strong: #36423a;
   --accent: #43c79a;
   --accent-ink: #6ad6b0;
   --accent-wash: #132a22;
   --warn: #e0a94a;
+  --warn-ink: #e0a94a;
   --warn-wash: #2a2213;
   --on-accent: #06130e;
   color-scheme: dark;
@@ -71,6 +75,8 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* Keep #anchor targets clear of the sticky nav. */
+  scroll-padding-top: 80px;
 }
 
 body {
@@ -84,6 +90,7 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: break-word;
 }
 
 h1, h2, h3, h4 {
@@ -176,6 +183,27 @@ main {
   margin: 0;
 }
 
+@media print {
+  .nav,
+  .footer,
+  .skip-link,
+  .actions,
+  .back {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .view {
+    padding-block: 0;
+  }
+  .prose {
+    max-width: none;
+    color: #000;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -215,7 +243,7 @@ main {
 }
 .tag.rev {
   background: var(--warn-wash);
-  color: var(--warn);
+  color: var(--warn-ink);
   border-color: transparent;
 }
 .tag.pre {
@@ -429,7 +457,7 @@ main {
 
 /* The first paragraph of a research page reads as its abstract. */
 .prose.lede-first > p:first-child {
-  font-size: 16.5px;
+  font-size: 16px;
   color: var(--ink-2);
   border-left: 2px solid var(--accent);
   padding-left: 18px;
