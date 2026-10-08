@@ -20,3 +20,6 @@ npm-debug.log*
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# private, unpublished papers: never commit
+source-papers/
