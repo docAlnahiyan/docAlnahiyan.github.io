@@ -1,0 +1,638 @@
+<title>Nahiyan — Portfolio Mockup</title>
+<style>
+  /* Layout: single column, ~760px reading measure; fixed slim top nav; sections swap in place (client-side routing). */
+  :root{
+    --bg:#f7f8f8;
+    --surface:#ffffff;
+    --surface-2:#f0f3f2;
+    --ink:#16201c;
+    --ink-2:#48564f;
+    --ink-3:#7a877f;
+    --border:#e2e7e4;
+    --border-strong:#cfd6d1;
+    --accent:#0c7a57;
+    --accent-ink:#0a5f44;
+    --accent-wash:#e8f3ee;
+    --warn:#b7791f;
+    --warn-wash:#fbf3e2;
+    --radius:10px;
+    --maxw:780px;
+    --font-display:"Newsreader",Georgia,"Times New Roman",serif;
+    --font-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    --font-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1311;
+      --surface:#151c19;
+      --surface-2:#1b2420;
+      --ink:#e8eeea;
+      --ink-2:#a9b5ae;
+      --ink-3:#77837b;
+      --border:#273029;
+      --border-strong:#36423a;
+      --accent:#43c79a;
+      --accent-ink:#6ad6b0;
+      --accent-wash:#132a22;
+      --warn:#e0a94a;
+      --warn-wash:#2a2213;
+      color-scheme:dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e1311;
+    --surface:#151c19;
+    --surface-2:#1b2420;
+    --ink:#e8eeea;
+    --ink-2:#a9b5ae;
+    --ink-3:#77837b;
+    --border:#273029;
+    --border-strong:#36423a;
+    --accent:#43c79a;
+    --accent-ink:#6ad6b0;
+    --accent-wash:#132a22;
+    --warn:#e0a94a;
+    --warn-wash:#2a2213;
+    color-scheme:dark;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,h4{font-family:var(--font-display);font-weight:500;line-height:1.15;text-wrap:balance;margin:0}
+  a{color:var(--accent-ink);text-decoration:none}
+  a:hover{text-decoration:underline}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+  /* ---------- top nav ---------- */
+  .nav{
+    position:sticky;
+    top:env(safe-area-inset-top,0px);
+    z-index:50;
+    background:color-mix(in srgb,var(--bg) 88%,transparent);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--border);
+  }
+  .nav-inner{
+    max-width:var(--maxw);margin:0 auto;
+    padding-block:12px;padding-inline:20px;
+    display:flex;align-items:center;gap:16px;
+  }
+  .brand{font-family:var(--font-display);font-size:19px;font-weight:600;color:var(--ink);letter-spacing:-.01em;cursor:pointer}
+  .brand span{color:var(--accent)}
+  .nav-links{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+  .nav-links button{
+    font-family:var(--font-body);font-size:13.5px;color:var(--ink-2);
+    background:none;border:none;padding:6px 10px;border-radius:7px;cursor:pointer;
+  }
+  .nav-links button:hover{color:var(--ink);background:var(--surface-2)}
+  .nav-links button.active{color:var(--accent-ink);background:var(--accent-wash)}
+  .theme-btn{
+    flex:none;width:34px;height:34px;display:grid;place-items:center;
+    border:1px solid var(--border);border-radius:8px;background:var(--surface);
+    color:var(--ink-2);cursor:pointer;
+  }
+  .theme-btn:hover{color:var(--ink);border-color:var(--border-strong)}
+
+  /* ---------- shell ---------- */
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-inline:20px;padding-block:0}
+  .view{padding-block:40px 72px}
+  .view[hidden]{display:none!important}
+  .eyebrow{
+    font-family:var(--font-mono);font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent-ink);margin-bottom:14px;
+  }
+
+  /* ---------- home hero ---------- */
+  .hero{position:relative;padding-block:28px 10px;overflow:hidden}
+  .hero-art{
+    position:absolute;right:-40px;top:-20px;width:300px;max-width:55%;
+    opacity:.5;pointer-events:none;color:var(--accent);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .hero-art{opacity:.32}}
+  :root[data-theme="dark"] .hero-art{opacity:.32}
+  .hero h1{font-size:clamp(34px,6vw,52px);letter-spacing:-.02em;margin-bottom:6px}
+  .hero .role{font-family:var(--font-mono);font-size:13px;color:var(--ink-2);letter-spacing:.02em;margin-bottom:22px}
+  .hero p.lede{font-size:18px;color:var(--ink-2);max-width:60ch;margin:0 0 24px}
+  .hero p.lede b{color:var(--ink);font-weight:600}
+  .links-row{display:flex;flex-wrap:wrap;gap:8px 18px;font-family:var(--font-mono);font-size:13px}
+  .links-row a{color:var(--ink-2)}
+  .links-row a:hover{color:var(--accent-ink)}
+
+  /* ---------- live stat cards ---------- */
+  .section-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:56px 0 16px}
+  .section-label h2{font-size:15px;font-family:var(--font-body);font-weight:600;color:var(--ink);letter-spacing:.01em}
+  .section-label .hint{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:620px){.cards{grid-template-columns:repeat(2,1fr)}}
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 16px 14px;cursor:pointer;transition:border-color .15s;
+  }
+  .card:hover{border-color:var(--accent)}
+  .card .k{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+  .card .v{font-family:var(--font-display);font-size:34px;color:var(--ink);line-height:1;margin:8px 0 10px;font-variant-numeric:tabular-nums}
+  .spark{display:block;width:100%;height:28px}
+  .card .meta{font-size:12px;color:var(--ink-3);margin-top:8px}
+
+  /* mini bar chart */
+  .panel{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 18px 14px;margin-top:12px;
+  }
+  .panel h3{font-size:14px;font-family:var(--font-body);font-weight:600;margin-bottom:2px}
+  .panel .sub{font-size:12px;color:var(--ink-3);margin-bottom:16px}
+  .bars{display:flex;align-items:flex-end;gap:14px;height:120px;padding-top:6px}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+  .bar{width:100%;max-width:46px;background:var(--accent);border-radius:4px 4px 2px 2px;transition:height .6s cubic-bezier(.2,.7,.2,1)}
+  .bar-col .yr{font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+  .bar-col .n{font-family:var(--font-mono);font-size:11px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+  /* ---------- research index ---------- */
+  .page-head{margin-bottom:28px}
+  .page-head h1{font-size:clamp(28px,5vw,38px);letter-spacing:-.015em;margin-bottom:8px}
+  .page-head p{color:var(--ink-2);max-width:62ch;margin:0}
+  .r-item{border-top:1px solid var(--border);padding:22px 0}
+  .r-item:last-child{border-bottom:1px solid var(--border)}
+  .r-head{display:flex;gap:18px;align-items:flex-start;cursor:pointer}
+  .r-thumb{
+    flex:none;width:64px;height:64px;border-radius:10px;border:1px solid var(--border);
+    background:var(--surface-2);display:grid;place-items:center;color:var(--accent);
+  }
+  .r-main{flex:1;min-width:0}
+  .r-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+  .tag{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;
+    padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border)}
+  .tag.pub{background:var(--accent-wash);color:var(--accent-ink);border-color:transparent}
+  .tag.rev{background:var(--warn-wash);color:var(--warn);border-color:transparent}
+  .r-title{font-family:var(--font-display);font-size:21px;color:var(--ink);margin-bottom:4px}
+  .r-sub{font-size:14px;color:var(--ink-2)}
+  .r-caret{flex:none;color:var(--ink-3);transition:transform .25s;margin-top:4px}
+  .r-item.open .r-caret{transform:rotate(90deg)}
+  .r-expand{max-height:0;overflow:hidden;transition:max-height .35s ease}
+  .r-item.open .r-expand{max-height:420px}
+  .r-expand-inner{padding:16px 0 4px 82px}
+  @media(max-width:560px){.r-expand-inner{padding-left:0}}
+  .r-expand-inner p{margin:0 0 14px;color:var(--ink-2);font-size:15px}
+  .metrics{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+  .metric{font-family:var(--font-mono);font-size:12px;color:var(--ink);background:var(--surface-2);
+    border:1px solid var(--border);border-radius:7px;padding:6px 10px}
+  .metric b{color:var(--accent-ink)}
+  .btn{
+    display:inline-flex;align-items:center;gap:7px;font-family:var(--font-body);font-size:14px;font-weight:500;
+    padding:9px 15px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;cursor:pointer;
+  }
+  :root[data-theme="dark"] .btn{color:#06130e}
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn{color:#06130e}}
+  .btn:hover{filter:brightness(1.05);text-decoration:none}
+  .btn.ghost{background:none;color:var(--ink);border-color:var(--border-strong)}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent-ink);filter:none}
+
+  /* ---------- detail page ---------- */
+  .back{display:inline-flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:12.5px;
+    color:var(--ink-2);background:none;border:none;cursor:pointer;padding:0;margin-bottom:24px;letter-spacing:.03em}
+  .back:hover{color:var(--accent-ink)}
+  .detail-title{font-size:clamp(26px,4.5vw,36px);letter-spacing:-.015em;margin-bottom:10px}
+  .detail-meta{font-family:var(--font-mono);font-size:12.5px;color:var(--ink-3);margin-bottom:22px}
+  .abstract{font-size:16px;color:var(--ink-2);border-left:2px solid var(--accent);padding-left:18px;margin:0 0 30px;max-width:66ch}
+
+  /* walkthrough */
+  .wt{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px 20px;margin:10px 0 28px}
+  .wt-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .wt-top h3{font-size:15px;font-family:var(--font-body);font-weight:600}
+  .wt-controls{display:flex;gap:8px}
+  .wt-controls button{width:36px;height:36px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+  .wt-controls button:hover{border-color:var(--accent);color:var(--accent-ink)}
+  .wt-controls button.play{width:auto;padding:0 14px;gap:7px;font-family:var(--font-body);font-size:13.5px;font-weight:500}
+
+  .flow{display:flex;flex-direction:column;gap:0}
+  .stage{
+    border:1px solid var(--border);border-radius:10px;background:var(--bg);
+    padding:14px 16px;opacity:.45;transition:opacity .4s, border-color .4s, background .4s, box-shadow .4s;
+  }
+  .stage.active{opacity:1;border-color:var(--accent);background:var(--surface);box-shadow:0 0 0 3px var(--accent-wash)}
+  .stage.done{opacity:.9}
+  .stage .s-k{font-family:var(--font-mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  .stage .s-t{font-family:var(--font-display);font-size:18px;color:var(--ink);margin:3px 0 2px}
+  .stage .s-d{font-size:13.5px;color:var(--ink-2)}
+  .connector{align-self:center;width:2px;height:18px;background:var(--border-strong);position:relative}
+  .connector.lit{background:var(--accent)}
+  .connector::after{content:"";position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);
+    border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--border-strong)}
+  .connector.lit::after{border-top-color:var(--accent)}
+  .dual{display:flex;gap:12px}
+  .dual .stage{flex:1;min-width:0}
+  @media(max-width:520px){.dual{flex-direction:column;gap:0}.dual .connector{display:none}}
+  .params{font-family:var(--font-mono);font-size:12px;color:var(--accent-ink);margin-top:8px;font-variant-numeric:tabular-nums}
+  .classes{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .cls{flex:1;min-width:92px;text-align:center;border:1px dashed var(--border-strong);border-radius:8px;padding:8px 6px;
+    font-family:var(--font-mono);font-size:12px;color:var(--ink-2);transition:all .4s}
+  .cls.hit{border-style:solid;border-color:var(--accent);color:var(--accent-ink);background:var(--accent-wash)}
+
+  .wt-caption{margin-top:18px;padding-top:16px;border-top:1px solid var(--border);min-height:54px}
+  .wt-caption .step-k{font-family:var(--font-mono);font-size:11px;letter-spacing:.08em;color:var(--ink-3);text-transform:uppercase}
+  .wt-caption p{margin:5px 0 0;font-size:15px;color:var(--ink);max-width:64ch}
+
+  .dd-links{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+
+  .note{font-size:13px;color:var(--ink-3);font-family:var(--font-mono);background:var(--surface-2);
+    border:1px dashed var(--border-strong);border-radius:8px;padding:12px 14px;margin-top:30px}
+
+  .admin-pill{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:11.5px;
+    color:var(--ink-3);border:1px solid var(--border);border-radius:999px;padding:5px 11px;margin-top:10px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+
+  .hero-art{animation:drift 16s ease-in-out infinite}
+  .hero-art circle{transform-box:fill-box;transform-origin:center;animation:pulse 4.5s ease-in-out infinite}
+  .hero-art circle:nth-of-type(2){animation-delay:.5s}
+  .hero-art circle:nth-of-type(3){animation-delay:1s}
+  .hero-art circle:nth-of-type(4){animation-delay:1.6s}
+  .hero-art circle:nth-of-type(5){animation-delay:2.1s}
+  .hero-art circle:nth-of-type(6){animation-delay:2.7s}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+  @keyframes pulse{0%,100%{opacity:.35}50%{opacity:1}}
+
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important}
+    .hero-art,.hero-art circle{animation:none!important}
+    .r-item.open .r-expand{max-height:none}
+  }
+</style>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="brand" data-go="home">Al-Nahiyan<span>.</span></div>
+    <div class="nav-links">
+      <button data-go="home" class="active">Home</button>
+      <button data-go="research">Research</button>
+      <button data-go="pubs">Publications</button>
+      <button data-go="projects">Projects</button>
+      <button data-go="blog">Blog</button>
+      <button data-go="cv">CV</button>
+      <button data-go="upwork">Upwork</button>
+    </div>
+    <button class="theme-btn" id="themeBtn" aria-label="Toggle theme" title="Toggle light/dark">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+</nav>
+
+<!-- ============ HOME ============ -->
+<section class="view" id="home">
+  <div class="wrap">
+    <div class="hero">
+      <svg class="hero-art" viewBox="0 0 200 180" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M70 30c-22 0-40 16-40 38 0 8 3 15 7 21-3 5-4 11-2 17 3 10 13 16 24 15 5 9 15 15 26 15 18 0 33-13 35-31" stroke-opacity=".9"/>
+        <path d="M70 30c14-10 34-8 45 4 6 7 9 16 8 25 7 6 11 15 9 24-2 11-12 19-24 19" stroke-opacity=".6"/>
+        <circle cx="66" cy="62" r="3.2" fill="currentColor" stroke="none"/>
+        <circle cx="92" cy="50" r="3.2" fill="currentColor" stroke="none"/>
+        <circle cx="110" cy="74" r="3.2" fill="currentColor" stroke="none"/>
+        <circle cx="80" cy="92" r="3.2" fill="currentColor" stroke="none"/>
+        <circle cx="104" cy="104" r="3.2" fill="currentColor" stroke="none"/>
+        <circle cx="60" cy="100" r="3.2" fill="currentColor" stroke="none"/>
+        <path d="M66 62l26-12M92 50l18 24M110 74l-30 18M80 92l24 12M80 92l-20 8M66 62l14 30" stroke-opacity=".45"/>
+      </svg>
+      <h1>Al-Nahiyan Khushbu</h1>
+      <div class="role">Medical AI Researcher · Southwest Jiaotong University</div>
+      <p class="lede">I'm a <b>PhD researcher in artificial intelligence</b>, working in medical imaging and computer vision — building models that read medical scans and help detect disease earlier and more reliably.</p>
+      <div class="links-row">
+        <a href="#" onclick="return false">CV</a>
+        <a href="#" onclick="return false">Google&nbsp;Scholar</a>
+        <a href="#" onclick="return false">ORCID</a>
+        <a href="#" onclick="return false">GitHub</a>
+        <a href="#" onclick="return false">LinkedIn</a>
+        <a href="#" onclick="return false">Email</a>
+      </div>
+      <div class="admin-pill"><span class="dot"></span> Admin: sign in with GitHub to edit &amp; publish</div>
+    </div>
+
+    <div class="section-label">
+      <h2>At a glance</h2>
+      <span class="hint">counts update automatically when you publish</span>
+    </div>
+    <div class="cards" id="statCards">
+      <div class="card" data-go="pubs">
+        <div class="k">Publications</div>
+        <div class="v" data-count="2">0</div>
+        <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,24 25,24 50,16 75,8 100,6" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
+        <div class="meta">1 published · 1 under review</div>
+      </div>
+      <div class="card" data-go="projects">
+        <div class="k">Projects</div>
+        <div class="v" data-count="6">0</div>
+        <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,22 25,18 50,18 75,10 100,8" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
+        <div class="meta">medical AI · vision</div>
+      </div>
+      <div class="card" data-go="blog">
+        <div class="k">Blog posts</div>
+        <div class="v" data-count="5">0</div>
+        <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,20 25,22 50,14 75,16 100,6" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
+        <div class="meta">latest: 3 days ago</div>
+      </div>
+      <div class="card" data-go="upwork">
+        <div class="k">Upwork</div>
+        <div class="v" data-count="4">0</div>
+        <svg class="spark" viewBox="0 0 100 28" preserveAspectRatio="none"><polyline points="0,24 25,20 50,20 75,12 100,10" fill="none" stroke="var(--accent)" stroke-width="2"/></svg>
+        <div class="meta">ML &amp; data work</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Publications by year</h3>
+      <div class="sub">A small live graph — one of the activity cards on your home page.</div>
+      <div class="bars" id="yearBars">
+        <div class="bar-col"><div class="bar" style="height:0" data-h="18"></div><div class="n">1</div><div class="yr">2024</div></div>
+        <div class="bar-col"><div class="bar" style="height:0" data-h="0"></div><div class="n">0</div><div class="yr">2025</div></div>
+        <div class="bar-col"><div class="bar" style="height:0" data-h="18"></div><div class="n">1</div><div class="yr">2026</div></div>
+      </div>
+    </div>
+
+    <p class="note">This is a mockup of the home page, the research list, and one research detail page. Everything is clickable — try <b>Research</b> in the nav, expand a paper, then press <b>Dig deeper</b>. Toggle light/dark with the sun button; the whole page switches.</p>
+  </div>
+</section>
+
+<!-- ============ RESEARCH INDEX ============ -->
+<section class="view" id="research" hidden>
+  <div class="wrap">
+    <div class="page-head">
+      <h1>Research</h1>
+      <p>Each entry opens with a short summary. Press <b>Dig deeper</b> to see the full page, where an animated walkthrough shows how the model actually works — not a wall of text.</p>
+    </div>
+
+    <div class="r-item" data-paper="mri">
+      <div class="r-head">
+        <div class="r-thumb">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3c4.5 0 7 3 7 7 0 2-1 3.5-1 5s1 2 1 3c0 1.5-1.5 3-4 3-1 0-1.8-.5-3-.5s-2 .5-3 .5c-2.5 0-4-1.5-4-3 0-1 1-1.5 1-3s-1-3-1-5c0-4 2.5-7 7-7Z"/><path d="M12 7v10M8.5 10.5h7M9 14h6"/></svg>
+        </div>
+        <div class="r-main">
+          <div class="r-tags"><span class="tag rev">Under review</span><span class="tag">3D MRI</span><span class="tag">Thesis</span></div>
+          <div class="r-title">HybridTransMedFormer: a dual-path 3D MRI framework for early Parkinson's detection</div>
+          <div class="r-sub">A CNN + Transformer model that reads 3D brain scans and flags the disease in its prodromal stage.</div>
+        </div>
+        <div class="r-caret"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></div>
+      </div>
+      <div class="r-expand">
+        <div class="r-expand-inner">
+          <p>Most models need several types of scan to diagnose Parkinson's. This one works from a single 3D T1-weighted MRI by running two paths at once — a convolutional path for fine local detail around the substantia nigra, and a Transformer path for whole-brain context — then fusing them. It reaches diagnosis in the prodromal window, 2–3 years before motor symptoms appear.</p>
+          <div class="metrics">
+            <span class="metric"><b>92.34%</b> accuracy</span>
+            <span class="metric"><b>0.984</b> ROC AUC</span>
+            <span class="metric"><b>96.85%</b> prodromal acc.</span>
+          </div>
+          <button class="btn" data-dig="mri">Dig deeper
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="r-item" data-paper="2d">
+      <div class="r-head">
+        <div class="r-thumb">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 9h16M9 9v11"/></svg>
+        </div>
+        <div class="r-main">
+          <div class="r-tags"><span class="tag pub">IEEE · published</span><span class="tag">Best paper</span><span class="tag">2D MRI</span></div>
+          <div class="r-title">Parkinson's recognition with a hybrid CNN–Transformer on 2D MRI</div>
+          <div class="r-sub">A lightweight model for rapid pre-screening — IARCE 2024, Best Paper Award.</div>
+        </div>
+        <div class="r-caret"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m9 6 6 6-6 6"/></svg></div>
+      </div>
+      <div class="r-expand">
+        <div class="r-expand-inner">
+          <p>The first integration of CNN and Transformer features for Parkinson's classification from 2D MRI slices. Designed to be fast and cheap enough for a first-pass screening tool, it won Best Paper at IARCE 2024.</p>
+          <div class="metrics">
+            <span class="metric"><b>80.51%</b> accuracy</span>
+            <span class="metric">2D · fast inference</span>
+            <span class="metric">IEEE · DOI</span>
+          </div>
+          <button class="btn" data-dig="2d">Dig deeper
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESEARCH DETAIL (3D MRI) ============ -->
+<section class="view" id="detail-mri" hidden>
+  <div class="wrap">
+    <button class="back" data-go="research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg> Back to research</button>
+    <div class="r-tags" style="margin-bottom:12px"><span class="tag rev">Under review</span><span class="tag">Artificial Intelligence in Medicine</span></div>
+    <h1 class="detail-title">HybridTransMedFormer</h1>
+    <div class="detail-meta">A Dual-Path 3D MRI Fusion Framework for Early Parkinson's Disease Recognition · Khushbu A. N., Zhang X. et al.</div>
+    <p class="abstract">Early Parkinson's is hard to catch because the clearest signs appear only after irreversible damage. HybridTransMedFormer reads a single 3D T1-weighted MRI and combines local convolutional features with global self-attention to separate healthy, prodromal, and Parkinson's brains — reaching the prodromal stage 2–3 years before motor symptoms.</p>
+
+    <div class="wt">
+      <div class="wt-top">
+        <h3>How the model works</h3>
+        <div class="wt-controls">
+          <button id="wtPrev" aria-label="Previous step"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg></button>
+          <button class="play" id="wtPlay"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg> Play walkthrough</button>
+          <button id="wtNext" aria-label="Next step"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="flow">
+        <div class="stage" data-stage="0">
+          <div class="s-k">Input</div>
+          <div class="s-t">3D T1-weighted MRI</div>
+          <div class="s-d">From the PPMI cohort — Control 131, PD 318, Prodromal 110, balanced to 497 each.</div>
+        </div>
+        <div class="connector" data-conn="0"></div>
+        <div class="stage" data-stage="1">
+          <div class="s-k">Preprocessing</div>
+          <div class="s-t">Skull-strip · normalize · resample</div>
+          <div class="s-d">Each volume is aligned and intensity-normalized so scans from different sites are comparable.</div>
+        </div>
+        <div class="connector" data-conn="1"></div>
+        <div class="dual">
+          <div style="flex:1;display:flex;flex-direction:column;align-items:stretch">
+            <div class="stage" data-stage="2">
+              <div class="s-k">Path A</div>
+              <div class="s-t">CNN — local</div>
+              <div class="s-d">Fine texture around the substantia nigra.</div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:stretch">
+            <div class="stage" data-stage="2">
+              <div class="s-k">Path B</div>
+              <div class="s-t">Transformer — global</div>
+              <div class="s-d">Cortical–subcortical context across the whole brain.</div>
+            </div>
+          </div>
+        </div>
+        <div class="connector" data-conn="2"></div>
+        <div class="stage" data-stage="3">
+          <div class="s-k">Fusion</div>
+          <div class="s-t">Dynamic cross-pathway fusion</div>
+          <div class="s-d">The two paths weight each other instead of being simply concatenated.</div>
+          <div class="params" id="paramCount">parameters engaged: 0</div>
+        </div>
+        <div class="connector" data-conn="3"></div>
+        <div class="stage" data-stage="4">
+          <div class="s-k">Output</div>
+          <div class="s-t">Classification</div>
+          <div class="classes">
+            <div class="cls" data-cls="0">Control</div>
+            <div class="cls" data-cls="1">Prodromal</div>
+            <div class="cls" data-cls="2">Parkinson's</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wt-caption">
+        <div class="step-k" id="stepK">Step 1 of 5 · Input</div>
+        <p id="stepP">A single 3D brain MRI goes in — no extra scans, no clinical scores. Press <b>Play walkthrough</b> to follow the data through the model.</p>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <span class="metric"><b>92.34%</b> accuracy</span>
+      <span class="metric"><b>0.984</b> ROC AUC</span>
+      <span class="metric"><b>96.85%</b> prodromal acc.</span>
+      <span class="metric"><b>0.994</b> prodromal AUC</span>
+    </div>
+    <div class="dd-links">
+      <button class="btn ghost" onclick="return false">Request full paper</button>
+      <button class="btn ghost" onclick="return false">Copy BibTeX</button>
+    </div>
+    <p class="note">The abstract and this walkthrough are public. "Request full paper" opens a pre-filled email to you — the reader asks, and you send it. Each paper's walkthrough is built to fit that paper; this is the deep one.</p>
+  </div>
+</section>
+
+<!-- ============ SIMPLE DETAIL (2D) ============ -->
+<section class="view" id="detail-2d" hidden>
+  <div class="wrap">
+    <button class="back" data-go="research"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m15 6-6 6 6 6"/></svg> Back to research</button>
+    <div class="r-tags" style="margin-bottom:12px"><span class="tag pub">IEEE · published</span><span class="tag">Best paper · IARCE 2024</span></div>
+    <h1 class="detail-title">Hybrid CNN–Transformer for 2D Parkinson's MRI</h1>
+    <div class="detail-meta">Khushbu A. N., Yang Z., Liu Y., Zhang X. · IARCE 2024, pp. 307–311</div>
+    <p class="abstract">A lightweight hybrid model for rapid pre-screening from 2D MRI slices — the first to combine CNN and Transformer features for this task, and winner of the IARCE 2024 Best Paper Award.</p>
+    <div class="metrics">
+      <span class="metric"><b>80.51%</b> accuracy</span>
+      <span class="metric">2D · fast inference</span>
+    </div>
+    <div class="dd-links">
+      <button class="btn ghost" onclick="return false">DOI</button>
+      <button class="btn ghost" onclick="return false">GitHub</button>
+      <button class="btn ghost" onclick="return false">Copy BibTeX</button>
+    </div>
+    <p class="note">This page uses a lighter template — its own walkthrough would be simpler than the 3D one. Not every paper needs the same depth, as you said.</p>
+  </div>
+</section>
+
+<!-- ============ PLACEHOLDER VIEWS ============ -->
+<section class="view" id="pubs" hidden><div class="wrap"><div class="page-head"><h1>Publications</h1><p>Clean list with title, abstract, DOI and a direct link — the only place papers appear. (Shown fully in the real build.)</p></div></div></section>
+<section class="view" id="projects" hidden><div class="wrap"><div class="page-head"><h1>Projects</h1><p>Same card-and-dig-deeper pattern as Research, each with its GitHub repo. Easy to add a new one from the admin. (Shown fully in the real build.)</p></div></div></section>
+<section class="view" id="blog" hidden><div class="wrap"><div class="page-head"><h1>Blog</h1><p>Write and read — each post its own page. (Shown fully in the real build.)</p></div></div></section>
+<section class="view" id="cv" hidden><div class="wrap"><div class="page-head"><h1>CV</h1><p>The PDF plus a readable text version. (Shown fully in the real build.)</p></div></div></section>
+<section class="view" id="upwork" hidden><div class="wrap"><div class="page-head"><h1>Upwork</h1><p>Page title, project info, and your Upwork link in the footer — kept general, no confidential client details. (Shown fully in the real build.)</p></div></div></section>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  // theme toggle (per-viewer convenience)
+  try{var s=localStorage.getItem('mk-theme');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('themeBtn').addEventListener('click',function(){
+    var cur=root.getAttribute('data-theme');
+    var next = cur==='dark' ? 'light' : (cur==='light' ? 'dark' : (matchMedia('(prefers-color-scheme: dark)').matches?'light':'dark'));
+    root.setAttribute('data-theme',next);
+    try{localStorage.setItem('mk-theme',next);}catch(e){}
+  });
+
+  var views=Array.prototype.slice.call(document.querySelectorAll('.view'));
+  var navBtns=Array.prototype.slice.call(document.querySelectorAll('.nav-links button'));
+  function show(id){
+    views.forEach(function(v){v.hidden = (v.id!==id);});
+    var navId = id.indexOf('detail')===0 ? 'research' : id;
+    navBtns.forEach(function(b){b.classList.toggle('active', b.getAttribute('data-go')===navId);});
+    window.scrollTo(0,0);
+    if(id==='home') runHome();
+    if(id==='detail-mri') resetWT();
+  }
+  document.addEventListener('click',function(e){
+    var go=e.target.closest('[data-go]'); if(go){show(go.getAttribute('data-go'));return;}
+    var head=e.target.closest('.r-head'); if(head){head.parentElement.classList.toggle('open');return;}
+    var dig=e.target.closest('[data-dig]'); if(dig){show('detail-'+dig.getAttribute('data-dig'));return;}
+  });
+
+  // home animations: count-up + bars
+  var homeDone=false;
+  function runHome(){
+    document.querySelectorAll('#statCards .v').forEach(function(el){
+      var target=+el.getAttribute('data-count'),t0=null;
+      function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/600,1);el.textContent=Math.round(p*target);if(p<1)requestAnimationFrame(step);}
+      requestAnimationFrame(step);
+    });
+    document.querySelectorAll('#yearBars .bar').forEach(function(b){
+      b.style.height='0px';requestAnimationFrame(function(){b.style.height=(+b.getAttribute('data-h'))+'px';});
+    });
+  }
+  runHome();
+
+  // ---- walkthrough ----
+  var STEPS=[
+    {k:'Step 1 of 5 · Input', t:'A single 3D brain MRI goes in — no extra scans, no clinical scores.', st:[0], conn:[]},
+    {k:'Step 2 of 5 · Preprocessing', t:'The scan is skull-stripped, intensity-normalized and resampled so brains from different hospitals line up.', st:[1], conn:[0]},
+    {k:'Step 3 of 5 · Two parallel paths', t:'The volume is read twice at once: a CNN hunts for fine local texture near the substantia nigra, while a Transformer looks at the whole brain for context.', st:[2], conn:[1]},
+    {k:'Step 4 of 5 · Fusion', t:'The two views are merged by dynamic cross-pathway fusion — each path adjusts how much it trusts the other, rather than just being stacked together.', st:[3], conn:[2], params:true},
+    {k:'Step 5 of 5 · Classification', t:'The fused representation is sorted into Control, Prodromal, or Parkinson’s — reaching the prodromal stage 2–3 years early.', st:[4], conn:[3], hit:1}
+  ];
+  var cur=0,timer=null,playing=false;
+  var stages=Array.prototype.slice.call(document.querySelectorAll('#detail-mri .stage'));
+  var conns=Array.prototype.slice.call(document.querySelectorAll('#detail-mri .connector'));
+  var clsEls=Array.prototype.slice.call(document.querySelectorAll('#detail-mri .cls'));
+  var stepK=document.getElementById('stepK'),stepP=document.getElementById('stepP');
+  var paramEl=document.getElementById('paramCount');
+
+  function render(i){
+    var s=STEPS[i];
+    stages.forEach(function(el){
+      var sn=+el.getAttribute('data-stage');
+      el.classList.toggle('active', s.st.indexOf(sn)>=0);
+      el.classList.toggle('done', sn < Math.min.apply(null,s.st));
+    });
+    conns.forEach(function(c,idx){c.classList.toggle('lit', s.conn.indexOf(idx)>=0 || idx < i);});
+    clsEls.forEach(function(c,idx){c.classList.toggle('hit', !!s.hit && idx===1);});
+    stepK.textContent=s.k;
+    stepP.innerHTML=s.t;
+    if(s.params){animParams();} else {paramEl.textContent='parameters engaged: '+(i>3?'24.7M':'0');}
+    cur=i;
+  }
+  function animParams(){
+    var t0=null,target=24.7;
+    function step(ts){if(!t0)t0=ts;var p=Math.min((ts-t0)/700,1);paramEl.textContent='parameters engaged: '+(p*target).toFixed(1)+'M';if(p<1)requestAnimationFrame(step);}
+    requestAnimationFrame(step);
+  }
+  function next(){render((cur+1)%STEPS.length);}
+  function prev(){render((cur-1+STEPS.length)%STEPS.length);}
+  function stopPlay(){playing=false;clearInterval(timer);setPlayLabel();}
+  function setPlayLabel(){
+    document.getElementById('wtPlay').innerHTML = playing
+      ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg> Pause'
+      : '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8 5v14l11-7z"/></svg> Play walkthrough';
+  }
+  function resetWT(){stopPlay();render(0);}
+  document.getElementById('wtNext').addEventListener('click',function(){stopPlay();next();});
+  document.getElementById('wtPrev').addEventListener('click',function(){stopPlay();prev();});
+  document.getElementById('wtPlay').addEventListener('click',function(){
+    if(playing){stopPlay();return;}
+    playing=true;setPlayLabel();
+    if(cur===STEPS.length-1)render(0);
+    timer=setInterval(function(){
+      if(cur>=STEPS.length-1){stopPlay();return;}
+      next();
+    },1900);
+  });
+  render(0);
+})();
+</script>
