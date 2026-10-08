@@ -1,5 +1,6 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
+import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 
 // Netlify sets URL to the site's primary address at build time; it feeds
@@ -9,5 +10,5 @@ const site = process.env.URL ?? 'http://localhost:4321';
 export default defineConfig({
   site,
   output: 'static',
-  integrations: [sitemap()],
+  integrations: [mdx(), sitemap()],
 });
