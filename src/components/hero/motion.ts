@@ -16,8 +16,11 @@ export interface Frame {
   dt: number;
 }
 
-/** Starts the shared loop, which tracks the pointer and runs every tick each frame. */
-export function startLoop(heroEl: HTMLElement, ticks: Tick[]): void {
+/**
+ * Starts the shared loop, which tracks the pointer and runs every tick each
+ * frame. Returns a switch to stop and restart it (for pausing).
+ */
+export function startLoop(heroEl: HTMLElement, ticks: Tick[]): (running: boolean) => void {
   let px = 0;
   let py = 0;
   let has = false;
@@ -45,8 +48,9 @@ export function startLoop(heroEl: HTMLElement, ticks: Tick[]): void {
 
   let seen = false;
   let prev = performance.now();
+  let raf = 0;
   const frame = (now: number) => {
-    const dt = Math.min(0.05, (now - prev) / 1000);
+    const dt = Math.min(0.05, Math.max(0, (now - prev) / 1000));
     prev = now;
     const hero = heroEl.getBoundingClientRect();
     if (has) seen = true;
@@ -54,9 +58,20 @@ export function startLoop(heroEl: HTMLElement, ticks: Tick[]): void {
     const inside = has && px >= hero.left && px <= hero.right && py >= hero.top && py <= hero.bottom;
     const f: Frame = { hero, pointer: inside ? rel : null, last: seen ? rel : null, dt };
     for (const tick of ticks) tick(f);
-    requestAnimationFrame(frame);
+    raf = requestAnimationFrame(frame);
   };
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
+
+  return (running) => {
+    if (running && !raf) {
+      // Pick up where it stopped rather than jumping by the time away.
+      prev = performance.now();
+      raf = requestAnimationFrame(frame);
+    } else if (!running && raf) {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  };
 }
 
 // ---------------------------------------------------------------- repel text

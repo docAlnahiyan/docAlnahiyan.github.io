@@ -56,23 +56,59 @@ const peakLinks = [
 
   const hero = document.getElementById('hero');
   if (hero) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     let geo = drawScene(hero);
     const redraw = () => {
       geo = drawScene(hero);
       hero.dispatchEvent(new Event('hero:drawn'));
+      apply();
     };
     onThemeChange(redraw);
     onResize(hero, redraw);
 
     // With reduced motion the scene stays still: the text is plain, the
     // explorer stands on the road and the mountain buttons are plain links.
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let setLoop: ((running: boolean) => void) | undefined;
+    if (!reduced.matches) {
       const text = [...hero.querySelectorAll<HTMLElement>('.name, .bio')];
-      startLoop(hero, [
+      setLoop = startLoop(hero, [
         repelText(hero, text, () => hero.querySelectorAll('.fly path')),
         explorer(hero, () => geo),
       ]);
     }
+
+    // Everything moves only while it can be seen: not with reduced motion,
+    // not in a hidden tab, not with the hero scrolled out of view. That
+    // covers the motion loop, the CSS animations and the SMIL ones (sun
+    // rays, orbit, wing flaps), which CSS alone cannot stop.
+    let inView = true;
+    function apply() {
+      const running = !reduced.matches && !document.hidden && inView;
+      hero!.classList.toggle('paused', !running);
+      hero!.querySelectorAll<SVGSVGElement>('svg[data-layer]').forEach((svg) => {
+        if (running) {
+          svg.unpauseAnimations();
+          return;
+        }
+        svg.pauseAnimations();
+        // With reduced motion, hold the composed starting pose.
+        if (reduced.matches) svg.setCurrentTime(0);
+      });
+      setLoop?.(running);
+    }
+    document.addEventListener('visibilitychange', apply);
+    reduced.addEventListener('change', apply);
+    // The sticky nav covers the top of the window, so a hero only showing
+    // behind it counts as out of view.
+    const navH = document.getElementById('site-nav')?.offsetHeight ?? 0;
+    new IntersectionObserver(
+      ([entry]) => {
+        inView = entry.isIntersecting;
+        apply();
+      },
+      { rootMargin: `-${navH}px 0px 0px 0px` },
+    ).observe(hero);
+    apply();
   }
 </script>
 
@@ -118,6 +154,12 @@ const peakLinks = [
   .layer-land { z-index: 3; }
   .layer-orbit { z-index: 6; }
   .layer-characters { z-index: 7; }
+
+  /* Paused while hidden, scrolled away or with reduced motion (see the
+     script); this holds the CSS animations where they are. */
+  .scene.paused :global(*) {
+    animation-play-state: paused !important;
+  }
 
   /* Motion (ported from the element library). Drawn elements are created by
      the script, so these rules are global within the scene. The site-wide
