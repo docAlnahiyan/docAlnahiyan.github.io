@@ -17,7 +17,7 @@ const [pubs, projects] = await Promise.all([getPublications(), getProjects()]);
     <header class="page-head cv-head">
       <div>
         <h1>{profile.name}</h1>
-        <p class="role">{profile.role}</p>
+        <p class="role">{[profile.role, profile.affiliation].filter(Boolean).join(' · ')}</p>
         <p class="contact"><span class="selectable">{profile.links.email}</span></p>
       </div>
       {page.data.pdf && (

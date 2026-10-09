@@ -250,9 +250,14 @@ collections:
         file: src/content/site/profile.yml
         fields:
           - { name: name, label: Name, widget: string }
-          - { name: role, label: Role line, widget: string, hint: "Shown under your name on the home page." }
+          - { name: role, label: Role line, widget: string, hint: "Shown under your name on the home page, e.g. PhD Researcher in Artificial Intelligence." }
+          - { name: affiliation, label: Affiliation, widget: string, required: false, hint: "University or organisation, shown above your name." }
           - { name: bio, label: Bio, widget: text, hint: "Wrap words in **double asterisks** to make them bold." }
-          - { name: photo, label: Photo, widget: image, required: false }
+          - { name: photo, label: Photo, widget: image, required: false, hint: "Square works best; shown small in the Research focus card on the home page." }
+          - { name: research_area, label: "Research focus: Area", widget: string, required: false, hint: "Leave empty to hide this row." }
+          - { name: methods, label: "Research focus: Methods", widget: string, required: false }
+          - { name: location, label: "Research focus: Based in", widget: string, required: false }
+          - { name: active_since, label: "Research focus: Since", widget: string, required: false }
           - name: links
             label: Links
             widget: object

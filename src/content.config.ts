@@ -137,9 +137,16 @@ const site = defineCollection({
   schema: z.object({
     name: z.string(),
     role: z.string(),
+    /** University or organisation, shown above the name on the home page. */
+    affiliation: optionalText,
     /** Markdown; **bold** is allowed. */
     bio: z.string(),
     photo: optionalImage,
+    // "Research focus" card on the home page; empty fields are hidden.
+    research_area: optionalText,
+    methods: optionalText,
+    location: optionalText,
+    active_since: optionalText,
     links: z.object({
       cv: optionalText,
       scholar: optionalUrl,

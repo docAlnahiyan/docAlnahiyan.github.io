@@ -1,10 +1,15 @@
 name: Al-Nahiyan Khushbu
-role: "PhD Researcher in Artificial Intelligence · Southwest Jiaotong University "
-bio: I'm a **PhD researcher in artificial intelligence** at Southwest Jiaotong
-  University (since September 2025), working in medical imaging and computer
-  vision — building models that read medical scans to detect disease earlier and
-  more reliably.
+role: PhD Researcher in Artificial Intelligence
+affiliation: Southwest Jiaotong University
+bio: >-
+  I'm a **PhD researcher in artificial intelligence** at Southwest Jiaotong University
+  (since September 2025), working in medical imaging and computer vision — building models that read medical
+  scans to detect disease earlier and more reliably.
 photo: ""
+research_area: Medical imaging · Computer vision
+methods: CNN–Transformer architectures
+location: Chengdu, China
+active_since: Sept 2025
 links:
   cv: /cv/
   scholar: ""
