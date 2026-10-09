@@ -1,7 +1,9 @@
 ---
-// Home: a full-bleed hero band and a wider "At a glance" row (layout from
-// design-reference/landing-v2.html). Other pages keep the narrow reading width.
+// Home: the animated sketch hero (design-reference/landing-scene-spec.md), then
+// About with the research-focus card, then the wider "At a glance" row.
+// Other pages keep the narrow reading width.
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HeroScene from '../components/HeroScene.astro';
 import { getProfile, getPublications, getProjects, getPosts, getUpworkItems } from '../lib/content';
 import {
   cumulativeSpark,
@@ -76,7 +78,7 @@ const glanceColumns =
     : `repeat(${cards.length}, minmax(0, 1fr))`;
 
 const { links } = profile;
-const heroLinks = [
+const aboutLinks = [
   { label: 'CV', href: links.cv },
   { label: 'ORCID', href: links.orcid },
   { label: 'Google Scholar', href: links.scholar },
@@ -95,57 +97,46 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
 ---
 
 <BaseLayout description={`${profile.name} — ${plainBio}`}>
-  <section class="hero-band" aria-labelledby="hero-name">
-    <svg class="hero-bg" viewBox="0 0 200 150" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
-      <path d="M70 20c-22 0-40 16-40 38 0 8 3 15 7 21-3 5-4 11-2 17 3 10 13 16 24 15 5 9 15 15 26 15 18 0 33-13 35-31" />
-      <path d="M70 20c14-10 34-8 45 4 6 7 9 16 8 25 7 6 11 15 9 24-2 11-12 19-24 19" />
-      <path d="M66 52l26-12M92 40l18 24M110 64l-30 18M80 82l24 12M80 82l-20 8M66 52l14 30" />
-      <circle cx="66" cy="52" r="3.4" fill="currentColor" stroke="none" />
-      <circle cx="92" cy="40" r="3.4" fill="currentColor" stroke="none" />
-      <circle cx="110" cy="64" r="3.4" fill="currentColor" stroke="none" />
-      <circle cx="80" cy="82" r="3.4" fill="currentColor" stroke="none" />
-      <circle cx="104" cy="94" r="3.4" fill="currentColor" stroke="none" />
-      <circle cx="60" cy="90" r="3.4" fill="currentColor" stroke="none" />
-    </svg>
+  <HeroScene
+    name={profile.name}
+    bio={[profile.role, profile.affiliation].filter(Boolean).join(' at ')}
+  />
 
-    <div class="wide hero">
-      <div class="intro">
-        {profile.affiliation && <p class="eyebrow">{profile.affiliation}</p>}
-        <h1 id="hero-name">{profile.name}</h1>
-        <p class="role">{profile.role}</p>
-        <p class="bio" set:html={inlineMarkdown(profile.bio)} />
-        <ul class="links">
-          {heroLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
-          <li><span class="selectable">{links.email}</span></li>
-        </ul>
-      </div>
-
-      {facts.length > 0 && (
-        <aside class="focus" aria-labelledby="focus-label">
-          <div class="focus-head">
-            <span class="avatar">
-              {profile.photo ? (
-                <img src={profile.photo} alt="" width="58" height="58" />
-              ) : (
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="9" r="3.6" /><path d="M5.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5" /></svg>
-              )}
-            </span>
-            <div>
-              <h2 id="focus-label" class="k">Research focus</h2>
-              <p class="focus-name">{profile.name}</p>
-            </div>
-          </div>
-          <dl class="facts">
-            {facts.map((f) => (
-              <div class="fact">
-                <dt>{f.label}</dt>
-                <dd>{f.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </aside>
-      )}
+  <section class="wide about" id="about" aria-labelledby="about-head">
+    <div class="intro">
+      <h2 id="about-head" class="k">About</h2>
+      <p class="bio" set:html={inlineMarkdown(profile.bio)} />
+      <ul class="links">
+        {aboutLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        <li><span class="selectable">{links.email}</span></li>
+      </ul>
     </div>
+
+    {facts.length > 0 && (
+      <aside class="focus" aria-labelledby="focus-label">
+        <div class="focus-head">
+          <span class="avatar">
+            {profile.photo ? (
+              <img src={profile.photo} alt="" width="58" height="58" />
+            ) : (
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="9" r="3.6" /><path d="M5.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5" /></svg>
+            )}
+          </span>
+          <div>
+            <h2 id="focus-label" class="k">Research focus</h2>
+            <p class="focus-name">{profile.name}</p>
+          </div>
+        </div>
+        <dl class="facts">
+          {facts.map((f) => (
+            <div class="fact">
+              <dt>{f.label}</dt>
+              <dd>{f.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </aside>
+    )}
   </section>
 
   <section class="wide glance-section" aria-labelledby="glance">
@@ -205,63 +196,25 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
     padding-inline: 24px;
   }
 
-  /* ---------- full-bleed hero band ---------- */
-  .hero-band {
-    position: relative;
-    overflow: hidden;
-    background: linear-gradient(180deg, var(--surface-2), var(--bg));
-    border-bottom: 1px solid var(--border);
-  }
-  .hero-bg {
-    position: absolute;
-    left: -40px;
-    top: -30px;
-    width: 430px;
-    max-width: 42%;
-    opacity: .12;
-    color: var(--accent);
-    pointer-events: none;
-  }
-  .hero {
-    position: relative;
-    z-index: 1;
+  /* ---------- about (sits just below the hero) ---------- */
+  .about {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
     gap: 56px;
     align-items: start;
-    padding-block: 64px 56px;
+    padding-block: 56px 8px;
   }
   @media (max-width: 860px) {
-    .hero-bg {
-      display: none;
-    }
-    .hero {
+    .about {
       grid-template-columns: 1fr;
       gap: 32px;
-      padding-block: 44px;
+      padding-block: 44px 8px;
     }
   }
-
-  .eyebrow {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--accent-ink);
-    margin: 0 0 18px;
-  }
-  .hero h1 {
-    font-size: clamp(44px, 7vw, 76px);
-    letter-spacing: -.02em;
-    line-height: 1.1;
+  .about .k {
     margin-bottom: 14px;
   }
-  .role {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    color: var(--ink-2);
-    margin: 0 0 24px;
-  }
+
   .bio {
     font-size: 19px;
     color: var(--ink-2);

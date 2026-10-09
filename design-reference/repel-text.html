@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Repel Text</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0;--surface:#fffdf9;--surface-2:#f2ece0;--ink:#201e1a;--ink-2:#5c584f;--ink-3:#6e6a60;
+    --border:#e8e1d4;--accent:#c96442;--accent-ink:#a8482b;
+    --font-display:"Newsreader",Georgia,serif;--font-body:"IBM Plex Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;color-scheme:dark}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);-webkit-font-smoothing:antialiased;overflow:hidden}
+
+  /* faint backdrop so you can see the text is transparent (background shows through) */
+  .backdrop{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.6}
+  .backdrop svg{width:100%;height:100%;display:block}
+
+  .stage{position:fixed;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px}
+
+  /* the repelling text — transparent background, tiny */
+  .repel{line-height:1.15;cursor:default;user-select:none}
+  .name{font-family:var(--font-display);font-weight:500;font-size:30px;letter-spacing:.3px}
+  .bio{font-family:var(--font-mono);font-size:12px;color:var(--ink-2);letter-spacing:.4px;margin-top:4px}
+  .ch{display:inline-block;will-change:transform;background:transparent}
+
+  .hint{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:2;
+    font-family:var(--font-mono);font-size:11px;color:var(--ink-3);opacity:.8}
+  .toggle{position:fixed;top:16px;right:16px;z-index:3;display:inline-flex;align-items:center;gap:7px;
+    font-family:var(--font-mono);font-size:12px;border:1px solid var(--border);background:var(--surface);
+    color:var(--ink);border-radius:999px;padding:7px 12px;cursor:pointer}
+  .ctrl{position:fixed;top:16px;left:16px;z-index:3;display:flex;gap:10px;align-items:center;
+    font-family:var(--font-mono);font-size:11px;color:var(--ink-3)}
+  .ctrl label{display:flex;flex-direction:column;gap:3px}
+  .ctrl input{width:120px}
+  @media (prefers-reduced-motion:reduce){.ch{transition:none}}
+</style>
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true">
+    <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice">
+      <!-- faint sun top-right + horizon so transparency is visible -->
+      <circle cx="840" cy="130" r="70" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="1 10" stroke-linecap="round"/>
+      <circle cx="840" cy="130" r="48" fill="var(--accent)" opacity=".10"/>
+      <path d="M0,430 Q250,400 500,430 T1000,420" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-dasharray="2 12" stroke-linecap="round" opacity=".5"/>
+      <path d="M0,470 Q250,445 500,470 T1000,462" fill="none" stroke="var(--accent-ink)" stroke-width="2" stroke-dasharray="2 12" stroke-linecap="round" opacity=".35"/>
+    </svg>
+  </div>
+
+  <button class="toggle" id="t">☀︎ / ☾&nbsp; Day · Night</button>
+  <div class="ctrl">
+    <label>push <input id="push" type="range" min="20" max="80" value="46"></label>
+    <label>bounce <input id="bounce" type="range" min="0" max="100" value="62"></label>
+  </div>
+
+  <div class="stage">
+    <div class="repel name" data-text="Al-Nahiyan Khushbu"></div>
+    <div class="repel bio" data-text="PhD researcher in Artificial Intelligence · Southwest Jiaotong University"></div>
+  </div>
+  <div class="hint">move your cursor through the text — it scatters, then springs back</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  try{var s=localStorage.getItem('rt');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('t').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme');
+    var night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches);
+    var n=night?'light':'dark';root.setAttribute('data-theme',n);
+    try{localStorage.setItem('rt',n);}catch(e){}
+  });
+
+  // split each .repel into per-character spans
+  var chars=[];
+  document.querySelectorAll('.repel').forEach(function(el){
+    var txt=el.getAttribute('data-text');el.textContent='';
+    for(var i=0;i<txt.length;i++){
+      var ch=txt[i];
+      var span=document.createElement('span');
+      span.className='ch';
+      span.textContent=ch===' '?' ':ch;
+      el.appendChild(span);
+      chars.push({el:span,x:0,y:0,vx:0,vy:0,r:0,vr:0});
+    }
+  });
+
+  var R=130;                 // radius of influence (px)
+  var PUSH=46;               // max push distance
+  var K=0.14, D=0.78;        // spring stiffness / damping (bounce)
+  document.getElementById('push').addEventListener('input',function(e){PUSH=+e.target.value;});
+  document.getElementById('bounce').addEventListener('input',function(e){
+    // higher bounce -> lower damping (more overshoot/wobble)
+    D=0.9-(+e.target.value/100)*0.28;  // 0.9 (calm) .. 0.62 (wobbly)
+  });
+  D=0.9-(62/100)*0.28;
+
+  var mx=-9999,my=-9999,active=false;
+  window.addEventListener('mousemove',function(e){mx=e.clientX;my=e.clientY;active=true;});
+  window.addEventListener('mouseleave',function(){active=false;mx=-9999;my=-9999;});
+  window.addEventListener('touchmove',function(e){var t=e.touches[0];if(t){mx=t.clientX;my=t.clientY;active=true;}},{passive:true});
+  window.addEventListener('touchend',function(){active=false;mx=-9999;my=-9999;});
+
+  function frame(){
+    for(var i=0;i<chars.length;i++){
+      var c=chars[i];
+      var rect=c.el.getBoundingClientRect();
+      // base center = current center minus current offset
+      var cx=rect.left+rect.width/2-c.x;
+      var cy=rect.top+rect.height/2-c.y;
+      var tx=0,ty=0,tr=0;
+      if(active){
+        var dx=cx-mx, dy=cy-my, dist=Math.hypot(dx,dy);
+        if(dist<R){
+          var f=(1-dist/R);               // 0..1, stronger when closer
+          var inv=dist>0.001?1/dist:0;
+          tx=dx*inv*f*PUSH;
+          ty=dy*inv*f*PUSH;
+          tr=(dx<0?-1:1)*f*14;            // slight tilt for the "knocked" feel
+        }
+      }
+      // spring toward target (x, y, rotation)
+      c.vx=(c.vx+(tx-c.x)*K)*D; c.x+=c.vx;
+      c.vy=(c.vy+(ty-c.y)*K)*D; c.y+=c.vy;
+      c.vr=(c.vr+(tr-c.r)*K)*D; c.r+=c.vr;
+      c.el.style.transform='translate('+c.x.toFixed(2)+'px,'+c.y.toFixed(2)+'px) rotate('+c.r.toFixed(2)+'deg)';
+    }
+    requestAnimationFrame(frame);
+  }
+  if(!matchMedia('(prefers-reduced-motion: reduce)').matches) requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+---
+// Animated landing hero (design-reference/landing-scene-spec.md). A stack of
+// layers in one box: decorative SVG for the sketch, real HTML for the name,
+// bio and (later) the road signposts, so text and links work for search,
+// keyboard and screen readers without the drawing.
+interface Props {
+  name: string;
+  /** One line under the name; the only place the university is named in the hero. */
+  bio: string;
+}
+
+const { name, bio } = Astro.props;
+
+// Back to front (spec §3). Each is filled by scene.ts.
+const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
+---
+
+<section class="scene" id="hero" aria-labelledby="hero-name">
+  {layers.map((layer) => (
+    <svg
+      class={`layer layer-${layer}`}
+      data-layer={layer}
+      viewBox="0 0 1440 760"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+      focusable="false"
+    />
+  ))}
+
+  <div class="text">
+    <h1 id="hero-name" class="name">{name}</h1>
+    <p class="bio">{bio}</p>
+  </div>
+</section>
+
+<script>
+  import { drawScene, onThemeChange } from './hero/scene';
+
+  const hero = document.getElementById('hero');
+  if (hero) {
+    drawScene(hero);
+    onThemeChange(() => drawScene(hero));
+  }
+</script>
+
+<style>
+  /* Sky colours (spec §4.1): day follows the light theme, night the dark. */
+  .scene {
+    --sky-top: #fbeede;
+    --sky-bottom: #f6ead5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .scene {
+      --sky-top: #141821;
+      --sky-bottom: #1f2430;
+    }
+  }
+  :global(:root[data-theme='dark']) .scene {
+    --sky-top: #141821;
+    --sky-bottom: #1f2430;
+  }
+
+  .scene {
+    position: relative;
+    overflow: hidden;
+    /* About 85% of the screen, so the next section peeks up from below. */
+    height: clamp(560px, 85svh, 980px);
+    background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
+    border-bottom: 1px solid var(--border);
+    transition: background-color .4s;
+  }
+
+  .layer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .layer-sky { z-index: 1; }
+  .layer-birds { z-index: 2; }
+  .layer-land { z-index: 3; }
+  .layer-orbit { z-index: 6; }
+  .layer-characters { z-index: 7; }
+
+  /* Name and bio, upper left, with no card behind them (spec §4.13). */
+  .text {
+    position: absolute;
+    z-index: 8;
+    left: 6%;
+    top: 15%;
+    right: 6%;
+    pointer-events: none;
+  }
+  .name {
+    font-size: clamp(44px, 6.4vw, 88px);
+    letter-spacing: -.02em;
+    line-height: 1.05;
+    margin: 0 0 14px;
+    max-width: 12ch;
+  }
+  .bio {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--ink-2);
+    max-width: 46ch;
+    margin: 0;
+  }
+  @media (max-width: 620px) {
+    .text {
+      top: 9%;
+    }
+    .bio {
+      font-size: 13px;
+    }
+  }
+</style>
