@@ -93,8 +93,15 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     animation: flow linear infinite;
   }
   @keyframes flow {
-    /* 20 dots of 13px, so the loop has no visible seam. */
-    to { stroke-dashoffset: -260; }
+    /* 20 dots of 14px, so the loop has no visible seam. */
+    to { stroke-dashoffset: -280; }
+  }
+  .scene :global(.glow) {
+    animation: glow 5s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { opacity: .45; }
+    50% { opacity: .92; }
   }
   .scene :global(.tw) {
     animation: twinkle ease-in-out infinite;
