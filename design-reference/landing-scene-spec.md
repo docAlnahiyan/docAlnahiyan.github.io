@@ -62,7 +62,7 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 | 1 | Sun / Moon | SVG | top-right; sun in day, moon in night |
 | 1 | Stars | SVG | night only; behind/around moon |
 | 2 | Birds | SVG | glide across sky |
-| 3 | Mountains | SVG | tall left, tapering right |
+| 3 | Mountains | SVG | clustered right, tallest right, tapering left |
 | 4 | River + Boat | SVG | bottom band |
 | 5 | Muddy road | SVG | above river |
 | 5 | Road signposts | **HTML `<a>`** | on the road; real links |
@@ -199,9 +199,9 @@ One `requestAnimationFrame` loop drives everything cursor-reactive. Track the cu
 
 - **Desktop:** a horizontal nav bar in the header showing all pages: **Home · About · Research · Publications · Projects · Blog · CV**.
 - **Mobile / narrow:** the same nav collapses into the **3-dash (hamburger)** menu automatically (one responsive nav, breakpoint ~720px).
-- **CV** link opens the **CV PDF** directly (in `public/cv/…`), opening in a new tab.
-- This header is the complete, reliable navigation; the road signposts are the playful extra for Research/Publications/Projects only.
-- Keep same-tab navigation for internal pages (per site convention); CV PDF may open in a new tab.
+- **CV** → the CV page (which has its PDF download); Upwork in footer.
+- This header is the complete, reliable navigation; the mountain nav buttons are the playful extra for Research/Publications/Projects only.
+- Keep same-tab navigation for internal pages (per site convention).
 
 ---
 
@@ -263,7 +263,7 @@ public/
 6. Repel text (name + bio) upper-left — cursor repel first.
 7. Explorer walk + cursor-follow; then dog follow.
 8. Road signposts (links) + dive-to-navigate; then feed bird positions into repel text.
-9. Responsive header nav (bar → hamburger); CV→PDF.
+9. Responsive header nav (bar → hamburger); CV → the CV page (which has its PDF download); Upwork in footer.
 10. Reduced-motion static fallback + visibility/offscreen pausing.
 11. Polish: speeds, sizes, easing, and the lively-but-light balance.
 
@@ -279,11 +279,11 @@ public/
 - [ ] Clicking a **mountain nav button** (Research/Publications/Projects) plays the genie/jump dive **into** it + ripple, then navigates; keyboard navigates instantly.
 - [ ] Birds: 3–4, slow, right→left, cross the sun, loop; white glow at night.
 - [ ] Boat: slow, left→right along the river, loops; rower aboard; river flows left→right.
-- [ ] Mountains tall-left tapering right; sun/moon clear top-right.
-- [ ] Brain⟲books orbit spins at dead center, medium size.
+- [ ] Mountains clustered on the right, tallest right, tapering left; sun/moon above the right peaks.
+- [ ] Brain⟲books orbit, medium, centered horizontally, raised into the open sky (~36% height).
 - [ ] Day/night follows the theme toggle; all objects recolor; stars only at night.
 - [ ] Research-focus card now lives in the section **below** the hero (not in the hero).
-- [ ] Header nav responsive (bar→hamburger), all pages; CV opens PDF.
+- [ ] Header nav responsive (bar→hamburger), all pages; CV → the CV page (which has its PDF download); Upwork in footer.
 - [ ] `prefers-reduced-motion`: full static scene, instant navigation, still looks complete.
 - [ ] rAF/animation pauses when tab hidden or hero offscreen.
 ```
