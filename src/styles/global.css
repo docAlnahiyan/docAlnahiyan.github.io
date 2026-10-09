@@ -372,6 +372,14 @@ main .copy {
   /* Only split words of 6+ letters, leaving at least 3 on each side. */
   hyphenate-limit-chars: 6 3 3;
 }
+/* On phones a ~38-character line stretches too much when justified: go
+   ragged right, still hyphenated. */
+@media (max-width: 479.98px) {
+  main p:not([class]),
+  main .copy {
+    text-align: start;
+  }
+}
 
 /* ---------- long-form text (Markdown bodies) ---------- */
 .prose {
