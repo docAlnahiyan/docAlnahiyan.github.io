@@ -53,8 +53,9 @@ GitHub Pages serves the site at https://docalnahiyan.github.io. The workflow in
 including saves from `/admin`. (Repo Settings → Pages → Source must be
 "GitHub Actions".)
 
-Netlify is used only for the admin's "Login with GitHub": a Netlify site with
-GitHub configured as an OAuth provider. It hosts nothing; its name is set as
-`site_domain` in `public/admin/config.yml`.
+The admin's "Login with GitHub" is handled by a small sign-in service in
+`oauth-proxy/`, deployed as the Netlify site `alnahiyan-admin` (see
+`oauth-proxy/README.md`). Its GitHub OAuth credentials are Netlify environment
+variables, never committed.
 
 The previous React version of the site lives on the `old-react-site` branch.

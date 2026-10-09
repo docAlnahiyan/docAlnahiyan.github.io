@@ -1,0 +1,16 @@
+# Netlify site "alnahiyan-admin": the GitHub sign-in service for /admin.
+# Netlify's base directory for this site is `oauth-proxy`, so paths here are
+# relative to this folder. The portfolio itself is built by GitHub Actions.
+
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+  command = "echo 'Nothing to build'"
+  # Skip deploys for pushes that don't change this folder (e.g. content saves).
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- ."
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "no-referrer"
