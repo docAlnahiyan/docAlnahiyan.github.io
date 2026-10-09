@@ -12,7 +12,7 @@
 
 ## 0. Goal & feel
 
-A hand-sketched, watercolor-dots landing hero: an explorer character walks a muddy road, drifts toward the visitor's cursor (never touching), and can "dive into" sketch signposts to open a page. A dog follows. Birds glide across the sky over the sun; a boat sails the river below. A brain⟲books motif orbits at center. The visitor's name/bio is kinetic "repel" text that scatters from the cursor (and from passing birds). A day/night toggle swaps the whole scene between a sunny and a moonlit version.
+A hand-sketched, watercolor-dots landing hero: an explorer character walks a muddy road, drifts toward the visitor's cursor (never touching), and can "dive into" sketch nav buttons on the mountain peaks to open a page. A dog follows. Birds glide across the sky over the sun; a boat sails the river below. A brain⟲books motif orbits at center. The visitor's name/bio is kinetic "repel" text that scatters from the cursor (and from passing birds). A day/night toggle swaps the whole scene between a sunny and a moonlit version.
 
 **Overall intensity:** *lively but light* — the scene is clearly visible and animated, but soft enough that the **name/text and nav read first**. Nothing should fight the content.
 
@@ -24,7 +24,7 @@ A hand-sketched, watercolor-dots landing hero: an explorer character walks a mud
 - **Drawing:** `rough.js` (v4.6.6). **Install as an npm dependency** (`npm i roughjs`) and import it in the client script — do NOT load from a CDN (CDN fails on local/offline and adds a request). Draw into inline `<svg>` layers.
 - **Structure:** the scene is a stack of absolutely-positioned layers inside a `position:relative` hero box. Mix of:
   - **SVG layers** for all drawn objects (sky bodies, birds, mountains, river, boat, road, orbit, explorer, dog).
-  - **HTML overlay layers** for: the **repel text** (real text for SEO/a11y) and the **road signposts** (real `<a>` links for SEO/a11y/keyboard).
+  - **HTML overlay layers** for: the **repel text** (real text for SEO/a11y) and the **mountain nav buttons** (real `<a>` links for SEO/a11y/keyboard).
 - **Animation:** reuse the demos' techniques — CSS keyframes (`flow`, `twinkle`, `glow`, `fly`, `sail`, walk bob), SMIL `animateTransform`/`animate` (sun rays, orbit, leg/arm swing, tail wag, bird flap), and one shared `requestAnimationFrame` loop for the cursor-driven physics (explorer follow + repel text).
 - **Hero height:** `min(85vh, …)` — about **85% of the viewport**, so the next section peeks up and invites scrolling. Keep a sensible min-height (~560px) so it never collapses.
 - **Responsiveness:** the scene scales with the hero. Use SVG `viewBox` with `preserveAspectRatio` so drawn objects scale; position HTML overlays in `%`. Design reference canvas: **1440 × 760**. All coordinates below are given as **% of the hero box** (x from left, y from top) unless noted.
@@ -50,7 +50,7 @@ Use the site's existing clay tokens. Day = light theme, Night = dark theme. Obje
 | book | `#5c584f` | `#c7c0b2` |
 | bird | `#8a8378` | `#f4f1ea` (glowing white) |
 
-Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono** (labels/signposts). Already loaded site-wide.
+Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono** (labels/mountain nav buttons). Already loaded site-wide.
 
 ---
 
@@ -65,7 +65,7 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 | 3 | Mountains | SVG | clustered right, tallest right, tapering left |
 | 4 | River + Boat | SVG | bottom band |
 | 5 | Muddy road | SVG | above river |
-| 5 | Road signposts | **HTML `<a>`** | on the road; real links |
+| 5 | Mountain nav buttons | **HTML `<a>`** | on the mountain peaks; real links |
 | 6 | Brain⟲books orbit | SVG | center, medium |
 | 7 | Explorer + Dog | SVG | foreground, on road; follow cursor |
 | 8 | Repel text (name + bio) | **HTML** | upper-left; transparent; `pointer-events:none` on the text itself |
@@ -217,7 +217,7 @@ One `requestAnimationFrame` loop drives everything cursor-reactive. Track the cu
 ## 8. Accessibility & reduced-motion
 
 - **`prefers-reduced-motion: reduce`:** hold the whole scene **static** — a complete, composed sketch (sun/moon, mountains, river, road, boat, explorer, dog, orbit, birds all drawn but not animated; text does not scatter; no dive animation — links navigate instantly). It must still look finished and intentional.
-- **Keyboard:** all nav (header + signposts) reachable and operable by keyboard; visible focus states.
+- **Keyboard:** all nav (header + mountain nav buttons) reachable and operable by keyboard; visible focus states.
 - **Semantics:** name is a real `<h1>`; bio is real text; nav are real links. The SVG scene is decorative (`aria-hidden="true"`) since every destination has a real link elsewhere.
 - **Contrast:** keep text/nav contrast to standard; the scene is soft enough not to reduce text legibility (lively-but-light).
 
@@ -238,7 +238,7 @@ One `requestAnimationFrame` loop drives everything cursor-reactive. Track the cu
 ```
 src/
   components/
-    HeroScene.astro        # markup: layers + overlays + <a> signposts + <h1>/bio
+    HeroScene.astro        # markup: layers + overlays + <a> mountain nav buttons + <h1>/bio
     hero/
       scene.ts             # rough.js draw functions (ported from Element Library)
       motion.ts            # rAF loop: explorer follow, dog, dive, repel physics
@@ -262,7 +262,7 @@ public/
 5. Brain⟲books orbit at center.
 6. Repel text (name + bio) upper-left — cursor repel first.
 7. Explorer walk + cursor-follow; then dog follow.
-8. Road signposts (links) + dive-to-navigate; then feed bird positions into repel text.
+8. Mountain nav buttons (links) + dive-to-navigate; then feed bird positions into repel text.
 9. Responsive header nav (bar → hamburger); CV → the CV page (which has its PDF download); Upwork in footer.
 10. Reduced-motion static fallback + visibility/offscreen pausing.
 11. Polish: speeds, sizes, easing, and the lively-but-light balance.
