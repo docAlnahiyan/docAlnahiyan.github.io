@@ -12,7 +12,7 @@ interface Props {
 const { name, bio } = Astro.props;
 
 // Back to front (spec §3). scene.ts sizes and fills each one.
-const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
+const layers = ['sky', 'birds', 'land', 'water', 'road', 'orbit', 'characters'];
 
 // One per mountain peak, left to right. The positions are where they land on
 // a 1440 × 900 screen, used until the script places them exactly.
@@ -152,6 +152,14 @@ const peakLinks = [
   .layer-sky { z-index: 1; }
   .layer-birds { z-index: 2; }
   .layer-land { z-index: 3; }
+  .layer-water { z-index: 4; }
+  .layer-road { z-index: 5; }
+  /* The dense static layers get their own compositing layer, so the motion
+     around them never makes the browser repaint their thousands of dots. */
+  .layer-land,
+  .layer-road {
+    will-change: transform;
+  }
   .layer-orbit { z-index: 6; }
   .layer-characters { z-index: 7; }
 

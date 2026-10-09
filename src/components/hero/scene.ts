@@ -408,10 +408,10 @@ function mountains({ rc, svg, c, box }: Ctx) {
 }
 
 /**
- * A wide watercolour wash, wider on the left, whose top rides up under the
- * road, with five flowing dotted lines on top, left to right (§4.6).
+ * River, part 1 (static): a wide watercolour wash, wider on the left, whose
+ * top rides up under the road (§4.6).
  */
-function river({ svg, c, night, box }: Ctx) {
+function riverWash({ svg, c, night, box }: Ctx) {
   const defs = el('defs');
   const grad = el('linearGradient', { id: 'hero-river-wash', x1: 0, y1: 0, x2: 0, y2: 1 });
   grad.appendChild(el('stop', { offset: '0%', 'stop-color': c.washTop, 'stop-opacity': night ? 0.8 : 0.92 }));
@@ -432,7 +432,14 @@ function river({ svg, c, night, box }: Ctx) {
       filter: 'url(#hero-soft)',
     }),
   );
+}
 
+/**
+ * River, part 2 (animated): five flowing dotted lines on the wash, left to
+ * right (§4.6). Kept in their own layer so the flow never repaints the dense
+ * mountain and road dots.
+ */
+function riverFlow({ svg, c, box }: Ctx) {
   [[462, 506], [494, 524], [526, 542], [558, 560], [588, 578]].forEach(([yl, yr], i) => {
     const line = el('path', {
       d: mapPath(`M-30,${yl} Q420,${yl - 6} 820,${Math.trunc((yl + yr) / 2)} T1470,${yr}`, box.fx, box.by),
@@ -689,8 +696,12 @@ function placeNavButtons(hero: HTMLElement, geo: Geometry) {
 const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
   sky: [stars, sunOrMoon],
   birds: [birds],
-  // Back to front: mountains, river and boat, then the road over the waterline.
-  land: [mountains, river, boat, road],
+  // Back to front: mountains and the river wash (static), the flowing water
+  // and boat (animated), then the road over the waterline (static). The
+  // static layers are composited on their own, so they are painted once.
+  land: [mountains, riverWash],
+  water: [riverFlow, boat],
+  road: [road],
   orbit: [orbit],
   characters: [dog, explorer],
 };
@@ -707,13 +718,22 @@ export function drawScene(hero: HTMLElement): Geometry {
   const geo = geometry(box);
   const origin = hero.getBoundingClientRect();
   const text = [...hero.querySelectorAll('.name, .bio')].map((node) => {
-    // The tight box around the words, not the full-width block.
-    const range = document.createRange();
-    range.selectNodeContents(node);
-    const r = range.getBoundingClientRect();
+    // The tight box around the words, not the full-width block. Once the
+    // repel script has split the text, use the word boxes: they ignore the
+    // letters' current scatter, so a redraw mid-scatter measures the same.
+    const words = node.querySelectorAll('.word');
+    const rects = words.length
+      ? [...words].map((w) => w.getBoundingClientRect())
+      : [(() => {
+          const range = document.createRange();
+          range.selectNodeContents(node);
+          return range.getBoundingClientRect();
+        })()];
     return {
-      left: r.left - origin.left, top: r.top - origin.top,
-      right: r.right - origin.left, bottom: r.bottom - origin.top,
+      left: Math.min(...rects.map((r) => r.left)) - origin.left,
+      top: Math.min(...rects.map((r) => r.top)) - origin.top,
+      right: Math.max(...rects.map((r) => r.right)) - origin.left,
+      bottom: Math.max(...rects.map((r) => r.bottom)) - origin.top,
     };
   });
 
