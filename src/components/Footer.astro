@@ -16,7 +16,7 @@ const external = [
 ---
 
 <footer class="footer">
-  <div class="wrap footer-inner">
+  <div class="footer-inner">
     <p class="footer-contact">
       <span class="footer-label">Email</span>
       <span class="selectable">{links.email}</span>
@@ -39,6 +39,9 @@ const external = [
     color: var(--ink-3);
   }
   .footer-inner {
+    max-width: var(--maxw-wide);
+    margin: 0 auto;
+    padding-inline: 24px;
     display: flex;
     flex-wrap: wrap;
     gap: 10px 24px;

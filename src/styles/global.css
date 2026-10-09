@@ -22,7 +22,8 @@
   --warn-wash: #f6edda;
   --on-accent: #ffffff;
   --radius: 10px;
-  --maxw: 780px;
+  --maxw: 780px; /* reading column */
+  --maxw-wide: 1120px; /* nav, footer, home */
   --font-display: "Newsreader", Georgia, "Times New Roman", serif;
   --font-body: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
