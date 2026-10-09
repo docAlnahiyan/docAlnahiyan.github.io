@@ -123,12 +123,13 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - **Key:** the road's **bottom edge is the waterline** — the river wash meets it flush (§4.6), and the road is drawn **in front of** the river so it covers the seam. No cream gap above or below the road.
 - **Look:** mud-color **dots** ribbon (closed path filled `fillStyle:'dots'`), color `#9c7a52` (day) / `#7a5f45` (night). **No motion** — it's the ground the explorer and dog walk on.
 
-### 4.9 Road signposts — Research · Publications · Projects
-- **What:** three **hand-drawn sketch buttons** standing on the road, each a real `<a>` link to its page.
-- **Positions along the road** (left→right): **Research ≈ x 30%**, **Publications ≈ x 52%**, **Projects ≈ x 72%**, all sitting at road level (~y 80%, label just above the road).
-- **Look:** a small sketched post/placard (rough rectangle, dots or hatch edge) with the page name in **IBM Plex Mono**. Clay accent on hover/focus.
-- **These are a *bonus* path** — the same pages are always reachable from the header nav (§6). Never the only route.
-- **Behavior:** see the dive mechanic in §5.2.
+### 4.9 Mountain nav buttons — Research · Publications · Projects
+> The road is too small for nav, so the buttons live **on the mountains**. Behavior ported from `design-reference/explorer-proto.html` (approved).
+- **What:** three **sketch nav buttons**, one on each of the three mountain peaks, each a real `<a>` link: **Research · Publications · Projects**.
+- **Position:** at the **lower-middle of each peak** (between apex and base), sitting clearly on the mountain face.
+- **Look:** a small rough-rectangle placard with the page name in **IBM Plex Mono**, clay outline on a light fill; clay accent on hover/focus.
+- **Bonus path only:** all pages (these three included) stay in the header nav (§6) — keyboard/mobile users navigate there. These buttons are the playful extra.
+- **Behavior:** clicking one plays the dive (§5.2); keyboard focus + Enter navigates immediately.
 
 ### 4.10 Brain ⟲ Books orbit — center, medium, always circling in place
 - **Position:** **true center, x 50%, y ~46–48%**.
@@ -136,16 +137,25 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - **Look:** a faint **dashed orbit ring** (the ↺) with a direction chevron; a **mini brain** and **mini open book** orbit the ring continuously (SMIL rotate, ~16s). Brain dotted-fill `#a8482b`/`#ea9c7e`; open book `#5c584f`/`#c7c0b2`.
 - **Static location** (it does not travel) — it just spins in the middle, all the time.
 
-### 4.11 Explorer — foreground, walks the road, follows cursor, dives to navigate
-- **Idle position:** **lower-center on the road ≈ x 48%, y 80%**, walking in place (legs stride, arms swing, small step-bounce — port the library's walk).
-- **Size:** ≈ 70–90px tall at reference scale. Clay stroke `#c96442`/`#e8a07f`.
-- **Cursor follow:** when the cursor is inside the hero, the explorer **drifts toward it but never touches** — it eases toward a point offset ~40–60px short of the cursor, faces the direction of travel, and keeps the walk cycle going while moving. When the cursor leaves or rests, he eases back to the road idle spot. Use the shared rAF loop with smooth easing (lerp ~0.06–0.1). Keep him roughly on the road band vertically (don't let him fly into the sky).
+### 4.11 Explorer — **road-locked**, follows the cursor's horizontal direction
+> Behavior ported from `design-reference/explorer-proto.html` (approved). The real road's geometry (the `roadY(x)` curve from step 2) replaces the proto's simplified road.
+- **Road-locked:** only his **horizontal position (x)** changes; his **y follows the road slope** (`y = roadY(x)`). He never leaves the road — no vertical chasing into the sky.
+- **Idle:** lower-center on the road, walking in place.
+- **Size:** ≈ 70–90px tall. Clay stroke `#c96442`/`#e8a07f`. Faces his direction of travel.
+- **Follow (horizontal):** target x = cursor x, clamped to the road's x-range; he eases toward it. Cursor left → walks left; right → right. The cursor's vertical position does **not** move him off the road, but it counts toward the *distance* below.
+- **Distance-based speed (the key behavior):**
+  - Cursor **near** him (or on the road) → high responsiveness; **he runs** (fast approach, bigger/faster stride).
+  - Cursor **far** → low responsiveness; **he ambles** slowly — lazier still when the cursor is both far and off the road, so he's not darting around while someone reads. Settles when the cursor leaves the hero.
+  - Proto values: ease factor mapped from distance ~**0.20 near → ~0.010 far**; ×0.45 when off-road & far; ×0.25 when cursor outside.
+  - **Gait follows speed** — stride length/cadence scale with how fast he's moving (fast = running, slow = strolling).
 - **Dive-to-navigate:** see §5.2.
 
-### 4.12 Dog — follows the explorer
-- **Position:** trails the explorer by ~60–80px (lower, on the road), walking (four-leg diagonal gait + tail wag — port the library's dog).
-- **Size:** smaller than the explorer. Clay stroke.
-- Follows with a slight lag (lerp a bit slower than the explorer) so it reads as "following," not glued.
+### 4.12 Dog — always follows the explorer
+> Ported from `design-reference/explorer-proto.html`.
+- **Follows** the explorer, trailing ~60–70px behind on the road, with a slight lag (eases a touch slower) so it reads as following, not glued.
+- **Gait scales with speed** like the explorer; **tail wags** continuously.
+- **Occasional little hop** (every ~2–4s, a small parabolic bounce) for dog energy.
+- Smaller than the explorer; clay stroke.
 
 ### 4.13 Repel text — name + bio, upper-left, transparent, no card
 - **Position:** **upper-left**, name at ≈ **x 6%, y 15%**; bio line directly under it.
@@ -167,13 +177,17 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 
 One `requestAnimationFrame` loop drives everything cursor-reactive. Track the cursor position globally (and touch). Each frame:
 
-### 5.1 Explorer follow
-- Target = a point offset short of the cursor (never reaching it). Ease the explorer toward target; flip facing by direction of x-travel; clamp y to the road band; keep walk animation running while |velocity| > threshold, settle to idle walk-in-place otherwise. On cursor-leave, target = road idle spot.
+### 5.1 Explorer follow (road-locked, distance speed)
+- Each frame: target x = clamp(cursorX, road-min, road-max); distance `d = hypot(cursor − explorer)`. Derive the ease factor from `d` (near → fast/run, far → slow/amble), reduced when the cursor is off-road & far, and when it has left the hero. Move x toward target by that factor; set `y = roadY(x)`; flip facing by x-direction; advance the gait phase proportional to the per-frame step so speed drives walk↔run. He never leaves the road. (Port the integrator from `explorer-proto.html`.)
 
-### 5.2 Dive-to-navigate (explorer → signpost → page)
-- Each signpost `<a>` has an `href` to its page.
-- **Trigger:** when the visitor **clicks a signpost**, or the **explorer reaches/overlaps a signpost** while following the cursor there (and the visitor clicks), play a short **dive animation**: explorer scales down + tucks into the signpost (~450ms), then `window.location`/Astro navigation to the `href`. A tiny splash/ink-dot burst at the signpost is a nice touch.
-- **Accessibility / fallback:** the signpost is a plain link — **keyboard focus + Enter navigates immediately** (skip or fast-forward the animation), and it works with no cursor at all. Respect `prefers-reduced-motion` (navigate instantly, no dive).
+### 5.2 Dive-to-navigate (genie / jump **into** the mountain button)
+- Each mountain button `<a>` has an `href` to its page.
+- **On click**, the explorer animates **into** the button — as if entering a portal to that page — a small **ripple** rings out where he enters, and the page navigates. Two entry styles (both ported from the proto):
+  - **Genie (quick / direct click):** he slides onto the button and **collapses into it to a point** with a slight swirl (~0.5s) — macOS-Dock-like, fast, so it never feels laggy.
+  - **Jump (slow approach):** he arcs up, **lands exactly on the button**, then **dives in** / shrinks into it (~0.8s).
+  - Choose genie vs jump by how it was triggered (fast/direct → genie; leisurely → jump).
+- **No lag:** on the real site, **fire the navigation immediately on click** and let the chosen animation play as a quick flourish over the page load.
+- **Accessibility / fallback:** the button is a plain link — **keyboard focus + Enter navigates immediately** (no animation needed), works with no cursor. Respect `prefers-reduced-motion` (navigate instantly, no dive).
 
 ### 5.3 Repel text (cursor + birds)
 - Maintain a list of **repulsion sources**: the cursor (when active) **plus each bird's current screen position**. For every letter, sum the pushes from all sources within `R`, spring toward the summed target, render `translate(x,y) rotate(r)`. Port the demo's integrator.
@@ -260,9 +274,9 @@ public/
 - [ ] Hero ≈ 85vh; next section peeks below.
 - [ ] Name upper-left, transparent, scatters from cursor **and** from passing birds, springs back.
 - [ ] "Southwest Jiaotong University" appears **once** (in the bio line).
-- [ ] Explorer walks, drifts toward cursor **without touching**, returns to lower-center road idle.
-- [ ] Dog follows with a lag.
-- [ ] Clicking a road signpost (Research/Publications/Projects) plays the dive, then navigates; keyboard navigates instantly.
+- [ ] Explorer is **road-locked**; runs when the cursor is near, ambles when far, never leaves the road.
+- [ ] Dog follows with a lag, tail wagging, with an occasional hop.
+- [ ] Clicking a **mountain nav button** (Research/Publications/Projects) plays the genie/jump dive **into** it + ripple, then navigates; keyboard navigates instantly.
 - [ ] Birds: 3–4, slow, right→left, cross the sun, loop; white glow at night.
 - [ ] Boat: slow, left→right along the river, loops; rower aboard; river flows left→right.
 - [ ] Mountains tall-left tapering right; sun/moon clear top-right.

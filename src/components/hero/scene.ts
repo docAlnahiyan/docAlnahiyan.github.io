@@ -119,6 +119,7 @@ interface Ctx {
   box: Box;
   /** Where the name and bio actually sit, relative to the hero. */
   text: Rect[];
+  geo: Geometry;
 }
 
 // ---------------------------------------------------------------- sky
@@ -285,9 +286,88 @@ function birds({ svg, c, night, box }: Ctx) {
 
 // ---------------------------------------------------------------- land
 
-// The road's two edges, in mock units. The bottom edge is also the waterline.
-const ROAD_TOP = 'M-30,398 C260,384 520,414 800,430 C1060,446 1260,452 1470,456';
-const ROAD_BOTTOM = 'L1470,496 C1260,492 1060,486 800,470 C520,454 260,424 -30,438';
+// The road's two edges, in mock units, left to right: two cubic Béziers each.
+// The bottom edge is also the waterline.
+type Pt = [number, number];
+const ROAD_TOP_PTS: Pt[] = [[-30, 398], [260, 384], [520, 414], [800, 430], [1060, 446], [1260, 452], [1470, 456]];
+const ROAD_BOTTOM_PTS: Pt[] = [[-30, 438], [260, 424], [520, 454], [800, 470], [1060, 486], [1260, 492], [1470, 496]];
+const pt = ([x, y]: Pt) => `${x},${y}`;
+const ROAD_TOP = `M${pt(ROAD_TOP_PTS[0])} C${ROAD_TOP_PTS.slice(1, 4).map(pt).join(' ')} C${ROAD_TOP_PTS.slice(4).map(pt).join(' ')}`;
+const ROAD_BOTTOM = `L${pt(ROAD_BOTTOM_PTS[6])} C${[5, 4, 3].map((i) => pt(ROAD_BOTTOM_PTS[i])).join(' ')} C${[2, 1, 0].map((i) => pt(ROAD_BOTTOM_PTS[i])).join(' ')}`;
+
+/**
+ * Samples one road edge in pixels and returns its height at any x. The mapping
+ * from mock units is linear on each axis, so sampling the mapped control
+ * points gives the same curve that is drawn.
+ */
+function edgeY(box: Box, ctrl: Pt[]): (x: number) => number {
+  const p = ctrl.map(([x, y]) => [box.fx(x), box.by(y)] as Pt);
+  const samples: Pt[] = [];
+  for (const seg of [p.slice(0, 4), p.slice(3, 7)]) {
+    for (let i = 0; i <= 48; i++) {
+      const t = i / 48;
+      const u = 1 - t;
+      const a = u * u * u, b = 3 * u * u * t, c = 3 * u * t * t, d = t * t * t;
+      samples.push([
+        a * seg[0][0] + b * seg[1][0] + c * seg[2][0] + d * seg[3][0],
+        a * seg[0][1] + b * seg[1][1] + c * seg[2][1] + d * seg[3][1],
+      ]);
+    }
+  }
+  return (x) => {
+    let i = 1;
+    while (i < samples.length - 1 && samples[i][0] < x) i++;
+    const [x0, y0] = samples[i - 1];
+    const [x1, y1] = samples[i];
+    return y0 + (y1 - y0) * (x1 === x0 ? 0 : (x - x0) / (x1 - x0));
+  };
+}
+
+/** Where things stand on the road, plus the peaks that carry nav buttons. */
+export interface Geometry {
+  w: number;
+  h: number;
+  /** Feet height on the road at x (a little below the road's centre line). */
+  roadY: (x: number) => number;
+  roadMin: number;
+  roadMax: number;
+  /** Size of the explorer and dog relative to the prototype. */
+  fig: number;
+  /** Where the explorer rests: lower centre, kept clear of the buttons. */
+  idleX: number;
+  /** Button centres on the peaks, left to right; empty when they are hidden. */
+  buttons: Pt[];
+}
+
+/** The three peaks (mock apex) that carry Research, Publications, Projects. */
+const NAV_PEAKS: Pt[] = [[820, 300], [1040, 205], [1250, 170]];
+
+function geometry(box: Box): Geometry {
+  const top = edgeY(box, ROAD_TOP_PTS);
+  const bottom = edgeY(box, ROAD_BOTTOM_PTS);
+  const buttons = NAV_PEAKS.map(([x, y]) => {
+    const ax = box.rx(x);
+    const ay = box.by(y);
+    // Lower-middle of the peak's face: a bit over halfway from apex to road.
+    return [ax, ay + (top(ax) - ay) * 0.58] as Pt;
+  });
+  const fig = Math.min(1.15, Math.max(0.8, box.k));
+  // On narrow screens the leftmost peak is off-screen; the header nav covers it.
+  const visible = buttons.every(([x]) => x > box.w * 0.04 && x < box.w * 0.96);
+  return {
+    w: box.w,
+    h: box.h,
+    roadY: (x) => {
+      const t = top(x);
+      return t + (bottom(x) - t) * 0.62;
+    },
+    roadMin: box.w * 0.05,
+    roadMax: box.w * 0.95,
+    fig,
+    idleX: visible ? Math.max(box.w * 0.3, Math.min(box.w * 0.48, buttons[0][0] - 80 * fig)) : box.w * 0.48,
+    buttons: visible ? buttons : [],
+  };
+}
 
 /** The mountain range's outline in pixels (mock peaks, anchored right). */
 function mountainOutline(box: Box): [number, number][] {
@@ -521,6 +601,85 @@ function orbit({ rc, svg, c, box, text }: Ctx) {
   svg.appendChild(g);
 }
 
+// ---------------------------------------------------------------- characters
+
+// Ported from design-reference/explorer-proto.html. Each figure is drawn once,
+// origin at the feet, with every limb in its own group so motion.ts can swing
+// it. Until motion.ts takes over (or with reduced motion), they stand at the
+// idle spot on the road.
+
+/** The explorer: about 72 units tall, limbs tagged for the walk cycle. */
+function explorer({ rc, svg, c, geo }: Ctx) {
+  const o = { stroke: c.char, strokeWidth: 2.4, roughness: 1.4, seed: 51 };
+  const wrap = el('g', { 'data-actor': 'explorer' });
+  const body = el('g');
+  body.appendChild(rc.circle(0, -62, 22, o));
+  body.appendChild(rc.line(0, -51, 0, -24, o));
+  const limb = (name: string, jx: number, jy: number, x2: number, y2: number) => {
+    const g = el('g', { 'data-limb': name });
+    g.appendChild(rc.line(jx, jy, x2, y2, o));
+    body.appendChild(g);
+  };
+  limb('armL', 0, -46, -15, -34);
+  limb('armR', 0, -46, 15, -34);
+  limb('legL', 0, -24, -11, 0);
+  limb('legR', 0, -24, 11, 0);
+  wrap.appendChild(body);
+  const x = geo.idleX;
+  wrap.setAttribute('transform', `translate(${x} ${geo.roadY(x)}) scale(${geo.fig})`);
+  svg.appendChild(wrap);
+}
+
+/** The dog: smaller, four legs, a wagging tail, trailing the explorer. */
+function dog({ rc, svg, c, geo }: Ctx) {
+  const o = { stroke: c.char, strokeWidth: 2.1, roughness: 1.4, seed: 53 };
+  const wrap = el('g', { 'data-actor': 'dog' });
+  const body = el('g');
+  body.appendChild(rc.ellipse(0, -16, 46, 20, o));
+  body.appendChild(rc.circle(26, -22, 16, o));
+  body.appendChild(rc.path('M20,-28 L24,-38 L31,-30', o));
+  body.appendChild(rc.path('M33,-20 q9,0 10,5 q-7,2 -11,-1', o));
+  for (const [name, lx] of [['l1', -16], ['l2', -6], ['l3', 6], ['l4', 16]] as const) {
+    const g = el('g', { 'data-limb': name, 'data-x': lx });
+    g.appendChild(rc.line(lx, -7, lx, 6, o));
+    body.appendChild(g);
+  }
+  const tail = el('g', { 'data-limb': 'tail' });
+  tail.appendChild(rc.path('M-22,-20 q-11,-2 -8,-15', o));
+  body.appendChild(tail);
+  body.appendChild(rc.circle(30, -24, 2.4, { fill: c.char, fillStyle: 'solid', stroke: 'none', seed: 55 }));
+  wrap.appendChild(body);
+  const x = geo.idleX - 64 * geo.fig;
+  wrap.setAttribute('transform', `translate(${x} ${geo.roadY(x) - 6}) scale(${geo.fig})`);
+  svg.appendChild(wrap);
+}
+
+/**
+ * Positions the three mountain nav links (real <a> elements in the page) on
+ * their peaks and draws a rough placard behind each label (§4.9).
+ */
+function placeNavButtons(hero: HTMLElement, geo: Geometry) {
+  const links = hero.querySelectorAll<HTMLAnchorElement>('.peak-link');
+  links.forEach((a, i) => {
+    const pos = geo.buttons[i];
+    a.hidden = !pos;
+    if (!pos) return;
+    a.style.left = `${pos[0]}px`;
+    a.style.top = `${pos[1]}px`;
+    const bg = a.querySelector<SVGSVGElement>('.peak-bg');
+    if (!bg) return;
+    clear(bg);
+    const w = a.offsetWidth;
+    const h = a.offsetHeight;
+    bg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+    bg.appendChild(
+      rough.svg(bg).rectangle(1.5, 1.5, w - 3, h - 3, {
+        strokeWidth: 1.4, roughness: 1.5, fill: '#fff', fillStyle: 'solid', seed: 61 + i,
+      }),
+    );
+  });
+}
+
 // ---------------------------------------------------------------- scene
 
 const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
@@ -529,15 +688,19 @@ const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
   // Back to front: mountains, river and boat, then the road over the waterline.
   land: [mountains, river, boat, road],
   orbit: [orbit],
-  characters: [],
+  characters: [dog, explorer],
 };
 
-/** Redraws every layer at the hero's current size with the day or night palette. */
-export function drawScene(hero: HTMLElement): void {
+/**
+ * Redraws every layer at the hero's current size with the day or night
+ * palette, and returns the road and button geometry for motion.ts.
+ */
+export function drawScene(hero: HTMLElement): Geometry {
   const night = isNight();
   hero.dataset.time = night ? 'night' : 'day';
   const c = colors(night);
   const box = makeBox(hero.clientWidth, hero.clientHeight);
+  const geo = geometry(box);
   const origin = hero.getBoundingClientRect();
   const text = [...hero.querySelectorAll('.name, .bio')].map((node) => {
     // The tight box around the words, not the full-width block.
@@ -558,9 +721,11 @@ export function drawScene(hero: HTMLElement): void {
     svg.setAttribute('preserveAspectRatio', 'none');
     const rc = rough.svg(svg);
     for (const draw of LAYERS[svg.dataset.layer ?? ''] ?? []) {
-      draw({ rc, svg, c, night, box, text });
+      draw({ rc, svg, c, night, box, text, geo });
     }
   });
+  placeNavButtons(hero, geo);
+  return geo;
 }
 
 /**

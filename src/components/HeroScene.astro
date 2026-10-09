@@ -13,6 +13,14 @@ const { name, bio } = Astro.props;
 
 // Back to front (spec §3). scene.ts sizes and fills each one.
 const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
+
+// One per mountain peak, left to right. The positions are where they land on
+// a 1440 × 900 screen, used until the script places them exactly.
+const peakLinks = [
+  { label: 'Research', href: '/research/', left: '47%', top: '60%' },
+  { label: 'Publications', href: '/publications/', left: '66%', top: '55%' },
+  { label: 'Projects', href: '/projects/', left: '84%', top: '54%' },
+];
 ---
 
 <section class="scene" id="hero" aria-labelledby="hero-name">
@@ -25,6 +33,17 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     />
   ))}
 
+  {/* Bonus path to three pages (spec §4.9); the header nav always has them.
+       scene.ts places each on its mountain peak and draws its placard. */}
+  <nav class="peaks" aria-label="Explore">
+    {peakLinks.map((l) => (
+      <a class="peak-link" href={l.href} style={`left:${l.left};top:${l.top}`}>
+        <svg class="peak-bg" aria-hidden="true" focusable="false" preserveAspectRatio="none" />
+        <span>{l.label}</span>
+      </a>
+    ))}
+  </nav>
+
   <div class="text">
     <h1 id="hero-name" class="name">{name}</h1>
     <p class="bio">{bio}</p>
@@ -33,19 +52,26 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
 
 <script>
   import { drawScene, onResize, onThemeChange } from './hero/scene';
-  import { repelText, startLoop } from './hero/motion';
+  import { explorer, repelText, startLoop } from './hero/motion';
 
   const hero = document.getElementById('hero');
   if (hero) {
-    const redraw = () => drawScene(hero);
-    redraw();
+    let geo = drawScene(hero);
+    const redraw = () => {
+      geo = drawScene(hero);
+      hero.dispatchEvent(new Event('hero:drawn'));
+    };
     onThemeChange(redraw);
     onResize(hero, redraw);
 
-    // With reduced motion the text stays as plain, still text.
+    // With reduced motion the scene stays still: the text is plain, the
+    // explorer stands on the road and the mountain buttons are plain links.
     if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
       const text = [...hero.querySelectorAll<HTMLElement>('.name, .bio')];
-      startLoop(hero, [repelText(hero, text, () => hero.querySelectorAll('.fly path'))]);
+      startLoop(hero, [
+        repelText(hero, text, () => hero.querySelectorAll('.fly path')),
+        explorer(hero, () => geo),
+      ]);
     }
   }
 </script>
@@ -139,6 +165,82 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
   @keyframes rock {
     0%, 100% { transform: translateY(0) rotate(-1.6deg); }
     50% { transform: translateY(-2px) rotate(1.6deg); }
+  }
+
+  /* Mountain nav buttons: real links over the scene, each with a rough
+     placard (drawn by scene.ts) behind its label. */
+  .peaks {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    pointer-events: none;
+  }
+  .peak-link {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    isolation: isolate;
+    padding: 5px 13px;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--accent-ink);
+    white-space: nowrap;
+    pointer-events: auto;
+  }
+  .peak-link[hidden] {
+    display: none;
+  }
+  .peak-link:hover,
+  .peak-link:focus-visible {
+    text-decoration: none;
+    color: var(--accent);
+  }
+  .peak-link:focus-visible {
+    outline: 2px solid var(--accent-ink);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+  .peak-bg {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+  }
+  /* rough.js draws the fill first, then the outline. */
+  .peak-bg :global(path:first-child) {
+    fill: var(--surface);
+    stroke: none;
+  }
+  .peak-bg :global(path:last-child) {
+    stroke: var(--accent-ink);
+  }
+  .peak-link:hover .peak-bg :global(path:first-child),
+  .peak-link:focus-visible .peak-bg :global(path:first-child) {
+    fill: var(--accent-wash);
+  }
+  .peak-link:hover .peak-bg :global(path:last-child),
+  .peak-link:focus-visible .peak-bg :global(path:last-child) {
+    stroke: var(--accent);
+  }
+  @media (max-width: 620px) {
+    .peaks {
+      display: none;
+    }
+  }
+
+  /* The ring that spreads where the explorer dives into a button. */
+  .scene :global(.ripple) {
+    fill: none;
+    stroke: var(--accent-ink);
+    stroke-width: 2.4;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: ripple .6s ease-out forwards;
+  }
+  @keyframes ripple {
+    from { transform: scale(.12); opacity: .85; }
+    to { transform: scale(1); opacity: 0; }
   }
 
   /* Name and bio, upper left, with no card behind them (spec §4.13). */
