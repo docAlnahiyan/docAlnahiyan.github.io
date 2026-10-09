@@ -105,7 +105,7 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
   <section class="wide about" id="about" aria-labelledby="about-head">
     <div class="intro">
       <h2 id="about-head" class="k">About</h2>
-      <p class="bio" set:html={inlineMarkdown(profile.bio)} />
+      <p class="bio copy" set:html={inlineMarkdown(profile.bio)} />
       <ul class="links">
         {aboutLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
         <li><span class="selectable">{links.email}</span></li>

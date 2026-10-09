@@ -358,6 +358,21 @@ main {
   margin: 0;
 }
 
+/* ---------- justified copy ----------
+   Paragraphs of running text are justified, with hyphenation (lang="en" on
+   <html>) so lines stay evenly spaced on narrow screens. Labels, captions,
+   meta lines and the hero's mono bio all carry a class and stay left-aligned;
+   a classed paragraph that is real copy opts in with .copy. Headings, lists,
+   tables, code and buttons are untouched. */
+main p:not([class]),
+main .copy {
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+  /* Only split words of 6+ letters, leaving at least 3 on each side. */
+  hyphenate-limit-chars: 6 3 3;
+}
+
 /* ---------- long-form text (Markdown bodies) ---------- */
 .prose {
   max-width: 66ch;
