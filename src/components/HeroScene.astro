@@ -11,7 +11,7 @@ interface Props {
 
 const { name, bio } = Astro.props;
 
-// Back to front (spec §3). Each is filled by scene.ts.
+// Back to front (spec §3). scene.ts sizes and fills each one.
 const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
 ---
 
@@ -20,8 +20,6 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     <svg
       class={`layer layer-${layer}`}
       data-layer={layer}
-      viewBox="0 0 1440 760"
-      preserveAspectRatio="xMidYMid slice"
       aria-hidden="true"
       focusable="false"
     />
@@ -34,12 +32,14 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
 </section>
 
 <script>
-  import { drawScene, onThemeChange } from './hero/scene';
+  import { drawScene, onResize, onThemeChange } from './hero/scene';
 
   const hero = document.getElementById('hero');
   if (hero) {
-    drawScene(hero);
-    onThemeChange(() => drawScene(hero));
+    const redraw = () => drawScene(hero);
+    redraw();
+    onThemeChange(redraw);
+    onResize(hero, redraw);
   }
 </script>
 
@@ -63,8 +63,11 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
   .scene {
     position: relative;
     overflow: hidden;
-    /* About 85% of the screen, so the next section peeks up from below. */
-    height: clamp(560px, 85svh, 980px);
+    /* 85% of the screen (never under 560px), so the next section peeks up
+       from below. svh ignores the phone address bar, so the scene does not
+       jump while scrolling. */
+    height: max(560px, 85vh);
+    height: max(560px, 85svh);
     background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
     border-bottom: 1px solid var(--border);
     transition: background-color .4s;
@@ -83,6 +86,24 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
   .layer-orbit { z-index: 6; }
   .layer-characters { z-index: 7; }
 
+  /* Motion (ported from the element library). Drawn elements are created by
+     the script, so these rules are global within the scene. The site-wide
+     reduced-motion rule turns them all off. */
+  .scene :global(.flow) {
+    animation: flow linear infinite;
+  }
+  @keyframes flow {
+    /* 20 dots of 13px, so the loop has no visible seam. */
+    to { stroke-dashoffset: -260; }
+  }
+  .scene :global(.tw) {
+    animation: twinkle ease-in-out infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: .2; }
+    50% { opacity: 1; }
+  }
+
   /* Name and bio, upper left, with no card behind them (spec §4.13). */
   .text {
     position: absolute;
@@ -97,7 +118,6 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     letter-spacing: -.02em;
     line-height: 1.05;
     margin: 0 0 14px;
-    max-width: 12ch;
   }
   .bio {
     font-family: var(--font-mono);

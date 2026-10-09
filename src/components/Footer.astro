@@ -5,13 +5,14 @@ const profile = await getProfile();
 const { links } = profile;
 const year = new Date().getFullYear();
 
-// Only links that have been filled in are shown.
+// Only links that have been filled in are shown. The Upwork page itself is
+// linked from here rather than the header nav.
 const external = [
   { label: 'Google Scholar', href: links.scholar },
   { label: 'ORCID', href: links.orcid },
   { label: 'GitHub', href: links.github },
   { label: 'LinkedIn', href: links.linkedin },
-  { label: 'Upwork', href: links.upwork },
+  { label: 'Upwork profile', href: links.upwork },
 ].filter((l): l is { label: string; href: string } => Boolean(l.href));
 ---
 
@@ -21,11 +22,10 @@ const external = [
       <span class="footer-label">Email</span>
       <span class="selectable">{links.email}</span>
     </p>
-    {external.length > 0 && (
-      <ul class="footer-links">
-        {external.map((l) => <li><a href={l.href} rel="me">{l.label}</a></li>)}
-      </ul>
-    )}
+    <ul class="footer-links">
+      <li><a href="/upwork/">Upwork</a></li>
+      {external.map((l) => <li><a href={l.href} rel="me">{l.label}</a></li>)}
+    </ul>
     <p class="footer-copy">© {year} {profile.name}</p>
   </div>
 </footer>

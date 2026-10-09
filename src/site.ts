@@ -13,10 +13,11 @@ export const SITE = {
 
 export const NAV = [
   { href: '/', label: 'Home' },
+  // A section of the home page, so it is never marked as the current page.
+  { href: '/#about', label: 'About' },
   { href: '/research/', label: 'Research' },
   { href: '/publications/', label: 'Publications' },
   { href: '/projects/', label: 'Projects' },
   { href: '/blog/', label: 'Blog' },
   { href: '/cv/', label: 'CV' },
-  { href: '/upwork/', label: 'Upwork' },
 ] as const;
