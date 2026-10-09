@@ -1,6 +1,6 @@
 // Drawing for the landing hero (design-reference/landing-scene-spec.md).
 // The landscape and sun/moon are ported from design-reference/landscape-mock.html;
-// the other objects come from design-reference/element-library.html.
+// stars, birds, boat and the other objects from design-reference/element-library.html.
 //
 // Every layer is redrawn at the hero's real pixel size, so stroke widths and
 // dot spacing stay the same on every screen. Landscape coordinates are kept
@@ -166,6 +166,88 @@ function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
   );
 }
 
+/**
+ * Night only: twinkling dots and two sparkles across the upper sky (§4.3),
+ * kept out of the name and bio.
+ */
+function stars({ svg, c, night, box }: Ctx) {
+  if (!night) return;
+  const dots: [number, number][] = [
+    [4, 40], [8, 8], [18, 42], [27, 12], [35, 40], [39, 36], [44, 6], [49, 26],
+    [56, 36], [61, 10], [64, 42], [68, 26], [73, 44], [77, 8], [83, 46], [88, 36],
+    [96, 8], [97, 30],
+  ];
+  dots.forEach(([x, y], i) => {
+    const s = el('circle', { cx: box.x(x), cy: box.y(y), r: i % 3 ? 1.3 : 1.9, fill: c.star, class: 'tw' });
+    s.style.animationDuration = `${3 + (i % 4)}s`;
+    s.style.animationDelay = `${i * 0.4}s`;
+    svg.appendChild(s);
+  });
+  ([[52, 16], [71, 34]] as [number, number][]).forEach(([x, y], i) => {
+    const px = box.x(x);
+    const py = box.y(y);
+    const g = el('g', { class: 'tw' });
+    g.style.animationDuration = '4.5s';
+    g.style.animationDelay = `${i * 1.2}s`;
+    const arm = { stroke: c.star, 'stroke-width': 1.4, 'stroke-linecap': 'round' };
+    g.appendChild(el('line', { x1: px - 6, y1: py, x2: px + 6, y2: py, ...arm }));
+    g.appendChild(el('line', { x1: px, y1: py - 6, x2: px, y2: py + 6, ...arm }));
+    svg.appendChild(g);
+  });
+}
+
+/**
+ * Four birds gliding right to left across the sun and looping (§4.4), each
+ * flapping at its own pace. At night they are white with a soft glow.
+ */
+function birds({ svg, c, night, box }: Ctx) {
+  const s = Math.min(1.3, Math.max(0.8, box.w / 1200));
+  // Flock layout from the library: x, y offsets and a flap delay.
+  const flock: [number, number, number][] = [
+    [0, 14, 0], [52, 0, 0.18], [110, 20, 0.42], [78, 40, 0.6],
+  ];
+  const flockW = 130 * s;
+  const top = box.y(12);
+
+  const g = el('g', { class: 'fly' });
+  // Where the flock rests when motion is reduced: just left of the sun.
+  g.setAttribute('transform', `translate(${box.x(64)} ${top})`);
+  g.style.setProperty('--from', `${box.w + 20}px, ${top}px`);
+  g.style.setProperty('--to', `${-flockW - 40}px, ${top}px`);
+  // Start part-way across, so the sky is not empty on arrival.
+  g.style.animationDelay = '-7s';
+
+  if (night) {
+    const defs = el('defs');
+    const glow = el('filter', { id: 'hero-bird-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+    glow.appendChild(el('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 2.2, result: 'b' }));
+    const merge = el('feMerge');
+    merge.appendChild(el('feMergeNode', { in: 'b' }));
+    merge.appendChild(el('feMergeNode', { in: 'SourceGraphic' }));
+    glow.appendChild(merge);
+    defs.appendChild(glow);
+    svg.appendChild(defs);
+    g.setAttribute('filter', 'url(#hero-bird-glow)');
+  }
+
+  for (const [ox, oy, delay] of flock) {
+    const x = ox * s;
+    const y = oy * s;
+    const w = 11 * s;
+    const up = `M${x - w},${y + 5 * s} Q${x - 5 * s},${y - 7 * s} ${x},${y} Q${x + 5 * s},${y - 7 * s} ${x + w},${y + 5 * s}`;
+    const dn = `M${x - w},${y - 3 * s} Q${x - 5 * s},${y + 5 * s} ${x},${y} Q${x + 5 * s},${y + 5 * s} ${x + w},${y - 3 * s}`;
+    const bird = el('path', { d: up, fill: 'none', stroke: c.bird, 'stroke-width': 2, 'stroke-linecap': 'round' });
+    bird.appendChild(
+      el('animate', {
+        attributeName: 'd', values: `${up};${dn};${up}`, keyTimes: '0;0.5;1',
+        dur: `${0.5 + delay}s`, begin: `${delay}s`, repeatCount: 'indefinite',
+      }),
+    );
+    g.appendChild(bird);
+  }
+  svg.appendChild(g);
+}
+
 // ---------------------------------------------------------------- land
 
 // The road's two edges, in mock units. The bottom edge is also the waterline.
@@ -253,6 +335,44 @@ function river({ svg, c, night, box }: Ctx) {
   }
 }
 
+/**
+ * A wooden boat with a small rower, sailing left to right with the current
+ * and rocking gently, then looping (§4.7).
+ */
+function boat({ rc, svg, c, box }: Ctx) {
+  const s = box.k * 0.85;
+  // Library boat: hull spans x 64–156, gunwale at y 98. Re-centre on the gunwale.
+  const ox = 110;
+  const oy = 98;
+  const hullW = 92 * s;
+  const waterline = box.by(560);
+
+  const sail = el('g', { class: 'sail' });
+  sail.setAttribute('transform', `translate(${box.x(30)} ${waterline})`);
+  sail.style.setProperty('--from', `${-hullW}px, ${waterline}px`);
+  sail.style.setProperty('--to', `${box.w + hullW}px, ${waterline}px`);
+  sail.style.animationDelay = '-8s';
+
+  const rock = el('g', { class: 'rock' });
+  const body = el('g', { transform: `scale(${s}) translate(${-ox} ${-oy})` });
+  const wood = { stroke: c.road, strokeWidth: 2.4 / s, roughness: 1.5, seed: 31 };
+  body.appendChild(
+    rc.path('M64,98 L156,98 Q152,120 110,122 Q68,120 64,98 Z', {
+      ...wood, fill: c.road, fillStyle: 'dots', fillWeight: 1.6 / s, hachureGap: 7 / s,
+    }),
+  );
+  body.appendChild(rc.line(64, 98, 156, 98, { ...wood, strokeWidth: 2.2 / s, roughness: 1.4 }));
+  // The rower; an empty boat can't move.
+  const rower = { stroke: c.char, strokeWidth: 2.2 / s, roughness: 1.6, seed: 37 };
+  body.appendChild(rc.circle(108, 66, 15, rower));
+  body.appendChild(rc.line(108, 73, 108, 96, rower));
+  body.appendChild(rc.line(108, 80, 122, 88, rower));
+  body.appendChild(rc.line(116, 76, 138, 110, { ...rower, roughness: 1.5 }));
+  rock.appendChild(body);
+  sail.appendChild(rock);
+  svg.appendChild(sail);
+}
+
 /** A winding mud ribbon, higher on the left, drawn over the waterline (§4.8). */
 function road({ rc, svg, c, box }: Ctx) {
   svg.appendChild(
@@ -266,10 +386,10 @@ function road({ rc, svg, c, box }: Ctx) {
 // ---------------------------------------------------------------- scene
 
 const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
-  sky: [sunOrMoon],
-  birds: [],
-  // Back to front: mountains, river, then the road over the waterline.
-  land: [mountains, river, road],
+  sky: [stars, sunOrMoon],
+  birds: [birds],
+  // Back to front: mountains, river and boat, then the road over the waterline.
+  land: [mountains, river, boat, road],
   orbit: [],
   characters: [],
 };
@@ -294,20 +414,17 @@ export function drawScene(hero: HTMLElement): void {
   });
 }
 
-/** Redraws when the hero changes size, at most once per frame. */
+/**
+ * Redraws when the hero changes size. ResizeObserver already runs once per
+ * frame, before paint, so the new drawing appears in the same frame.
+ */
 export function onResize(hero: HTMLElement, cb: () => void): void {
   let w = hero.clientWidth;
   let h = hero.clientHeight;
-  let queued = false;
   new ResizeObserver(() => {
     if (hero.clientWidth === w && hero.clientHeight === h) return;
     w = hero.clientWidth;
     h = hero.clientHeight;
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(() => {
-      queued = false;
-      cb();
-    });
+    cb();
   }).observe(hero);
 }
