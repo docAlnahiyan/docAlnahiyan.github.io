@@ -104,12 +104,21 @@ function mapPath(d: string, mx: (x: number) => number, my: (y: number) => number
   );
 }
 
+interface Rect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
 interface Ctx {
   rc: RoughSVG;
   svg: SVGSVGElement;
   c: Palette;
   night: boolean;
   box: Box;
+  /** Where the name and bio actually sit, relative to the hero. */
+  text: Rect[];
 }
 
 // ---------------------------------------------------------------- sky
@@ -254,6 +263,15 @@ function birds({ svg, c, night, box }: Ctx) {
 const ROAD_TOP = 'M-30,398 C260,384 520,414 800,430 C1060,446 1260,452 1470,456';
 const ROAD_BOTTOM = 'L1470,496 C1260,492 1060,486 800,470 C520,454 260,424 -30,438';
 
+/** The mountain range's outline in pixels (mock peaks, anchored right). */
+function mountainOutline(box: Box): [number, number][] {
+  const peaks: [number, number][] = [
+    [700, 520], [700, 460], [820, 300], [920, 350], [1040, 205], [1150, 300],
+    [1250, 170], [1360, 255], [1440, 210], [1470, 210], [1470, 520],
+  ];
+  return peaks.map(([x, y]) => [box.rx(x), box.by(y)]);
+}
+
 /**
  * Peaks clustered on the right, tallest on the right, tapering left (§4.5).
  * The base runs well below the road and is clipped at the road's bottom edge,
@@ -268,12 +286,8 @@ function mountains({ rc, svg, c, box }: Ctx) {
   defs.appendChild(clip);
   svg.appendChild(defs);
 
-  const peaks: [number, number][] = [
-    [700, 520], [700, 460], [820, 300], [920, 350], [1040, 205], [1150, 300],
-    [1250, 170], [1360, 255], [1440, 210], [1470, 210], [1470, 520],
-  ];
   const range = rc.polygon(
-    peaks.map(([x, y]) => [box.rx(x), box.by(y)] as [number, number]),
+    mountainOutline(box),
     {
       stroke: c.mtnO, strokeWidth: 2, roughness: 1.9, bowing: 1.1,
       fill: c.mtn, fillStyle: 'dots', fillWeight: 2.3, hachureGap: 8, seed: 11,
@@ -385,17 +399,67 @@ function road({ rc, svg, c, box }: Ctx) {
 
 // ---------------------------------------------------------------- orbit
 
+/** Shortest distance from point p to the segment a–b. */
+function distToSegment(p: [number, number], a: [number, number], b: [number, number]) {
+  const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
+  const len2 = dx * dx + dy * dy;
+  const t = len2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2)) : 0;
+  return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
+}
+
+/** Shortest distance from point p to a rectangle (0 when inside). */
+function distToRect(p: [number, number], r: Rect) {
+  const dx = Math.max(r.left - p[0], 0, p[0] - r.right);
+  const dy = Math.max(r.top - p[1], 0, p[1] - r.bottom);
+  return Math.hypot(dx, dy);
+}
+
+/**
+ * Picks the orbit's centre in the open sky: centred at about 38% height,
+ * then 36% or 40%, then stepping left, until everything it sweeps (radius
+ * `reach`) clears the mountains, the road and the name. Falls back to the
+ * spot with the most room if none is fully clear.
+ */
+function placeOrbit(box: Box, text: Rect[], reach: number): [number, number] {
+  const gap = 14;
+  const ridge = mountainOutline(box);
+  // The road's highest point; everything above it is sky or mountain.
+  const roadTop = box.by(384);
+
+  const room = (p: [number, number]) => {
+    let d = roadTop - p[1];
+    for (let i = 0; i < ridge.length - 1; i++) d = Math.min(d, distToSegment(p, ridge[i], ridge[i + 1]));
+    for (const t of text) d = Math.min(d, distToRect(p, t));
+    // Stay inside the hero.
+    d = Math.min(d, p[0], box.w - p[0], p[1]);
+    return d;
+  };
+
+  let best: [number, number] = [box.x(50), box.y(38)];
+  let bestRoom = -Infinity;
+  for (let x = 50; x >= 30; x -= 1) {
+    for (const y of [38, 36, 40]) {
+      const p: [number, number] = [box.x(x), box.y(y)];
+      const d = room(p);
+      if (d >= reach + gap) return p;
+      if (d > bestRoom) [best, bestRoom] = [p, d];
+    }
+  }
+  return best;
+}
+
 /**
  * Brain ⟲ books: a faint dashed ring at dead centre with a mini brain and a
  * mini open book circling it, turning in place (§4.10).
  */
-function orbit({ rc, svg, c, box }: Ctx) {
-  const cx = box.x(50);
-  const cy = box.y(47);
+function orbit({ rc, svg, c, box, text }: Ctx) {
   // About 60px on desktop, a little smaller on phones.
   const r = 60 * Math.min(1.07, Math.max(0.75, box.w / 1440));
   // The library draws a 38px ring; the mini brain and book scale with it.
   const f = r / 38;
+  // Farthest point swept: the open book's corner (44 × 30 units at half scale).
+  const reach = Math.hypot(22 * f, r + 11 * f);
+  const [cx, cy] = placeOrbit(box, text, reach);
 
   svg.appendChild(
     el('circle', {
@@ -456,6 +520,17 @@ export function drawScene(hero: HTMLElement): void {
   hero.dataset.time = night ? 'night' : 'day';
   const c = colors(night);
   const box = makeBox(hero.clientWidth, hero.clientHeight);
+  const origin = hero.getBoundingClientRect();
+  const text = [...hero.querySelectorAll('.name, .bio')].map((node) => {
+    // The tight box around the words, not the full-width block.
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const r = range.getBoundingClientRect();
+    return {
+      left: r.left - origin.left, top: r.top - origin.top,
+      right: r.right - origin.left, bottom: r.bottom - origin.top,
+    };
+  });
 
   hero.querySelectorAll<SVGSVGElement>('svg[data-layer]').forEach((svg) => {
     clear(svg);
@@ -465,7 +540,7 @@ export function drawScene(hero: HTMLElement): void {
     svg.setAttribute('preserveAspectRatio', 'none');
     const rc = rough.svg(svg);
     for (const draw of LAYERS[svg.dataset.layer ?? ''] ?? []) {
-      draw({ rc, svg, c, night, box });
+      draw({ rc, svg, c, night, box, text });
     }
   });
 }
