@@ -210,6 +210,10 @@ function stars({ svg, c, night, box, text }: Ctx) {
     [4, 40], [8, 8], [18, 42], [27, 12], [35, 40], [39, 36], [44, 6], [49, 26],
     [56, 36], [61, 10], [64, 42], [68, 26], [73, 44], [77, 8], [83, 46], [88, 36],
     [96, 8], [97, 30],
+    // Lower sky, between the orbit and the peaks; any that land on the
+    // mountains at this width are dropped by the check below.
+    [42, 46], [46, 54], [52, 50], [58, 47], [62, 55], [33, 50], [24, 48],
+    [12, 52], [70, 38], [79, 30], [91, 46], [54, 30],
   ];
   dots.forEach(([x, y], i) => {
     const p: [number, number] = [box.x(x), box.y(y)];

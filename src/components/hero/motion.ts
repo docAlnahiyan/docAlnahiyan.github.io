@@ -146,10 +146,13 @@ export function repelText(
   document.fonts?.ready.then(measure);
   new ResizeObserver(measure).observe(nodes[0].parentElement ?? heroEl);
 
+  const narrow = matchMedia('(max-width: 720px)');
+
   return ({ hero, pointer }) => {
     // Read every source first, then write, so the browser lays out once.
     const birdPts: { x: number; y: number }[] = [];
-    for (const bird of birds()) {
+    // On small screens the flock crosses the name constantly; keep it calm.
+    for (const bird of narrow.matches ? [] : birds()) {
       const b = bird.getBoundingClientRect();
       if (b.width === 0) continue;
       birdPts.push({ x: b.left + b.width / 2 - hero.left, y: b.top + b.height / 2 - hero.top });
