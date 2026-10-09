@@ -33,13 +33,13 @@ export function colors(night: boolean) {
   return night
     ? {
         char: '#e8a07f', mtn: '#5a7d4e', mtnO: '#7fa86d', road: '#7a5f45',
-        washTop: '#1f3a4d', washBot: '#13303f', flow: '#49a7da', glint: '#cfe6f2',
+        washTop: '#1f3a4d', washBot: '#13303f', flow: '#49a7da',
         sun: '#e8a54a', moon: '#f0e7d6', star: '#f3eee4', brain: '#ea9c7e',
         book: '#c7c0b2', bird: '#f4f1ea',
       }
     : {
         char: '#c96442', mtn: '#6f9b57', mtnO: '#4f7540', road: '#9c7a52',
-        washTop: '#bfe6fb', washBot: '#4fbfed', flow: '#1f9fe0', glint: '#bfe3f2',
+        washTop: '#bfe6fb', washBot: '#4fbfed', flow: '#1f9fe0',
         sun: '#e8954a', moon: '#e7dcc6', star: '#9a9280', brain: '#a8482b',
         book: '#5c584f', bird: '#8a8378',
       };
@@ -364,15 +364,7 @@ function river({ svg, c, night, box }: Ctx) {
     line.style.animationDuration = `${7 + i * 1.6}s`;
     svg.appendChild(line);
   });
-
-  if (night) {
-    [[180, 510], [640, 536], [1040, 500], [1300, 548]].forEach(([gx, gy], i) => {
-      const g = el('circle', { cx: box.fx(gx), cy: box.by(gy), r: 2.6, fill: c.glint, class: 'tw' });
-      g.style.animationDuration = `${3 + (i % 3)}s`;
-      g.style.animationDelay = `${i * 0.7}s`;
-      svg.appendChild(g);
-    });
-  }
+  // No twinkling glints on the water: twinkles belong to the sky only.
 }
 
 /**
