@@ -400,7 +400,7 @@ function mountains({ rc, svg, c, box }: Ctx) {
     mountainOutline(box),
     {
       stroke: c.mtnO, strokeWidth: 2, roughness: 1.9, bowing: 1.1,
-      fill: c.mtn, fillStyle: 'dots', fillWeight: 2.3, hachureGap: 8, seed: 11,
+      fill: c.mtn, fillStyle: 'dots', fillWeight: 2.1, hachureGap: 11, seed: 11,
     },
   );
   range.setAttribute('clip-path', 'url(#hero-above-water)');
