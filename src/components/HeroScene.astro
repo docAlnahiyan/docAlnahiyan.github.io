@@ -33,6 +33,7 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
 
 <script>
   import { drawScene, onResize, onThemeChange } from './hero/scene';
+  import { repelText, startLoop } from './hero/motion';
 
   const hero = document.getElementById('hero');
   if (hero) {
@@ -40,6 +41,12 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     redraw();
     onThemeChange(redraw);
     onResize(hero, redraw);
+
+    // With reduced motion the text stays as plain, still text.
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const text = [...hero.querySelectorAll<HTMLElement>('.name, .bio')];
+      startLoop(hero, [repelText(hero, text, () => hero.querySelectorAll('.fly path'))]);
+    }
   }
 </script>
 
@@ -142,6 +149,18 @@ const layers = ['sky', 'birds', 'land', 'orbit', 'characters'];
     top: 15%;
     right: 6%;
     pointer-events: none;
+  }
+  /* Letters made by the repel script (motion.ts). Words stay whole, so
+     lines only break at spaces. */
+  .text :global(.word) {
+    white-space: nowrap;
+  }
+  .text :global(.ch) {
+    display: inline-block;
+    will-change: transform;
+  }
+  .text :global(.ch)::before {
+    content: attr(data-ch);
   }
   .name {
     font-size: clamp(34px, 4.6vw, 64px);
