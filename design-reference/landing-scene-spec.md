@@ -79,8 +79,8 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - Full hero background. **Day:** vertical gradient warm cream `#fbeede` → soft peach `#f6ead5`. **Night:** `#141821` → `#1f2430` (indigo→charcoal). Tie to theme.
 - No motion.
 
-### 4.2 Sun (day) / Moon (night) — top-right
-- **Position:** center ≈ **x 82%, y 20%**.
+### 4.2 Sun (day) / Moon (night) — top-right, **above the right mountains**
+- **Position:** center ≈ **x 82%, y 14–16%** — high in the top-right corner, sitting **above the mountain peaks** (which are now on the right, §4.5). Draw it **before** the mountains so a tall peak can overlap its lower edge naturally.
 - **Size:** radius ≈ 64–72px at reference scale.
 - **Sun:** dotted-fill circle (`fillStyle:'dots'`) + **12 em-dash rays** rotating slowly around it (SMIL rotate, **55s**, continuous). Color `#e8954a`.
 - **Moon:** dotted-fill circle `#f0e7d6` + soft **radial-gradient glow** that gently pulses (`glow` keyframe, ~5s). 
@@ -97,25 +97,31 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - **Day:** muted grey `#8a8378`. **Night:** **glowing white** `#f4f1ea`.
 - **Interaction:** each bird's live screen position is fed into the **repel-text** physics as an extra push source (see §5.3) — as a bird passes over the name, those letters scatter under it.
 
-### 4.5 Mountains — **tall peaks massed on the LEFT**, tapering right
-- **Footprint:** base sits along the back of the land band, roughly **y 60–80%**. **Tall peaks on the left** (highest peak apex ≈ **x 14%, y 34%**), **descending to low hills on the right** (~y 70% by x 85%) so the **right stays open for the sun/moon**.
-- **Look:** green **dots-filled** polygon (`fillStyle:'dots'`, `fillWeight` ~2.2, `hachureGap` ~7), outline `#4f7540` (day). Use 3–4 peaks, left-weighted.
+### 4.5 Mountains — **clustered on the RIGHT only** (not full width)
+> **Reference the exact shapes in `design-reference/landscape-mock.html`** (the `mountain` / river / road drawing there is approved). Positions below describe it.
+- **Footprint:** a cluster occupying roughly the **right ~half** (x 50–100%). **Tallest peaks on the right**, **tapering DOWN toward the left** so they fade out around mid-scene. The **left and center stay open** (this is where the water, text and explorer live). Do **not** span the full width — that was the earlier mistake.
+- **Base:** tuck the polygon base **down under the road** (so there's no cream gap between the mountains and the road); the road, drawn in front, covers the seam.
+- **Look:** green **dots-filled** polygon (`fillStyle:'dots'`, `fillWeight` ~2.3, `hachureGap` ~8), outline `#4f7540` (day) / `#7fa86d` (night). 3–4 peaks, right-weighted.
 - No motion (static backdrop).
 
-### 4.6 River — front/bottom band, flowing
-- **Band:** full width along the **very bottom**, roughly **y 86–100%**.
-- **Look:** 3 **flowing dotted strokes** (`stroke-dasharray:'0.1 13'`, `flow` keyframe animating `stroke-dashoffset`) at slightly different speeds/opacity — the "water-color dot / em-dash flowing" look. Color `#4fa3cf` (day) / `#5a93c8` (night).
+### 4.6 River — wide sky-blue **watercolor wash** + flowing dots (NO gaps)
+> Port from `design-reference/landscape-mock.html` (the `river` block there is approved).
+- **Band:** full width along the **very bottom**, **wider (taller) on the LEFT**, tapering narrower on the right where the mountains come down.
+- **Watercolor wash (the base):** a **filled** sky-blue shape with a soft vertical gradient (lighter top `#bfe6fb` → deeper `#4fbfed` day; `#1f3a4d` → `#13303f` night) and a slight blur for a painted edge. **The wash top rides UP flush to the road's bottom edge so there is no cream gap between the road and the water.** This solid fill is what makes the river read as sky-blue water — not bare lines.
+- **Flowing dots on top:** **five** flowing dotted strokes (`stroke-dasharray:'0.1 14'`, `flow` keyframe animating `stroke-dashoffset`), brighter blue `#1f9fe0`, at slightly different speeds/opacity, spread wider on the left. (Three was too sparse — use five so the water looks filled.)
 - **Flow direction:** **left → right** (same as the boat, opposite the birds).
-- **Night:** add a few twinkling **glints** `#cfe6f2` on the water (the "river as seen at night").
+- **Night:** deeper-blue wash + a few twinkling **glints** `#cfe6f2` on the water.
 
 ### 4.7 Boat — one, continuous, **left → right**, slow
 - **Path:** sails along the river, **bottom-left → bottom-right** (~y 90%), exits right, **loops** back in from the left (infinite). **Same direction as the water flow, opposite the birds.**
 - **Speed:** slow — **~22–26s** per crossing (`sail` keyframe). Gentle **rock** (±1.6° + 2px bob, `rock` keyframe ~3.2s).
 - **Shape:** wooden dotted hull (`#9c7a52` day / `#7a5f45` night) with a **small explorer aboard** (clay stroke) holding an **oar** dipping into the water. *(An empty boat can't move.)*
 
-### 4.8 Muddy road — above the river, static
-- **Band:** between river and mountains, roughly **y 78–86%**, spanning the width with a slight curve.
-- **Look:** mud-color **dots** path (`fillStyle:'dots'`), color `#9c7a52` (day) / `#7a5f45` (night). **No motion** — it's the ground the explorer and dog walk on.
+### 4.8 Muddy road — **winding "snake" ribbon**, above the river, static
+> Port from `design-reference/landscape-mock.html` (the `road` block there is approved).
+- **Band:** a **winding ribbon** (not a straight/flat band) that bends as it crosses — "like it's going somewhere." It trends from **higher on the left down to lower on the right**, sitting just above the river.
+- **Key:** the road's **bottom edge is the waterline** — the river wash meets it flush (§4.6), and the road is drawn **in front of** the river so it covers the seam. No cream gap above or below the road.
+- **Look:** mud-color **dots** ribbon (closed path filled `fillStyle:'dots'`), color `#9c7a52` (day) / `#7a5f45` (night). **No motion** — it's the ground the explorer and dog walk on.
 
 ### 4.9 Road signposts — Research · Publications · Projects
 - **What:** three **hand-drawn sketch buttons** standing on the road, each a real `<a>` link to its page.

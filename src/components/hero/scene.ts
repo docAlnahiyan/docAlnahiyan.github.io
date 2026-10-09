@@ -383,6 +383,62 @@ function road({ rc, svg, c, box }: Ctx) {
   );
 }
 
+// ---------------------------------------------------------------- orbit
+
+/**
+ * Brain ⟲ books: a faint dashed ring at dead centre with a mini brain and a
+ * mini open book circling it, turning in place (§4.10).
+ */
+function orbit({ rc, svg, c, box }: Ctx) {
+  const cx = box.x(50);
+  const cy = box.y(47);
+  // About 60px on desktop, a little smaller on phones.
+  const r = 60 * Math.min(1.07, Math.max(0.75, box.w / 1440));
+  // The library draws a 38px ring; the mini brain and book scale with it.
+  const f = r / 38;
+
+  svg.appendChild(
+    el('circle', {
+      cx, cy, r, fill: 'none', stroke: c.brain, 'stroke-width': 1.3,
+      'stroke-dasharray': '2 6', 'stroke-linecap': 'round', opacity: 0.5,
+    }),
+  );
+  // Direction chevron on the right edge (clockwise).
+  svg.appendChild(
+    el('path', {
+      d: `M${cx + r - 5 * f},${cy + 2 * f} L${cx + r},${cy + 9 * f} L${cx + r + 5 * f},${cy + 2 * f}`,
+      fill: 'none', stroke: c.brain, 'stroke-width': 1.3,
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: 0.6,
+    }),
+  );
+
+  const g = el('g');
+  const brain = el('g', { transform: `translate(${cx} ${cy - r}) scale(${0.5 * f})` });
+  brain.appendChild(
+    rc.path(
+      'M0,-16 q-16,-6 -24,6 q-14,2 -12,16 q-10,8 -2,18 q-2,14 14,14 q8,8 24,2 q16,6 24,-2 q16,0 14,-14 q8,-10 -2,-18 q2,-14 -12,-16 q-8,-12 -24,-6 Z',
+      {
+        stroke: c.brain, strokeWidth: 2.8, roughness: 1.5,
+        fill: c.brain, fillStyle: 'dots', fillWeight: 2.4, hachureGap: 9, seed: 41,
+      },
+    ),
+  );
+  const book = el('g', { transform: `translate(${cx} ${cy + r}) scale(${0.5 * f})` });
+  const page = { stroke: c.book, strokeWidth: 2.8, roughness: 1.3, seed: 43 };
+  book.appendChild(rc.path('M0,2 C-13,-6 -30,-8 -44,-5 L-44,15 C-30,14 -13,16 0,22 Z', page));
+  book.appendChild(rc.path('M0,2 C13,-6 30,-8 44,-5 L44,15 C30,14 13,16 0,22 Z', page));
+  book.appendChild(el('line', { x1: 0, y1: 2, x2: 0, y2: 22, stroke: c.book, 'stroke-width': 2.8 }));
+  g.appendChild(brain);
+  g.appendChild(book);
+  g.appendChild(
+    el('animateTransform', {
+      attributeName: 'transform', type: 'rotate',
+      from: `0 ${cx} ${cy}`, to: `360 ${cx} ${cy}`, dur: '16s', repeatCount: 'indefinite',
+    }),
+  );
+  svg.appendChild(g);
+}
+
 // ---------------------------------------------------------------- scene
 
 const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
@@ -390,7 +446,7 @@ const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
   birds: [birds],
   // Back to front: mountains, river and boat, then the road over the waterline.
   land: [mountains, river, boat, road],
-  orbit: [],
+  orbit: [orbit],
   characters: [],
 };
 
