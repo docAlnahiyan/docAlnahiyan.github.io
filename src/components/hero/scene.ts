@@ -175,32 +175,58 @@ function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
   );
 }
 
+/** True if p is inside the polygon (even-odd rule). */
+function insidePolygon(p: [number, number], poly: [number, number][]) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, yi] = poly[i];
+    const [xj, yj] = poly[j];
+    if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
 /**
- * Night only: twinkling dots and two sparkles across the upper sky (§4.3),
- * kept out of the name and bio.
+ * Night only: twinkling dots and two sparkles in the open sky (§4.3). Any
+ * that would land on the mountains, road or water at this width are left
+ * out (the mountains' dot fill would let them show through), as are any on
+ * the name and bio.
  */
-function stars({ svg, c, night, box }: Ctx) {
+function stars({ svg, c, night, box, text }: Ctx) {
   if (!night) return;
+  const ridge = mountainOutline(box);
+  const roadTop = box.by(384);
+  const margin = 10;
+  const inSky = (p: [number, number]) => {
+    if (p[1] > roadTop - margin || insidePolygon(p, ridge)) return false;
+    for (let i = 0; i < ridge.length - 1; i++) {
+      if (distToSegment(p, ridge[i], ridge[i + 1]) < margin) return false;
+    }
+    return !text.some((t) => distToRect(p, t) < margin);
+  };
+
   const dots: [number, number][] = [
     [4, 40], [8, 8], [18, 42], [27, 12], [35, 40], [39, 36], [44, 6], [49, 26],
     [56, 36], [61, 10], [64, 42], [68, 26], [73, 44], [77, 8], [83, 46], [88, 36],
     [96, 8], [97, 30],
   ];
   dots.forEach(([x, y], i) => {
-    const s = el('circle', { cx: box.x(x), cy: box.y(y), r: i % 3 ? 1.3 : 1.9, fill: c.star, class: 'tw' });
+    const p: [number, number] = [box.x(x), box.y(y)];
+    if (!inSky(p)) return;
+    const s = el('circle', { cx: p[0], cy: p[1], r: i % 3 ? 1.3 : 1.9, fill: c.star, class: 'tw' });
     s.style.animationDuration = `${3 + (i % 4)}s`;
     s.style.animationDelay = `${i * 0.4}s`;
     svg.appendChild(s);
   });
-  ([[52, 16], [71, 34]] as [number, number][]).forEach(([x, y], i) => {
-    const px = box.x(x);
-    const py = box.y(y);
+  ([[52, 16], [60, 20]] as [number, number][]).forEach(([x, y], i) => {
+    const p: [number, number] = [box.x(x), box.y(y)];
+    if (!inSky(p)) return;
     const g = el('g', { class: 'tw' });
     g.style.animationDuration = '4.5s';
     g.style.animationDelay = `${i * 1.2}s`;
     const arm = { stroke: c.star, 'stroke-width': 1.4, 'stroke-linecap': 'round' };
-    g.appendChild(el('line', { x1: px - 6, y1: py, x2: px + 6, y2: py, ...arm }));
-    g.appendChild(el('line', { x1: px, y1: py - 6, x2: px, y2: py + 6, ...arm }));
+    g.appendChild(el('line', { x1: p[0] - 6, y1: p[1], x2: p[0] + 6, y2: p[1], ...arm }));
+    g.appendChild(el('line', { x1: p[0], y1: p[1] - 6, x2: p[0], y2: p[1] + 6, ...arm }));
     svg.appendChild(g);
   });
 }
