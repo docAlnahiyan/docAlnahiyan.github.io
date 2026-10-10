@@ -23,7 +23,7 @@ npm run preview   # serve dist/ locally
 | `src/components/` | Small reusable pieces |
 | `src/styles/global.css` | Design tokens (light and dark) and base styles |
 | `src/site.ts` | Site name, default description, nav items |
-| `design-reference/mockup.html` | The design this site follows |
+| `design-reference/landing-scene-spec.md` | Spec for the animated landing hero (with the reference files beside it) |
 
 ## Editing content
 
@@ -59,3 +59,10 @@ The admin's "Login with GitHub" is handled by a small sign-in service in
 variables, never committed.
 
 The previous React version of the site lives on the `old-react-site` branch.
+
+## Licence
+
+The code is released under the [MIT License](LICENSE). The content (the
+text, CV, papers, photos and other material in `src/content/`, `public/cv/`
+and `public/uploads/`) is © Al-Nahiyan Khushbu, all rights reserved, and is
+not covered by the MIT License.

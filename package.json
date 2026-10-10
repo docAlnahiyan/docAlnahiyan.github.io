@@ -2,6 +2,9 @@
   "name": "al-nahiyan-portfolio",
   "private": true,
   "version": "2.0.0",
+  "description": "Academic portfolio of Al-Nahiyan Khushbu, PhD researcher in AI at Southwest Jiaotong University.",
+  "homepage": "https://docalnahiyan.github.io",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.12.0"
