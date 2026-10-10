@@ -2,7 +2,7 @@
 title: GlobalFaceNet
 slug: globalfacenet
 one_liner: A CNN–Transformer hybrid for recognising emotion from facial expressions.
-tags: [Emotion recognition, CNN-Transformer, RAF-DB, PyTorch]
+tags: [Emotion recognition, CNN-Transformer, RAF-DB, TensorFlow/Keras]
 repo_url: https://github.com/docAlnahiyan/Global-Face-Net-Facial-for-expression-Recognition
 thumbnail: ""
 metrics:
