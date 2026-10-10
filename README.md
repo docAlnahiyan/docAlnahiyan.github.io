@@ -58,7 +58,7 @@ The admin's "Login with GitHub" is handled by a small sign-in service in
 `oauth-proxy/README.md`). Its GitHub OAuth credentials are Netlify environment
 variables, never committed.
 
-The previous React version of the site lives on the `old-react-site` branch.
+The previous React version of the site is kept as the tag `archive/old-react-site`.
 
 ## Licence
 
