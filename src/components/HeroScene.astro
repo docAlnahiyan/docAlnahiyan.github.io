@@ -229,7 +229,9 @@ const peakLinks = [
     position: absolute;
     transform: translate(-50%, -50%);
     isolation: isolate;
-    padding: 5px 13px;
+    /* In em, so the placard grows and shrinks with the font size that
+       scene.ts sets from the scene scale. */
+    padding: .4em 1.04em;
     font-family: var(--font-mono);
     font-size: 12.5px;
     color: var(--accent-ink);
@@ -273,11 +275,6 @@ const peakLinks = [
   .peak-link:focus-visible .peak-bg :global(path:last-child) {
     stroke: var(--accent);
   }
-  @media (max-width: 620px) {
-    .peaks {
-      display: none;
-    }
-  }
 
   /* The ring that spreads where the explorer dives into a button. */
   .scene :global(.ripple) {
@@ -293,13 +290,15 @@ const peakLinks = [
     to { transform: scale(1); opacity: 0; }
   }
 
-  /* Name and bio, upper left, with no card behind them (spec §4.13). */
+  /* Name and bio, upper left, with no card behind them (spec §4.13).
+     scene.ts sets the position and sizes from the scene scale, so they stay
+     in proportion with the drawing; the fallbacks apply without JavaScript. */
   .text {
     position: absolute;
     z-index: 8;
-    left: 6%;
-    top: 15%;
-    right: 6%;
+    left: var(--text-left, 6%);
+    top: var(--text-top, 15%);
+    width: var(--text-width, 88%);
     pointer-events: none;
   }
   /* Letters made by the repel script (motion.ts). Words stay whole, so
@@ -315,28 +314,16 @@ const peakLinks = [
     content: attr(data-ch);
   }
   .name {
-    font-size: clamp(34px, 4.6vw, 64px);
+    font-size: var(--name-size, clamp(34px, 4.6vw, 64px));
     letter-spacing: -.02em;
     line-height: 1.05;
-    margin: 0 0 14px;
+    margin: 0 0 .22em;
   }
   .bio {
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: var(--bio-size, 14px);
     color: var(--ink-2);
     max-width: 46ch;
     margin: 0;
-  }
-  @media (max-width: 620px) {
-    .text {
-      top: 9%;
-    }
-    /* Wrap before the sun in the top-right corner. */
-    .name {
-      padding-right: 110px;
-    }
-    .bio {
-      font-size: 13px;
-    }
   }
 </style>

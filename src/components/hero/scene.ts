@@ -2,21 +2,31 @@
 // The landscape and sun/moon are ported from design-reference/landscape-mock.html;
 // stars, birds, boat and the other objects from design-reference/element-library.html.
 //
-// Every layer is redrawn at the hero's real pixel size, so stroke widths and
-// dot spacing stay the same on every screen. Landscape coordinates are kept
-// in the mock's 1440 × 620 frame and mapped onto the hero:
-//   - river and road stretch across the full width, pinned to the bottom;
-//   - mountains keep their shape and are anchored to the right edge;
-//   - the sun and moon are anchored to the top-right corner.
+// Everything is drawn in one scene coordinate system, 1440 × 760 (the spec's
+// reference canvas), and the whole picture scales uniformly with the hero:
+// "meet" fit, centred horizontally, pinned to the bottom. The SVG viewBox
+// covers the entire hero in scene units, so where the hero is wider or
+// taller than the frame, the sky, road and river simply continue into the
+// extra space. The HTML parts of the scene (placards, name and bio) and the
+// pointer use the same scale, so nothing drifts out of place.
+//
+// The landscape mock is 1440 × 620; it sits at the bottom of the scene frame,
+// so a mock y becomes a scene y by adding 140.
 
 import rough from 'roughjs';
 import type { RoughSVG } from 'roughjs/bin/svg';
 
 const NS = 'http://www.w3.org/2000/svg';
 
-/** The landscape mock's frame. */
-const MOCK_W = 1440;
-const MOCK_H = 620;
+/** The scene frame, in scene units. */
+const SW = 1440;
+const SH = 760;
+/** Mock y → scene y (the mock's 620 rows sit at the bottom of the frame). */
+const MY = SH - 620;
+/** Below this the picture would be too small to read; phones crop instead. */
+const MIN_SCALE = 0.5;
+/** Explorer and dog size, relative to the prototype drawings. */
+const FIG = 1.15;
 
 export type Palette = ReturnType<typeof colors>;
 
@@ -64,44 +74,50 @@ function clear(svg: SVGSVGElement) {
   while (svg.firstChild) svg.removeChild(svg.firstChild);
 }
 
-/** The hero's size, plus ways to place things in it. */
-interface Box {
+/** How the scene frame maps onto the hero right now. */
+export interface View {
+  /** Hero size in CSS pixels. */
   w: number;
   h: number;
-  /** % of the box to pixels. */
+  /** CSS pixels per scene unit. */
+  s: number;
+  /** The visible part of the scene, in scene units (the SVG viewBox). */
+  x0: number;
+  y0: number;
+  vw: number;
+  vh: number;
+  /** % of the visible area to scene units. */
   x: (pct: number) => number;
   y: (pct: number) => number;
-  /** Scale of the landscape: mock units to pixels. */
-  k: number;
-  /** Mock x, stretched across the full width. */
-  fx: (x: number) => number;
-  /** Mock x, at true scale, measured from the right edge. */
-  rx: (x: number) => number;
-  /** Mock y, measured from the bottom edge. */
-  by: (y: number) => number;
+  /** Scene point → hero pixels, and back. */
+  toPx: (x: number, y: number) => [number, number];
+  toScene: (px: number, py: number) => [number, number];
 }
 
-function makeBox(w: number, h: number): Box {
-  // Fill the hero's height like the mock does, but on narrow screens keep the
-  // land lower so the peaks stay clear of the name.
-  const k = Math.min(h / MOCK_H, Math.max((w / MOCK_W) * 1.6, 0.8));
+export function makeView(w: number, h: number): View {
+  const s = Math.max(Math.min(w / SW, h / SH), MIN_SCALE);
+  const vw = w / s;
+  const vh = h / s;
+  // Centred when the frame fits; when a phone is too narrow for all of it,
+  // keep the right-hand side (mountains, sun and nav buttons) in view and
+  // crop the empty left end of the road.
+  const x0 = vw >= SW ? (SW - vw) / 2 : SW - vw;
+  const y0 = SH - vh;
   return {
-    w,
-    h,
-    x: (p) => (p / 100) * w,
-    y: (p) => (p / 100) * h,
-    k,
-    fx: (x) => (x / MOCK_W) * w,
-    rx: (x) => w - (MOCK_W - x) * k,
-    by: (y) => h - (MOCK_H - y) * k,
+    w, h, s, x0, y0, vw, vh,
+    x: (p) => x0 + (p / 100) * vw,
+    y: (p) => y0 + (p / 100) * vh,
+    toPx: (x, y) => [(x - x0) * s, (y - y0) * s],
+    toScene: (px, py) => [x0 + px / s, y0 + py / s],
   };
 }
 
-/** Maps every "x,y" pair in an absolute path written in mock units. */
-function mapPath(d: string, mx: (x: number) => number, my: (y: number) => number) {
-  return d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) =>
-    `${mx(+x).toFixed(1)},${my(+y).toFixed(1)}`,
-  );
+/** Scene units of horizontal slack beyond the visible area, for extended paths. */
+const PAD = 60;
+
+/** Converts every "x,y" pair in an absolute path from mock to scene units. */
+function mock(d: string) {
+  return d.replace(/(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g, (_, x, y) => `${+x},${+y + MY}`);
 }
 
 interface Rect {
@@ -116,24 +132,22 @@ interface Ctx {
   svg: SVGSVGElement;
   c: Palette;
   night: boolean;
-  box: Box;
-  /** Where the name and bio actually sit, relative to the hero. */
+  v: View;
+  /** Where the name and bio actually sit, in scene units. */
   text: Rect[];
   geo: Geometry;
 }
 
 // ---------------------------------------------------------------- sky
 
-/** Sun by day, moon by night: top right, behind the mountains (§4.2). */
-function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
-  // Smaller on narrow screens, so the rays stay clear of the name.
-  const k = Math.min(box.k, Math.max(0.55, box.w / 1000));
-  const sx = box.w - (1440 - 1330) * k;
-  const sy = 98 * k;
+/** Sun by day, moon by night: top right of the frame, above the peaks (§4.2). */
+function sunOrMoon({ rc, svg, c, night }: Ctx) {
+  const sx = 1330;
+  const sy = 98;
 
   if (!night) {
     svg.appendChild(
-      rc.circle(sx, sy, 104 * k, {
+      rc.circle(sx, sy, 104, {
         stroke: c.sun, strokeWidth: 2.8, roughness: 1.3,
         fill: c.sun, fillStyle: 'dots', fillWeight: 1.8, hachureGap: 9, seed: 5,
       }),
@@ -144,8 +158,8 @@ function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
       const a = (i / 12) * Math.PI * 2;
       rays.appendChild(
         el('line', {
-          x1: sx + Math.cos(a) * 62 * k, y1: sy + Math.sin(a) * 62 * k,
-          x2: sx + Math.cos(a) * 84 * k, y2: sy + Math.sin(a) * 84 * k,
+          x1: sx + Math.cos(a) * 62, y1: sy + Math.sin(a) * 62,
+          x2: sx + Math.cos(a) * 84, y2: sy + Math.sin(a) * 84,
           stroke: c.sun, 'stroke-width': 5, 'stroke-linecap': 'round',
         }),
       );
@@ -167,9 +181,9 @@ function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
   glow.appendChild(el('stop', { offset: '100%', 'stop-color': c.moon, 'stop-opacity': 0 }));
   defs.appendChild(glow);
   svg.appendChild(defs);
-  svg.appendChild(el('circle', { cx: sx, cy: sy, r: 120 * k, fill: 'url(#hero-moon-glow)', class: 'glow' }));
+  svg.appendChild(el('circle', { cx: sx, cy: sy, r: 120, fill: 'url(#hero-moon-glow)', class: 'glow' }));
   svg.appendChild(
-    rc.circle(sx, sy, 96 * k, {
+    rc.circle(sx, sy, 96, {
       stroke: c.moon, strokeWidth: 2.4, roughness: 1.3,
       fill: c.moon, fillStyle: 'dots', fillWeight: 1.5, hachureGap: 10, seed: 5,
     }),
@@ -177,7 +191,7 @@ function sunOrMoon({ rc, svg, c, night, box }: Ctx) {
 }
 
 /** True if p is inside the polygon (even-odd rule). */
-function insidePolygon(p: [number, number], poly: [number, number][]) {
+function insidePolygon(p: Pt, poly: Pt[]) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
     const [xi, yi] = poly[i];
@@ -188,43 +202,42 @@ function insidePolygon(p: [number, number], poly: [number, number][]) {
 }
 
 /**
- * Night only: twinkling dots and two sparkles in the open sky (§4.3). Any
- * that would land on the mountains, road or water at this width are left
- * out (the mountains' dot fill would let them show through), as are any on
- * the name and bio.
+ * Night only: twinkling dots and two sparkles in the open sky (§4.3), spread
+ * over the whole visible sky. Any that would land on the mountains, road or
+ * water are left out (the mountains' dot fill would let them show through),
+ * as are any on the name and bio.
  */
-function stars({ svg, c, night, box, text }: Ctx) {
+function stars({ svg, c, night, v, text, geo }: Ctx) {
   if (!night) return;
-  const ridge = mountainOutline(box);
-  const roadTop = box.by(384);
+  const ridge = mountainOutline();
   const margin = 10;
-  const inSky = (p: [number, number]) => {
-    if (p[1] > roadTop - margin || insidePolygon(p, ridge)) return false;
+  const inSky = (p: Pt) => {
+    if (p[1] > geo.roadTop - margin || insidePolygon(p, ridge)) return false;
     for (let i = 0; i < ridge.length - 1; i++) {
       if (distToSegment(p, ridge[i], ridge[i + 1]) < margin) return false;
     }
     return !text.some((t) => distToRect(p, t) < margin);
   };
 
-  const dots: [number, number][] = [
+  const dots: Pt[] = [
     [4, 40], [8, 8], [18, 42], [27, 12], [35, 40], [39, 36], [44, 6], [49, 26],
     [56, 36], [61, 10], [64, 42], [68, 26], [73, 44], [77, 8], [83, 46], [88, 36],
     [96, 8], [97, 30],
     // Lower sky, between the orbit and the peaks; any that land on the
-    // mountains at this width are dropped by the check below.
+    // mountains are dropped by the check above.
     [42, 46], [46, 54], [52, 50], [58, 47], [62, 55], [33, 50], [24, 48],
     [12, 52], [70, 38], [79, 30], [91, 46], [54, 30],
   ];
   dots.forEach(([x, y], i) => {
-    const p: [number, number] = [box.x(x), box.y(y)];
+    const p: Pt = [v.x(x), v.y(y)];
     if (!inSky(p)) return;
     const s = el('circle', { cx: p[0], cy: p[1], r: i % 3 ? 1.3 : 1.9, fill: c.star, class: 'tw' });
     s.style.animationDuration = `${3 + (i % 4)}s`;
     s.style.animationDelay = `${i * 0.4}s`;
     svg.appendChild(s);
   });
-  ([[52, 16], [60, 20]] as [number, number][]).forEach(([x, y], i) => {
-    const p: [number, number] = [box.x(x), box.y(y)];
+  ([[52, 16], [60, 20]] as Pt[]).forEach(([x, y], i) => {
+    const p: Pt = [v.x(x), v.y(y)];
     if (!inSky(p)) return;
     const g = el('g', { class: 'tw' });
     g.style.animationDuration = '4.5s';
@@ -238,22 +251,26 @@ function stars({ svg, c, night, box, text }: Ctx) {
 
 /**
  * Four birds gliding right to left across the sun and looping (§4.4), each
- * flapping at its own pace. At night they are white with a soft glow.
+ * flapping at its own pace. At night they are white with a soft glow. They
+ * cross the whole visible sky, side bands included.
  */
-function birds({ svg, c, night, box }: Ctx) {
-  const s = Math.min(1.3, Math.max(0.8, box.w / 1200));
+function birds({ svg, c, night, v }: Ctx) {
+  const s = 1.1;
   // Flock layout from the library: x, y offsets and a flap delay.
   const flock: [number, number, number][] = [
     [0, 14, 0], [52, 0, 0.18], [110, 20, 0.42], [78, 40, 0.6],
   ];
   const flockW = 130 * s;
-  const top = box.y(12);
+  // At the sun's height in the frame, so they always cross near it (and
+  // never above the top edge of the view).
+  const top = Math.max(88, v.y0 + 40);
 
   const g = el('g', { class: 'fly' });
   // Where the flock rests when motion is reduced: just left of the sun.
-  g.setAttribute('transform', `translate(${box.x(64)} ${top})`);
-  g.style.setProperty('--from', `${box.w + 20}px, ${top}px`);
-  g.style.setProperty('--to', `${-flockW - 40}px, ${top}px`);
+  g.setAttribute('transform', `translate(${Math.min(v.x(64), 1100)} ${top})`);
+  // CSS transforms on SVG elements are in scene units here.
+  g.style.setProperty('--from', `${v.x0 + v.vw + 20}px, ${top}px`);
+  g.style.setProperty('--to', `${v.x0 - flockW - 40}px, ${top}px`);
   // Start part-way across, so the sky is not empty on arrival.
   g.style.animationDelay = '-7s';
 
@@ -291,21 +308,36 @@ function birds({ svg, c, night, box }: Ctx) {
 // ---------------------------------------------------------------- land
 
 // The road's two edges, in mock units, left to right: two cubic Béziers each.
-// The bottom edge is also the waterline.
+// The bottom edge is also the waterline. Beyond x -30 and 1470 the road runs
+// on level, so it fills any side band.
 type Pt = [number, number];
 const ROAD_TOP_PTS: Pt[] = [[-30, 398], [260, 384], [520, 414], [800, 430], [1060, 446], [1260, 452], [1470, 456]];
 const ROAD_BOTTOM_PTS: Pt[] = [[-30, 438], [260, 424], [520, 454], [800, 470], [1060, 486], [1260, 492], [1470, 496]];
 const pt = ([x, y]: Pt) => `${x},${y}`;
-const ROAD_TOP = `M${pt(ROAD_TOP_PTS[0])} C${ROAD_TOP_PTS.slice(1, 4).map(pt).join(' ')} C${ROAD_TOP_PTS.slice(4).map(pt).join(' ')}`;
-const ROAD_BOTTOM = `L${pt(ROAD_BOTTOM_PTS[6])} C${[5, 4, 3].map((i) => pt(ROAD_BOTTOM_PTS[i])).join(' ')} C${[2, 1, 0].map((i) => pt(ROAD_BOTTOM_PTS[i])).join(' ')}`;
+const roadEdge = (p: Pt[]) => `C${p.slice(1, 4).map(pt).join(' ')} C${p.slice(4).map(pt).join(' ')}`;
+const reversed = (p: Pt[]) => [...p].reverse();
 
-/**
- * Samples one road edge in pixels and returns its height at any x. The mapping
- * from mock units is linear on each axis, so sampling the mapped control
- * points gives the same curve that is drawn.
- */
-function edgeY(box: Box, ctrl: Pt[]): (x: number) => number {
-  const p = ctrl.map(([x, y]) => [box.fx(x), box.by(y)] as Pt);
+/** Left and right ends for paths that must reach past the visible area. */
+const span = (v: View): [number, number] => [Math.min(-30, v.x0 - PAD), Math.max(1470, v.x0 + v.vw + PAD)];
+
+/** The road ribbon (top edge, then bottom edge back), in mock units. */
+function roadPath(v: View) {
+  const [L, R] = span(v);
+  const t = ROAD_TOP_PTS;
+  const b = reversed(ROAD_BOTTOM_PTS);
+  return `M${L},${t[0][1]} L${pt(t[0])} ${roadEdge(t)} L${R},${t[6][1]} L${R},${b[0][1]} L${pt(b[0])} ${roadEdge(b)} L${L},${b[6][1]} Z`;
+}
+
+/** Everything above the road's bottom edge (the waterline), in mock units. */
+function aboveWaterPath(v: View) {
+  const [L, R] = span(v);
+  const b = reversed(ROAD_BOTTOM_PTS);
+  return `M${L},-4000 L${R},-4000 L${R},${b[0][1]} L${pt(b[0])} ${roadEdge(b)} L${L},${b[6][1]} Z`;
+}
+
+/** Samples one road edge (mock control points) and returns its scene height at any x. */
+function edgeY(ctrl: Pt[]): (x: number) => number {
+  const p = ctrl.map(([x, y]) => [x, y + MY] as Pt);
   const samples: Pt[] = [];
   for (const seg of [p.slice(0, 4), p.slice(3, 7)]) {
     for (let i = 0; i <= 48; i++) {
@@ -318,21 +350,26 @@ function edgeY(box: Box, ctrl: Pt[]): (x: number) => number {
       ]);
     }
   }
+  const last = samples.length - 1;
   return (x) => {
+    // Level beyond the ends, as the road is drawn.
+    if (x <= samples[0][0]) return samples[0][1];
+    if (x >= samples[last][0]) return samples[last][1];
     let i = 1;
-    while (i < samples.length - 1 && samples[i][0] < x) i++;
+    while (i < last && samples[i][0] < x) i++;
     const [x0, y0] = samples[i - 1];
     const [x1, y1] = samples[i];
     return y0 + (y1 - y0) * (x1 === x0 ? 0 : (x - x0) / (x1 - x0));
   };
 }
 
-/** Where things stand on the road, plus the peaks that carry nav buttons. */
+/** Where things stand on the road, plus the peaks that carry nav buttons. All in scene units. */
 export interface Geometry {
-  w: number;
-  h: number;
+  view: View;
   /** Feet height on the road at x (a little below the road's centre line). */
   roadY: (x: number) => number;
+  /** The road's highest point; above it is sky or mountain. */
+  roadTop: number;
   roadMin: number;
   roadMax: number;
   /** Size of the explorer and dog relative to the prototype. */
@@ -346,72 +383,70 @@ export interface Geometry {
 /** The three peaks (mock apex) that carry Research, Publications, Projects. */
 const NAV_PEAKS: Pt[] = [[820, 300], [1040, 205], [1250, 170]];
 
-function geometry(box: Box): Geometry {
-  const top = edgeY(box, ROAD_TOP_PTS);
-  const bottom = edgeY(box, ROAD_BOTTOM_PTS);
+function geometry(v: View): Geometry {
+  const top = edgeY(ROAD_TOP_PTS);
+  const bottom = edgeY(ROAD_BOTTOM_PTS);
   const buttons = NAV_PEAKS.map(([x, y]) => {
-    const ax = box.rx(x);
-    const ay = box.by(y);
+    const ay = y + MY;
     // Lower-middle of the peak's face: a bit over halfway from apex to road.
-    return [ax, ay + (top(ax) - ay) * 0.58] as Pt;
+    return [x, ay + (top(x) - ay) * 0.58] as Pt;
   });
-  const fig = Math.min(1.15, Math.max(0.8, box.k));
-  // On narrow screens the leftmost peak is off-screen; the header nav covers it.
-  const visible = buttons.every(([x]) => x > box.w * 0.04 && x < box.w * 0.96);
+  // On very narrow phones the leftmost peak can fall off-screen; the header
+  // nav always has all three pages.
+  const visible = buttons.every(([x]) => x > v.x(4) && x < v.x(96));
   return {
-    w: box.w,
-    h: box.h,
+    view: v,
     roadY: (x) => {
       const t = top(x);
       return t + (bottom(x) - t) * 0.62;
     },
-    roadMin: box.w * 0.05,
-    roadMax: box.w * 0.95,
-    fig,
-    idleX: visible ? Math.max(box.w * 0.3, Math.min(box.w * 0.48, buttons[0][0] - 80 * fig)) : box.w * 0.48,
+    roadTop: 384 + MY,
+    roadMin: v.x(5),
+    roadMax: v.x(95),
+    fig: FIG,
+    idleX: v.x(48), // refined once the placards are measured
     buttons: visible ? buttons : [],
   };
 }
 
-/** The mountain range's outline in pixels (mock peaks, anchored right). */
-function mountainOutline(box: Box): [number, number][] {
-  const peaks: [number, number][] = [
+/**
+ * The mountain range's outline in scene units: the mock's peaks, with the
+ * right end sloping down to the road so a wide screen's side band shows a
+ * natural foothill rather than a cut edge.
+ */
+function mountainOutline(): Pt[] {
+  const peaks: Pt[] = [
     [700, 520], [700, 460], [820, 300], [920, 350], [1040, 205], [1150, 300],
-    [1250, 170], [1360, 255], [1440, 210], [1470, 210], [1470, 520],
+    [1250, 170], [1360, 255], [1440, 210], [1520, 300], [1640, 430], [1700, 520],
   ];
-  return peaks.map(([x, y]) => [box.rx(x), box.by(y)]);
+  return peaks.map(([x, y]) => [x, y + MY]);
 }
 
 /**
  * Peaks clustered on the right, tallest on the right, tapering left (§4.5).
  * The base runs well below the road and is clipped at the road's bottom edge,
- * so the range always meets the road with no gap, whatever the screen width.
+ * so the range always meets the road with no gap.
  */
-function mountains({ rc, svg, c, box }: Ctx) {
+function mountains({ rc, svg, c, v }: Ctx) {
   const defs = el('defs');
   const clip = el('clipPath', { id: 'hero-above-water' });
-  clip.appendChild(
-    el('path', { d: mapPath(`M-30,-2000 L1470,-2000 ${ROAD_BOTTOM} Z`, box.fx, box.by) }),
-  );
+  clip.appendChild(el('path', { d: mock(aboveWaterPath(v)) }));
   defs.appendChild(clip);
   svg.appendChild(defs);
 
-  const range = rc.polygon(
-    mountainOutline(box),
-    {
-      stroke: c.mtnO, strokeWidth: 2, roughness: 1.9, bowing: 1.1,
-      fill: c.mtn, fillStyle: 'dots', fillWeight: 2.1, hachureGap: 11, seed: 11,
-    },
-  );
+  const range = rc.polygon(mountainOutline(), {
+    stroke: c.mtnO, strokeWidth: 2, roughness: 1.9, bowing: 1.1,
+    fill: c.mtn, fillStyle: 'dots', fillWeight: 2.1, hachureGap: 11, seed: 11,
+  });
   range.setAttribute('clip-path', 'url(#hero-above-water)');
   svg.appendChild(range);
 }
 
 /**
  * River, part 1 (static): a wide watercolour wash, wider on the left, whose
- * top rides up under the road (§4.6).
+ * top rides up under the road and which fills to the bottom edge (§4.6).
  */
-function riverWash({ svg, c, night, box }: Ctx) {
+function riverWash({ svg, c, night, v }: Ctx) {
   const defs = el('defs');
   const grad = el('linearGradient', { id: 'hero-river-wash', x1: 0, y1: 0, x2: 0, y2: 1 });
   grad.appendChild(el('stop', { offset: '0%', 'stop-color': c.washTop, 'stop-opacity': night ? 0.8 : 0.92 }));
@@ -422,12 +457,10 @@ function riverWash({ svg, c, night, box }: Ctx) {
   defs.appendChild(soft);
   svg.appendChild(defs);
 
+  const [L, R] = span(v);
   svg.appendChild(
     el('path', {
-      d: mapPath(
-        'M-30,426 C260,412 520,442 800,458 C1060,474 1260,480 1470,484 L1470,640 L-30,640 Z',
-        box.fx, box.by,
-      ),
+      d: mock(`M${L},426 L-30,426 C260,412 520,442 800,458 C1060,474 1260,480 1470,484 L${R},484 L${R},680 L${L},680 Z`),
       fill: 'url(#hero-river-wash)',
       filter: 'url(#hero-soft)',
     }),
@@ -439,15 +472,16 @@ function riverWash({ svg, c, night, box }: Ctx) {
  * right (§4.6). Kept in their own layer so the flow never repaints the dense
  * mountain and road dots.
  */
-function riverFlow({ svg, c, box }: Ctx) {
+function riverFlow({ svg, c, v }: Ctx) {
+  const [L, R] = span(v);
   [[462, 506], [494, 524], [526, 542], [558, 560], [588, 578]].forEach(([yl, yr], i) => {
     const line = el('path', {
-      d: mapPath(`M-30,${yl} Q420,${yl - 6} 820,${Math.trunc((yl + yr) / 2)} T1470,${yr}`, box.fx, box.by),
+      d: mock(`M${L},${yl} L-30,${yl} Q420,${yl - 6} 820,${Math.trunc((yl + yr) / 2)} T1470,${yr} L${R},${yr}`),
       fill: 'none',
       stroke: c.flow,
       'stroke-width': 6,
       'stroke-linecap': 'round',
-      // One dot every 14px; the flow keyframe moves a whole number of dots.
+      // One dot every 14 units; the flow keyframe moves a whole number of dots.
       'stroke-dasharray': '0.1 13.9',
       class: 'flow',
       opacity: 0.95 - i * 0.12,
@@ -460,20 +494,20 @@ function riverFlow({ svg, c, box }: Ctx) {
 
 /**
  * A wooden boat with a small rower, sailing left to right with the current
- * and rocking gently, then looping (§4.7).
+ * across the whole visible river, rocking gently, then looping (§4.7).
  */
-function boat({ rc, svg, c, box }: Ctx) {
-  const s = box.k * 0.85;
+function boat({ rc, svg, c, v }: Ctx) {
+  const s = 0.95;
   // Library boat: hull spans x 64–156, gunwale at y 98. Re-centre on the gunwale.
   const ox = 110;
   const oy = 98;
   const hullW = 92 * s;
-  const waterline = box.by(560);
+  const waterline = 560 + MY;
 
   const sail = el('g', { class: 'sail' });
-  sail.setAttribute('transform', `translate(${box.x(30)} ${waterline})`);
-  sail.style.setProperty('--from', `${-hullW}px, ${waterline}px`);
-  sail.style.setProperty('--to', `${box.w + hullW}px, ${waterline}px`);
+  sail.setAttribute('transform', `translate(${v.x(30)} ${waterline})`);
+  sail.style.setProperty('--from', `${v.x0 - hullW}px, ${waterline}px`);
+  sail.style.setProperty('--to', `${v.x0 + v.vw + hullW}px, ${waterline}px`);
   sail.style.animationDelay = '-8s';
 
   const rock = el('g', { class: 'rock' });
@@ -497,9 +531,9 @@ function boat({ rc, svg, c, box }: Ctx) {
 }
 
 /** A winding mud ribbon, higher on the left, drawn over the waterline (§4.8). */
-function road({ rc, svg, c, box }: Ctx) {
+function road({ rc, svg, c, v }: Ctx) {
   svg.appendChild(
-    rc.path(mapPath(`${ROAD_TOP} ${ROAD_BOTTOM} Z`, box.fx, box.by), {
+    rc.path(mock(roadPath(v)), {
       stroke: c.road, strokeWidth: 1.3, roughness: 1.9,
       fill: c.road, fillStyle: 'dots', fillWeight: 2, hachureGap: 6.5, seed: 23,
     }),
@@ -509,7 +543,7 @@ function road({ rc, svg, c, box }: Ctx) {
 // ---------------------------------------------------------------- orbit
 
 /** Shortest distance from point p to the segment a–b. */
-function distToSegment(p: [number, number], a: [number, number], b: [number, number]) {
+function distToSegment(p: Pt, a: Pt, b: Pt) {
   const [dx, dy] = [b[0] - a[0], b[1] - a[1]];
   const len2 = dx * dx + dy * dy;
   const t = len2 ? Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2)) : 0;
@@ -517,38 +551,37 @@ function distToSegment(p: [number, number], a: [number, number], b: [number, num
 }
 
 /** Shortest distance from point p to a rectangle (0 when inside). */
-function distToRect(p: [number, number], r: Rect) {
+function distToRect(p: Pt, r: Rect) {
   const dx = Math.max(r.left - p[0], 0, p[0] - r.right);
   const dy = Math.max(r.top - p[1], 0, p[1] - r.bottom);
   return Math.hypot(dx, dy);
 }
 
 /**
- * Picks the orbit's centre in the open sky: centred at about 38% height,
- * then 36% or 40%, then stepping left, until everything it sweeps (radius
- * `reach`) clears the mountains, the road and the name. Falls back to the
- * spot with the most room if none is fully clear.
+ * Picks the orbit's centre in open sky: horizontally centred in view at about
+ * 36% of the frame's height, then a little higher or lower, then stepping
+ * left, until everything it sweeps (radius `reach`) clears the mountains, the
+ * road and the name. On tall screens it may rise into the extra sky above
+ * the frame. Falls back to the spot with the most room.
  */
-function placeOrbit(box: Box, text: Rect[], reach: number): [number, number] {
+function placeOrbit(v: View, geo: Geometry, text: Rect[], reach: number): Pt {
   const gap = 14;
-  const ridge = mountainOutline(box);
-  // The road's highest point; everything above it is sky or mountain.
-  const roadTop = box.by(384);
-
-  const room = (p: [number, number]) => {
-    let d = roadTop - p[1];
+  const ridge = mountainOutline();
+  const room = (p: Pt) => {
+    let d = geo.roadTop - p[1];
     for (let i = 0; i < ridge.length - 1; i++) d = Math.min(d, distToSegment(p, ridge[i], ridge[i + 1]));
     for (const t of text) d = Math.min(d, distToRect(p, t));
-    // Stay inside the hero.
-    d = Math.min(d, p[0], box.w - p[0], p[1]);
-    return d;
+    // Stay inside the visible area.
+    return Math.min(d, p[0] - v.x0, v.x0 + v.vw - p[0], p[1] - v.y0);
   };
 
-  let best: [number, number] = [box.x(50), box.y(38)];
+  const ys = [36, 38, 40, 32, 28, 24, 20, 14, 8, 0, -10, -20, -35, -50].map((f) => (f / 100) * SH);
+  let best: Pt = [v.x(50), ys[0]];
   let bestRoom = -Infinity;
-  for (let x = 50; x >= 30; x -= 1) {
-    for (const y of [38, 36, 40]) {
-      const p: [number, number] = [box.x(x), box.y(y)];
+  for (let x = 50; x >= 25; x -= 1) {
+    for (const y of ys) {
+      if (y < v.y0) continue;
+      const p: Pt = [v.x(x), y];
       const d = room(p);
       if (d >= reach + gap) return p;
       if (d > bestRoom) [best, bestRoom] = [p, d];
@@ -558,17 +591,16 @@ function placeOrbit(box: Box, text: Rect[], reach: number): [number, number] {
 }
 
 /**
- * Brain ⟲ books: a faint dashed ring at dead centre with a mini brain and a
+ * Brain ⟲ books: a faint dashed ring in the open sky with a mini brain and a
  * mini open book circling it, turning in place (§4.10).
  */
-function orbit({ rc, svg, c, box, text }: Ctx) {
-  // About 60px on desktop, a little smaller on phones.
-  const r = 60 * Math.min(1.07, Math.max(0.75, box.w / 1440));
-  // The library draws a 38px ring; the mini brain and book scale with it.
+function orbit({ rc, svg, c, v, text, geo }: Ctx) {
+  const r = 60;
+  // The library draws a 38-unit ring; the mini brain and book scale with it.
   const f = r / 38;
   // Farthest point swept: the open book's corner (44 × 30 units at half scale).
   const reach = Math.hypot(22 * f, r + 11 * f);
-  const [cx, cy] = placeOrbit(box, text, reach);
+  const [cx, cy] = placeOrbit(v, geo, text, reach);
 
   svg.appendChild(
     el('circle', {
@@ -660,28 +692,53 @@ function dog({ rc, svg, c, geo }: Ctx) {
   body.appendChild(tail);
   body.appendChild(rc.circle(30, -24, 2.4, { fill: c.char, fillStyle: 'solid', stroke: 'none', seed: 55 }));
   wrap.appendChild(body);
-  const x = geo.idleX - 64 * geo.fig;
+  const x = Math.max(geo.roadMin, geo.idleX - 64 * geo.fig);
   wrap.setAttribute('transform', `translate(${x} ${geo.roadY(x) - 6}) scale(${geo.fig})`);
   svg.appendChild(wrap);
 }
 
+// ---------------------------------------------------------------- HTML parts
+
 /**
- * Positions the three mountain nav links (real <a> elements in the page) on
- * their peaks and draws a rough placard behind each label (§4.9).
+ * Sizes and places the name and bio from the same scale as the drawing, via
+ * CSS custom properties on the hero. On desktop they sit where the frame puts
+ * them; when there is extra sky above the frame (tall screens, phones) they
+ * move up into it. Font sizes have a floor so phones stay readable.
  */
-function placeNavButtons(hero: HTMLElement, geo: Geometry) {
-  const links = hero.querySelectorAll<HTMLAnchorElement>('.peak-link');
-  links.forEach((a, i) => {
+function placeText(hero: HTMLElement, v: View) {
+  const [fx, fy] = v.toPx(86, 115);
+  const band = Math.max(0, -v.y0 * v.s); // extra sky above the frame, in px
+  const left = Math.max(24, fx);
+  const st = hero.style;
+  st.setProperty('--text-left', `${left}px`);
+  st.setProperty('--text-top', `${Math.max(28, fy - band * 0.65)}px`);
+  st.setProperty('--text-width', `${Math.min(v.w - left - 24, 1268 * v.s)}px`);
+  st.setProperty('--name-size', `${Math.max(30, 64 * v.s)}px`);
+  st.setProperty('--bio-size', `${Math.max(12, 14 * v.s)}px`);
+}
+
+/**
+ * Places the three mountain nav links (real <a> elements in the page) on
+ * their peaks, sized with the scene, and draws a rough placard behind each
+ * label (§4.9). Returns each placard's half-size in scene units.
+ */
+function placeNavButtons(hero: HTMLElement, geo: Geometry): Pt[] {
+  const v = geo.view;
+  const half: Pt[] = [];
+  hero.querySelectorAll<HTMLAnchorElement>('.peak-link').forEach((a, i) => {
     const pos = geo.buttons[i];
     a.hidden = !pos;
     if (!pos) return;
-    a.style.left = `${pos[0]}px`;
-    a.style.top = `${pos[1]}px`;
+    const [px, py] = v.toPx(pos[0], pos[1]);
+    a.style.left = `${px}px`;
+    a.style.top = `${py}px`;
+    a.style.fontSize = `${Math.max(11, 12.5 * v.s)}px`;
+    const w = a.offsetWidth;
+    const h = a.offsetHeight;
+    half[i] = [w / 2 / v.s, h / 2 / v.s];
     const bg = a.querySelector<SVGSVGElement>('.peak-bg');
     if (!bg) return;
     clear(bg);
-    const w = a.offsetWidth;
-    const h = a.offsetHeight;
     bg.setAttribute('viewBox', `0 0 ${w} ${h}`);
     bg.appendChild(
       rough.svg(bg).rectangle(1.5, 1.5, w - 3, h - 3, {
@@ -689,6 +746,27 @@ function placeNavButtons(hero: HTMLElement, geo: Geometry) {
       }),
     );
   });
+  return half;
+}
+
+/**
+ * The explorer's resting spot: as near the lower centre of the view as
+ * possible without his head touching a placard.
+ */
+function idleSpot(geo: Geometry, half: Pt[]): number {
+  const head = 72 * geo.fig + 6;
+  const clear = (x: number) =>
+    geo.buttons.every(([bx, by], i) => {
+      const [hw, hh] = half[i] ?? [0, 0];
+      return Math.abs(x - bx) > hw + 24 * geo.fig || geo.roadY(x) - head > by + hh;
+    });
+  const mid = geo.view.x(48);
+  for (let d = 0; d <= geo.view.vw / 2; d += 8) {
+    for (const x of [mid - d, mid + d]) {
+      if (x >= geo.roadMin + 64 * geo.fig && x <= geo.roadMax && clear(x)) return x;
+    }
+  }
+  return mid;
 }
 
 // ---------------------------------------------------------------- scene
@@ -707,15 +785,19 @@ const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
 };
 
 /**
- * Redraws every layer at the hero's current size with the day or night
- * palette, and returns the road and button geometry for motion.ts.
+ * Redraws every layer for the hero's current size with the day or night
+ * palette, places the HTML parts to match, and returns the scene geometry
+ * for motion.ts.
  */
 export function drawScene(hero: HTMLElement): Geometry {
   const night = isNight();
   hero.dataset.time = night ? 'night' : 'day';
   const c = colors(night);
-  const box = makeBox(hero.clientWidth, hero.clientHeight);
-  const geo = geometry(box);
+  const v = makeView(hero.clientWidth, hero.clientHeight);
+  hero.style.setProperty('--scene-scale', String(v.s));
+
+  // The text is placed first, so the drawing can keep clear of it.
+  placeText(hero, v);
   const origin = hero.getBoundingClientRect();
   const text = [...hero.querySelectorAll('.name, .bio')].map((node) => {
     // The tight box around the words, not the full-width block. Once the
@@ -729,26 +811,25 @@ export function drawScene(hero: HTMLElement): Geometry {
           range.selectNodeContents(node);
           return range.getBoundingClientRect();
         })()];
-    return {
-      left: Math.min(...rects.map((r) => r.left)) - origin.left,
-      top: Math.min(...rects.map((r) => r.top)) - origin.top,
-      right: Math.max(...rects.map((r) => r.right)) - origin.left,
-      bottom: Math.max(...rects.map((r) => r.bottom)) - origin.top,
-    };
+    const [left, top] = v.toScene(Math.min(...rects.map((r) => r.left)) - origin.left, Math.min(...rects.map((r) => r.top)) - origin.top);
+    const [right, bottom] = v.toScene(Math.max(...rects.map((r) => r.right)) - origin.left, Math.max(...rects.map((r) => r.bottom)) - origin.top);
+    return { left, top, right, bottom };
   });
+
+  const geo = geometry(v);
+  geo.idleX = idleSpot(geo, placeNavButtons(hero, geo));
 
   hero.querySelectorAll<SVGSVGElement>('svg[data-layer]').forEach((svg) => {
     clear(svg);
-    svg.setAttribute('viewBox', `0 0 ${box.w} ${box.h}`);
-    // The viewBox matches the box exactly; "none" just avoids a shrunken frame
-    // if the box resizes before the next redraw.
-    svg.setAttribute('preserveAspectRatio', 'none');
+    // The viewBox has the hero's exact aspect ratio, so "meet" never adds
+    // bands of its own; it only keeps the scale uniform.
+    svg.setAttribute('viewBox', `${v.x0} ${v.y0} ${v.vw} ${v.vh}`);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMax meet');
     const rc = rough.svg(svg);
     for (const draw of LAYERS[svg.dataset.layer ?? ''] ?? []) {
-      draw({ rc, svg, c, night, box, text, geo });
+      draw({ rc, svg, c, night, v, text, geo });
     }
   });
-  placeNavButtons(hero, geo);
   return geo;
 }
 

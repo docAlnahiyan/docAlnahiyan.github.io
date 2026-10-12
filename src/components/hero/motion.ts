@@ -76,13 +76,18 @@ export function startLoop(heroEl: HTMLElement, ticks: Tick[]): (running: boolean
 
 // ---------------------------------------------------------------- repel text
 
-/** Approved constants (spec §4.13). */
-const R = 130; // radius of influence, px
-const PUSH = 46; // max push, px
+/**
+ * Approved constants (spec §4.13), for the name at its desktop size (64px).
+ * Radius and push scale with the text, so the effect keeps its proportions
+ * when the scene shrinks.
+ */
+const R0 = 130; // radius of influence, px
+const PUSH0 = 46; // max push, px
+const NAME_PX = 64;
 const K = 0.14; // spring stiffness
 const D = 0.73; // damping: below 1 gives the bouncy overshoot
 const TILT = 14; // max tilt, degrees
-const BIRD_PUSH = PUSH * 0.65; // birds nudge rather than blast
+const BIRD_SHARE = 0.65; // birds nudge rather than blast
 
 interface Char {
   el: HTMLElement;
@@ -147,9 +152,14 @@ export function repelText(
     .flatMap(split)
     .map((el) => ({ el, bx: 0, by: 0, x: 0, y: 0, r: 0, vx: 0, vy: 0, vr: 0 }));
 
+  let R = R0;
+  let PUSH = PUSH0;
   // Resting positions are measured once, and again whenever the layout can
   // change, instead of reading every letter on every frame.
   const measure = () => {
+    const k = parseFloat(getComputedStyle(nodes[0]).fontSize) / NAME_PX || 1;
+    R = R0 * k;
+    PUSH = PUSH0 * k;
     const hero = heroEl.getBoundingClientRect();
     for (const c of chars) {
       const b = c.el.getBoundingClientRect();
@@ -160,6 +170,8 @@ export function repelText(
   measure();
   document.fonts?.ready.then(measure);
   new ResizeObserver(measure).observe(nodes[0].parentElement ?? heroEl);
+  // The text also moves when the scene is redrawn at a new size.
+  heroEl.addEventListener('hero:drawn', measure);
 
   const narrow = matchMedia('(max-width: 720px)');
 
@@ -197,7 +209,7 @@ export function repelText(
         const d = Math.hypot(c.bx - b.x, c.by - b.y);
         if (d < nearD) [near, nearD] = [b, d];
       }
-      if (near) push(near, BIRD_PUSH);
+      if (near) push(near, PUSH * BIRD_SHARE);
       // Cursor and bird together never push further, or tilt more, than the
       // cursor alone can.
       const len = Math.hypot(tx, ty);
@@ -245,9 +257,9 @@ interface Dive {
   rippled: boolean;
 }
 
-/** Scene geometry from scene.ts, refreshed on every redraw. */
+/** Scene geometry from scene.ts (in scene units), refreshed on every redraw. */
 export interface Geo {
-  w: number;
+  view: { toScene: (px: number, py: number) => [number, number] };
   roadY: (x: number) => number;
   roadMin: number;
   roadMax: number;
@@ -284,13 +296,11 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
   };
   lookUp();
   heroEl.addEventListener('hero:drawn', () => {
-    const next = getGeo();
-    // Keep the same place along the road when the width changes.
-    if (next.w !== geo.w) {
-      ex.x *= next.w / geo.w;
-      dg.x *= next.w / geo.w;
-    }
-    geo = next;
+    // Positions are in scene units, so they hold across resizes; only keep
+    // them on the part of the road that is still in view.
+    geo = getGeo();
+    ex.x = clamp(ex.x, geo.roadMin, geo.roadMax);
+    dg.x = clamp(dg.x, geo.roadMin - 20, geo.roadMax + 20);
     lookUp();
   });
 
@@ -419,7 +429,9 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
 
     // ---- follow: road-locked, distance-based speed ----
     const exY = geo.roadY(ex.x);
-    const target = last ?? { x: geo.idleX, y: exY };
+    // The pointer arrives in hero pixels; the road is in scene units.
+    const p = last ? geo.view.toScene(last.x, last.y) : null;
+    const target = p ? { x: p[0], y: p[1] } : { x: geo.idleX, y: exY };
     const tx = clamp(target.x, geo.roadMin, geo.roadMax);
     const d = Math.hypot(target.x - ex.x, target.y - exY);
     const onRoad = Math.abs(target.y - geo.roadY(tx)) < 70;
