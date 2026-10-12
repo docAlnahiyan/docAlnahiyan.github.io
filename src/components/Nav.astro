@@ -46,8 +46,20 @@ const isActive = (href: string) =>
     btn?.setAttribute('aria-label', `Switch to ${next} theme`);
   };
 
+  // Ease the whole page between palettes (see .theme-anim in global.css);
+  // skipped with reduced motion, where the switch stays instant.
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let easing = 0;
+  const easeSwitch = () => {
+    if (reduced.matches) return;
+    root.classList.add('theme-anim');
+    clearTimeout(easing);
+    easing = window.setTimeout(() => root.classList.remove('theme-anim'), 600);
+  };
+
   btn?.addEventListener('click', () => {
     const next = effective() === 'dark' ? 'light' : 'dark';
+    easeSwitch();
     root.dataset.theme = next;
     try {
       localStorage.setItem('theme', next);
@@ -55,7 +67,10 @@ const isActive = (href: string) =>
     syncLabel();
   });
 
-  media.addEventListener('change', syncLabel);
+  media.addEventListener('change', () => {
+    if (!root.dataset.theme) easeSwitch();
+    syncLabel();
+  });
   syncLabel();
 
   // Menu button for narrow screens. The class is only added when this script

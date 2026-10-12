@@ -218,6 +218,23 @@ main {
   }
 }
 
+/* Theme switch: the toggle adds .theme-anim to <html> for the length of the
+   switch, so every colour on the page (text, nav, cards, and the hero's
+   sketch, sky, sun and moon, whose colours are theme variables) eases to the
+   new palette together. It is only present during a switch, so it never
+   slows hover effects, and with reduced motion the switch stays instant. */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-anim *,
+  .theme-anim *::before,
+  .theme-anim *::after {
+    transition-property: color, background-color, border-color, fill, stroke, stop-color,
+      flood-color, flood-opacity !important;
+    transition-duration: .5s !important;
+    transition-timing-function: ease-in-out !important;
+    transition-delay: 0s !important;
+  }
+}
+
 /* ---------- shared UI (from the mockup) ---------- */
 .tags {
   display: flex;

@@ -11,8 +11,19 @@ interface Props {
 
 const { name, bio } = Astro.props;
 
-// Back to front (spec §3). scene.ts sizes and fills each one.
-const layers = ['sky', 'birds', 'land', 'water', 'road', 'orbit', 'characters'];
+// Back to front (spec §3). scene.ts sizes and fills each one. The dense
+// static layers come in a day and a night copy, crossfaded by the theme.
+const layers = [
+  { name: 'sky' },
+  { name: 'birds' },
+  { name: 'land', tone: 'day' },
+  { name: 'land', tone: 'night' },
+  { name: 'water' },
+  { name: 'road', tone: 'day' },
+  { name: 'road', tone: 'night' },
+  { name: 'orbit' },
+  { name: 'characters' },
+];
 
 // One per mountain peak, left to right. The positions are where they land on
 // a 1440 × 900 screen, used until the script places them exactly.
@@ -26,8 +37,9 @@ const peakLinks = [
 <section class="scene" id="hero" aria-labelledby="hero-name">
   {layers.map((layer) => (
     <svg
-      class={`layer layer-${layer}`}
-      data-layer={layer}
+      class={`layer layer-${layer.name}`}
+      data-layer={layer.name}
+      data-tone={layer.tone}
       aria-hidden="true"
       focusable="false"
     />
@@ -51,7 +63,7 @@ const peakLinks = [
 </section>
 
 <script>
-  import { drawScene, onResize, onThemeChange } from './hero/scene';
+  import { drawScene, onResize } from './hero/scene';
   import { explorer, repelText, startLoop } from './hero/motion';
 
   const hero = document.getElementById('hero');
@@ -63,7 +75,6 @@ const peakLinks = [
       hero.dispatchEvent(new Event('hero:drawn'));
       apply();
     };
-    onThemeChange(redraw);
     onResize(hero, redraw);
 
     // With reduced motion the scene stays still: the text is plain, the
@@ -113,20 +124,112 @@ const peakLinks = [
 </script>
 
 <style>
-  /* Sky colours (spec §4.1): day follows the light theme, night the dark. */
+  /* Scene colours (spec §2) and day/night switches, per theme. scene.ts
+     draws with these variables, so a theme switch only changes them; the
+     transition rule in global.css then eases everything across together. */
   .scene {
-    --sky-top: #fbeede;
-    --sky-bottom: #f6ead5;
+    --sk-night: 0;
+    --sk-day: 1;
+    --sk-day-delay: 0s;
+    --sk-glow: 0;
+    --sk-char: #c96442;
+    --sk-mtn: #6f9b57;
+    --sk-mtnO: #4f7540;
+    --sk-road: #9c7a52;
+    --sk-washTop: #bfe6fb;
+    --sk-washBot: #4fbfed;
+    --sk-flow: #1f9fe0;
+    --sk-sun: #e8954a;
+    --sk-moon: #e7dcc6;
+    --sk-star: #9a9280;
+    --sk-brain: #a8482b;
+    --sk-book: #5c584f;
+    --sk-bird: #8a8378;
   }
   @media (prefers-color-scheme: dark) {
     :global(:root:not([data-theme='light'])) .scene {
-      --sky-top: #141821;
-      --sky-bottom: #1f2430;
+      --sk-night: 1;
+      --sk-day: 0;
+      --sk-day-delay: .5s;
+      --sk-glow: 1;
+      --sk-char: #e8a07f;
+      --sk-mtn: #5a7d4e;
+      --sk-mtnO: #7fa86d;
+      --sk-road: #7a5f45;
+      --sk-washTop: #1f3a4d;
+      --sk-washBot: #13303f;
+      --sk-flow: #49a7da;
+      --sk-sun: #e8a54a;
+      --sk-moon: #f0e7d6;
+      --sk-star: #f3eee4;
+      --sk-brain: #ea9c7e;
+      --sk-book: #c7c0b2;
+      --sk-bird: #f4f1ea;
     }
   }
   :global(:root[data-theme='dark']) .scene {
-    --sky-top: #141821;
-    --sky-bottom: #1f2430;
+    --sk-night: 1;
+    --sk-day: 0;
+    --sk-day-delay: .5s;
+    --sk-glow: 1;
+    --sk-char: #e8a07f;
+    --sk-mtn: #5a7d4e;
+    --sk-mtnO: #7fa86d;
+    --sk-road: #7a5f45;
+    --sk-washTop: #1f3a4d;
+    --sk-washBot: #13303f;
+    --sk-flow: #49a7da;
+    --sk-sun: #e8a54a;
+    --sk-moon: #f0e7d6;
+    --sk-star: #f3eee4;
+    --sk-brain: #ea9c7e;
+    --sk-book: #c7c0b2;
+    --sk-bird: #f4f1ea;
+  }
+
+  /* Day and night skies are stacked; the night one fades in over the day.
+     Sun and moon, stars and the birds' glow follow the same switches. */
+  .scene::before,
+  .scene::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .scene::before {
+    background: linear-gradient(180deg, #fbeede, #f6ead5);
+  }
+  .scene::after {
+    background: linear-gradient(180deg, #141821, #1f2430);
+    opacity: var(--sk-night);
+    /* Its own GPU layer, so the fade doesn't repaint the sky every frame. */
+    will-change: opacity;
+  }
+  .scene :global(.day-only) {
+    opacity: var(--sk-day);
+  }
+  .scene :global(.night-only) {
+    opacity: var(--sk-night);
+  }
+  /* The night copy of the land and road fades in over the day copy. The day
+     copy only hides once the night one is fully in (and reappears at once on
+     the way back), so the sky never shows through mid-fade. */
+  .layer[data-tone='night'] {
+    opacity: var(--sk-night);
+  }
+  .layer[data-tone='day'] {
+    opacity: var(--sk-day);
+  }
+  /* Only the scene's day/night parts fade by opacity (global.css eases the
+     colours everywhere). */
+  :global(.theme-anim) .scene::after,
+  :global(.theme-anim) .scene :global(.day-only),
+  :global(.theme-anim) .scene :global(.night-only),
+  :global(.theme-anim) .layer[data-tone='night'] {
+    transition-property: opacity !important;
+  }
+  :global(.theme-anim) .layer[data-tone='day'] {
+    transition: opacity 0s linear var(--sk-day-delay, 0s) !important;
   }
 
   .scene {
@@ -137,9 +240,7 @@ const peakLinks = [
        jump while scrolling. */
     height: max(560px, 85vh);
     height: max(560px, 85svh);
-    background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
     border-bottom: 1px solid var(--border);
-    transition: background-color .4s;
   }
 
   .layer {
@@ -158,7 +259,7 @@ const peakLinks = [
      around them never makes the browser repaint their thousands of dots. */
   .layer-land,
   .layer-road {
-    will-change: transform;
+    will-change: transform, opacity;
   }
   .layer-orbit { z-index: 6; }
   .layer-characters { z-index: 7; }
