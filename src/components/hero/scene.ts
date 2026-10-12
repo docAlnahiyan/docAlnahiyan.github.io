@@ -709,12 +709,45 @@ function placeText(hero: HTMLElement, v: View) {
   const [fx, fy] = v.toPx(86, 115);
   const band = Math.max(0, -v.y0 * v.s); // extra sky above the frame, in px
   const left = Math.max(24, fx);
+  sizeText(hero, v.w, v.s, left);
+  // A portrait hero is sized to fit the text above the scene (fitHero), so
+  // the text starts at the top margin.
+  const top = hero.dataset.fit === 'portrait' ? TEXT_TOP : Math.max(TEXT_TOP, fy - band * 0.65);
+  hero.style.setProperty('--text-top', `${top}px`);
+}
+
+/** Font sizes and line length for the name and bio at scale s. */
+function sizeText(hero: HTMLElement, w: number, s: number, left: number) {
   const st = hero.style;
   st.setProperty('--text-left', `${left}px`);
-  st.setProperty('--text-top', `${Math.max(28, fy - band * 0.65)}px`);
-  st.setProperty('--text-width', `${Math.min(v.w - left - 24, 1268 * v.s)}px`);
-  st.setProperty('--name-size', `${Math.max(30, 64 * v.s)}px`);
-  st.setProperty('--bio-size', `${Math.max(12, 14 * v.s)}px`);
+  st.setProperty('--text-width', `${Math.min(w - left - 24, 1268 * s)}px`);
+  st.setProperty('--name-size', `${Math.max(30, 64 * s)}px`);
+  st.setProperty('--bio-size', `${Math.max(12, 14 * s)}px`);
+}
+
+/** Space above the name, and between the bio and the top of the scene. */
+const TEXT_TOP = 28;
+const TEXT_GAP = 32;
+
+/**
+ * On portrait screens the scene is limited by width, and a hero of 85% of
+ * the screen would leave a tall empty sky above it. There the hero is sized
+ * instead to the scene plus room for the name and bio above it, so About
+ * shows sooner. Landscape screens keep the CSS height (85% of the screen).
+ */
+function fitHero(hero: HTMLElement) {
+  hero.style.height = '';
+  delete hero.dataset.fit;
+  const w = hero.clientWidth;
+  const base = hero.clientHeight; // the CSS height
+  const s = Math.max(Math.min(w / SW, base / SH), MIN_SCALE);
+  if (SH * s >= base) return; // the scene already fills the height
+  sizeText(hero, w, s, Math.max(24, (86 - makeView(w, base).x0) * s));
+  const text = hero.querySelector<HTMLElement>('.text');
+  const needed = Math.ceil(TEXT_TOP + (text?.offsetHeight ?? 0) + TEXT_GAP + SH * s);
+  if (needed >= base) return;
+  hero.style.height = `${needed}px`;
+  hero.dataset.fit = 'portrait';
 }
 
 /**
@@ -793,6 +826,7 @@ export function drawScene(hero: HTMLElement): Geometry {
   const night = isNight();
   hero.dataset.time = night ? 'night' : 'day';
   const c = colors(night);
+  fitHero(hero);
   const v = makeView(hero.clientWidth, hero.clientHeight);
   hero.style.setProperty('--scene-scale', String(v.s));
 
@@ -846,4 +880,12 @@ export function onResize(hero: HTMLElement, cb: () => void): void {
     h = hero.clientHeight;
     cb();
   }).observe(hero);
+  // A portrait-fitted hero has a fixed height, so a change in the window's
+  // height alone (rotating, resizing) does not resize it; recheck the fit.
+  let lastH = window.innerHeight;
+  window.addEventListener('resize', () => {
+    if (window.innerHeight === lastH || !hero.dataset.fit) return;
+    lastH = window.innerHeight;
+    cb();
+  });
 }
