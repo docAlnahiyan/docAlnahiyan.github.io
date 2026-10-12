@@ -28,50 +28,40 @@ const MIN_SCALE = 0.5;
 /** Explorer and dog size, relative to the prototype drawings. */
 const FIG = 1.15;
 
-/**
- * Object colours (spec §2). Each is a CSS variable defined per theme in
- * HeroScene.astro, so a theme switch only swaps the variables and every
- * stroke and fill eases to its new colour; nothing is redrawn.
- */
-const C = Object.fromEntries(
-  ['char', 'mtn', 'mtnO', 'road', 'washTop', 'washBot', 'flow', 'sun', 'moon', 'star', 'brain', 'book', 'bird'].map(
-    (k) => [k, `var(--sk-${k})`],
-  ),
-) as Record<'char' | 'mtn' | 'mtnO' | 'road' | 'washTop' | 'washBot' | 'flow' | 'sun' | 'moon' | 'star' | 'brain' | 'book' | 'bird', string>;
+export type Palette = ReturnType<typeof colors>;
 
-export type Palette = typeof C;
+/** Day follows the light theme and night the dark one, saved or system. */
+export function isNight(): boolean {
+  const t = document.documentElement.dataset.theme;
+  if (t === 'dark') return true;
+  if (t === 'light') return false;
+  return matchMedia('(prefers-color-scheme: dark)').matches;
+}
 
-type Tone = 'day' | 'night';
-
-/**
- * The dense static layers (mountains with the river wash, and the road) are
- * drawn twice, once per theme with fixed colours, as separate layers; a theme
- * switch fades between them on the GPU instead of repainting thousands of
- * dots for every frame of the fade. Keep in step with the --sk-* values in
- * HeroScene.astro.
- */
-const TONES: Record<Tone, { mtn: string; mtnO: string; road: string; washTop: string; washBot: string; washTopOp: number; washBotOp: number }> = {
-  day: { mtn: '#6f9b57', mtnO: '#4f7540', road: '#9c7a52', washTop: '#bfe6fb', washBot: '#4fbfed', washTopOp: 0.92, washBotOp: 1 },
-  night: { mtn: '#5a7d4e', mtnO: '#7fa86d', road: '#7a5f45', washTop: '#1f3a4d', washBot: '#13303f', washTopOp: 0.8, washBotOp: 0.95 },
-};
-
-/** Paint attributes that may carry a CSS variable. */
-const PAINT = ['stroke', 'fill', 'stop-color', 'stop-opacity', 'flood-color', 'flood-opacity'];
-
-/**
- * SVG presentation attributes can't hold var(); move any that do (rough.js
- * writes them as attributes) into the style, where they work and transition.
- */
-function liftVars(root: Element) {
-  root.querySelectorAll('*').forEach((node) => {
-    for (const name of PAINT) {
-      const value = node.getAttribute(name);
-      if (value?.includes('var(')) {
-        (node as SVGElement).style.setProperty(name, value);
-        node.removeAttribute(name);
+/** Object colours (spec §2; landscape and sky bodies from the mock). */
+export function colors(night: boolean) {
+  return night
+    ? {
+        char: '#e8a07f', mtn: '#5a7d4e', mtnO: '#7fa86d', road: '#7a5f45',
+        washTop: '#1f3a4d', washBot: '#13303f', flow: '#49a7da',
+        sun: '#e8a54a', moon: '#f0e7d6', star: '#f3eee4', brain: '#ea9c7e',
+        book: '#c7c0b2', bird: '#f4f1ea',
       }
-    }
+    : {
+        char: '#c96442', mtn: '#6f9b57', mtnO: '#4f7540', road: '#9c7a52',
+        washTop: '#bfe6fb', washBot: '#4fbfed', flow: '#1f9fe0',
+        sun: '#e8954a', moon: '#e7dcc6', star: '#9a9280', brain: '#a8482b',
+        book: '#5c584f', bird: '#8a8378',
+      };
+}
+
+/** Runs `cb` whenever the theme toggle or the system setting changes. */
+export function onThemeChange(cb: () => void): void {
+  new MutationObserver(cb).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
   });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', cb);
 }
 
 function el(tag: string, attrs: Record<string, string | number> = {}) {
@@ -141,8 +131,7 @@ interface Ctx {
   rc: RoughSVG;
   svg: SVGSVGElement;
   c: Palette;
-  /** For the static land and road layers, which are drawn once per theme. */
-  tone: Tone;
+  night: boolean;
   v: View;
   /** Where the name and bio actually sit, in scene units. */
   text: Rect[];
@@ -152,13 +141,12 @@ interface Ctx {
 // ---------------------------------------------------------------- sky
 
 /**
- * Sun by day, moon by night (§4.2): both are drawn at the same spot, and the
- * theme fades one out as the other fades in. Top right of the frame, pulled
- * in from the edge so the rays are never cut off, clear above the peaks. On
- * tall screens with extra sky above the frame it rises a little, and it
- * keeps clear of the name and bio wherever they share its column.
+ * Sun by day, moon by night (§4.2): top right of the frame, pulled in from
+ * the edge so the rays are never cut off, clear above the peaks. On tall
+ * screens with extra sky above the frame it rises a little, and it keeps
+ * clear of the name and bio wherever they share its column.
  */
-function sunOrMoon({ rc, svg, c, v, text }: Ctx) {
+function sunOrMoon({ rc, svg, c, night, v, text }: Ctx) {
   const RAYS = 84; // outer radius of the sun's rays
   const sx = 1285;
   const lift = Math.min(24, Math.max(0, -v.y0) * 0.08);
@@ -168,50 +156,49 @@ function sunOrMoon({ rc, svg, c, v, text }: Ctx) {
     if (t.right > sx - RAYS - 12 && t.left < sx + RAYS + 12) sy = Math.max(sy, t.bottom + RAYS + 12);
   }
 
-  const sun = el('g', { class: 'day-only' });
-  sun.appendChild(
-    rc.circle(sx, sy, 104, {
-      stroke: c.sun, strokeWidth: 2.8, roughness: 1.3,
-      fill: c.sun, fillStyle: 'dots', fillWeight: 1.8, hachureGap: 9, seed: 5,
-    }),
-  );
-  // Twelve em-dash rays turning slowly around it.
-  const rays = el('g');
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    rays.appendChild(
-      el('line', {
-        x1: sx + Math.cos(a) * 62, y1: sy + Math.sin(a) * 62,
-        x2: sx + Math.cos(a) * RAYS, y2: sy + Math.sin(a) * RAYS,
-        stroke: c.sun, 'stroke-width': 5, 'stroke-linecap': 'round',
+  if (!night) {
+    svg.appendChild(
+      rc.circle(sx, sy, 104, {
+        stroke: c.sun, strokeWidth: 2.8, roughness: 1.3,
+        fill: c.sun, fillStyle: 'dots', fillWeight: 1.8, hachureGap: 9, seed: 5,
       }),
     );
+    // Twelve em-dash rays turning slowly around it.
+    const rays = el('g');
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      rays.appendChild(
+        el('line', {
+          x1: sx + Math.cos(a) * 62, y1: sy + Math.sin(a) * 62,
+          x2: sx + Math.cos(a) * RAYS, y2: sy + Math.sin(a) * RAYS,
+          stroke: c.sun, 'stroke-width': 5, 'stroke-linecap': 'round',
+        }),
+      );
+    }
+    rays.appendChild(
+      el('animateTransform', {
+        attributeName: 'transform', type: 'rotate',
+        from: `0 ${sx} ${sy}`, to: `360 ${sx} ${sy}`, dur: '55s', repeatCount: 'indefinite',
+      }),
+    );
+    svg.appendChild(rays);
+    return;
   }
-  rays.appendChild(
-    el('animateTransform', {
-      attributeName: 'transform', type: 'rotate',
-      from: `0 ${sx} ${sy}`, to: `360 ${sx} ${sy}`, dur: '55s', repeatCount: 'indefinite',
-    }),
-  );
-  sun.appendChild(rays);
-  svg.appendChild(sun);
 
-  const moon = el('g', { class: 'night-only' });
   const defs = el('defs');
   const glow = el('radialGradient', { id: 'hero-moon-glow', cx: '50%', cy: '50%', r: '50%' });
   glow.appendChild(el('stop', { offset: '0%', 'stop-color': c.moon, 'stop-opacity': 0.5 }));
   glow.appendChild(el('stop', { offset: '70%', 'stop-color': c.moon, 'stop-opacity': 0.1 }));
   glow.appendChild(el('stop', { offset: '100%', 'stop-color': c.moon, 'stop-opacity': 0 }));
   defs.appendChild(glow);
-  moon.appendChild(defs);
-  moon.appendChild(el('circle', { cx: sx, cy: sy, r: 120, fill: 'url(#hero-moon-glow)', class: 'glow' }));
-  moon.appendChild(
+  svg.appendChild(defs);
+  svg.appendChild(el('circle', { cx: sx, cy: sy, r: 120, fill: 'url(#hero-moon-glow)', class: 'glow' }));
+  svg.appendChild(
     rc.circle(sx, sy, 96, {
       stroke: c.moon, strokeWidth: 2.4, roughness: 1.3,
       fill: c.moon, fillStyle: 'dots', fillWeight: 1.5, hachureGap: 10, seed: 5,
     }),
   );
-  svg.appendChild(moon);
 }
 
 /** True if p is inside the polygon (even-odd rule). */
@@ -231,10 +218,8 @@ function insidePolygon(p: Pt, poly: Pt[]) {
  * water are left out (the mountains' dot fill would let them show through),
  * as are any on the name and bio.
  */
-function stars({ svg: layer, c, v, text, geo }: Ctx) {
-  // Drawn in both themes, inside a group that only shows at night.
-  const svg = el('g', { class: 'night-only' });
-  layer.appendChild(svg);
+function stars({ svg, c, night, v, text, geo }: Ctx) {
+  if (!night) return;
   const ridge = mountainOutline();
   const margin = 10;
   const inSky = (p: Pt) => {
@@ -280,7 +265,7 @@ function stars({ svg: layer, c, v, text, geo }: Ctx) {
  * flapping at its own pace. At night they are white with a soft glow. They
  * cross the whole visible sky, side bands included.
  */
-function birds({ svg, c, v }: Ctx) {
+function birds({ svg, c, night, v }: Ctx) {
   const s = 1.1;
   // Flock layout from the library: x, y offsets and a flap delay.
   const flock: [number, number, number][] = [
@@ -300,20 +285,18 @@ function birds({ svg, c, v }: Ctx) {
   // Start part-way across, so the sky is not empty on arrival.
   g.style.animationDelay = '-7s';
 
-  // The night glow: a blurred halo whose opacity is a theme variable (0 by
-  // day), so it fades in and out with the theme.
-  const defs = el('defs');
-  const glow = el('filter', { id: 'hero-bird-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
-  glow.appendChild(el('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 2.2, result: 'blur' }));
-  glow.appendChild(el('feFlood', { 'flood-color': c.bird, 'flood-opacity': 'var(--sk-glow)', result: 'tint' }));
-  glow.appendChild(el('feComposite', { in: 'tint', in2: 'blur', operator: 'in', result: 'halo' }));
-  const merge = el('feMerge');
-  merge.appendChild(el('feMergeNode', { in: 'halo' }));
-  merge.appendChild(el('feMergeNode', { in: 'SourceGraphic' }));
-  glow.appendChild(merge);
-  defs.appendChild(glow);
-  svg.appendChild(defs);
-  g.setAttribute('filter', 'url(#hero-bird-glow)');
+  if (night) {
+    const defs = el('defs');
+    const glow = el('filter', { id: 'hero-bird-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' });
+    glow.appendChild(el('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 2.2, result: 'b' }));
+    const merge = el('feMerge');
+    merge.appendChild(el('feMergeNode', { in: 'b' }));
+    merge.appendChild(el('feMergeNode', { in: 'SourceGraphic' }));
+    glow.appendChild(merge);
+    defs.appendChild(glow);
+    svg.appendChild(defs);
+    g.setAttribute('filter', 'url(#hero-bird-glow)');
+  }
 
   for (const [ox, oy, delay] of flock) {
     const x = ox * s;
@@ -455,10 +438,9 @@ function mountainOutline(): Pt[] {
  * The base runs well below the road and is clipped at the road's bottom edge,
  * so the range always meets the road with no gap.
  */
-function mountains({ rc, svg, v, tone }: Ctx) {
-  const c = TONES[tone];
+function mountains({ rc, svg, c, v }: Ctx) {
   const defs = el('defs');
-  const clip = el('clipPath', { id: `hero-above-water-${tone}` });
+  const clip = el('clipPath', { id: 'hero-above-water' });
   clip.appendChild(el('path', { d: mock(aboveWaterPath(v)) }));
   defs.appendChild(clip);
   svg.appendChild(defs);
@@ -467,7 +449,7 @@ function mountains({ rc, svg, v, tone }: Ctx) {
     stroke: c.mtnO, strokeWidth: 2, roughness: 1.9, bowing: 1.1,
     fill: c.mtn, fillStyle: 'dots', fillWeight: 2.1, hachureGap: 11, seed: 11,
   });
-  range.setAttribute('clip-path', `url(#hero-above-water-${tone})`);
+  range.setAttribute('clip-path', 'url(#hero-above-water)');
   svg.appendChild(range);
 }
 
@@ -475,14 +457,13 @@ function mountains({ rc, svg, v, tone }: Ctx) {
  * River, part 1 (static): a wide watercolour wash, wider on the left, whose
  * top rides up under the road and which fills to the bottom edge (§4.6).
  */
-function riverWash({ svg, v, tone }: Ctx) {
-  const c = TONES[tone];
+function riverWash({ svg, c, night, v }: Ctx) {
   const defs = el('defs');
-  const grad = el('linearGradient', { id: `hero-river-wash-${tone}`, x1: 0, y1: 0, x2: 0, y2: 1 });
-  grad.appendChild(el('stop', { offset: '0%', 'stop-color': c.washTop, 'stop-opacity': c.washTopOp }));
-  grad.appendChild(el('stop', { offset: '100%', 'stop-color': c.washBot, 'stop-opacity': c.washBotOp }));
+  const grad = el('linearGradient', { id: 'hero-river-wash', x1: 0, y1: 0, x2: 0, y2: 1 });
+  grad.appendChild(el('stop', { offset: '0%', 'stop-color': c.washTop, 'stop-opacity': night ? 0.8 : 0.92 }));
+  grad.appendChild(el('stop', { offset: '100%', 'stop-color': c.washBot, 'stop-opacity': night ? 0.95 : 1 }));
   defs.appendChild(grad);
-  const soft = el('filter', { id: `hero-soft-${tone}`, x: '-5%', y: '-20%', width: '110%', height: '140%' });
+  const soft = el('filter', { id: 'hero-soft', x: '-5%', y: '-20%', width: '110%', height: '140%' });
   soft.appendChild(el('feGaussianBlur', { in: 'SourceGraphic', stdDeviation: 3 }));
   defs.appendChild(soft);
   svg.appendChild(defs);
@@ -491,8 +472,8 @@ function riverWash({ svg, v, tone }: Ctx) {
   svg.appendChild(
     el('path', {
       d: mock(`M${L},426 L-30,426 C260,412 520,442 800,458 C1060,474 1260,480 1470,484 L${R},484 L${R},680 L${L},680 Z`),
-      fill: `url(#hero-river-wash-${tone})`,
-      filter: `url(#hero-soft-${tone})`,
+      fill: 'url(#hero-river-wash)',
+      filter: 'url(#hero-soft)',
     }),
   );
 }
@@ -561,8 +542,7 @@ function boat({ rc, svg, c, v }: Ctx) {
 }
 
 /** A winding mud ribbon, higher on the left, drawn over the waterline (§4.8). */
-function road({ rc, svg, v, tone }: Ctx) {
-  const c = TONES[tone];
+function road({ rc, svg, c, v }: Ctx) {
   svg.appendChild(
     rc.path(mock(roadPath(v)), {
       stroke: c.road, strokeWidth: 1.3, roughness: 1.9,
@@ -849,12 +829,14 @@ const LAYERS: Record<string, ((ctx: Ctx) => void)[]> = {
 };
 
 /**
- * Redraws every layer for the hero's current size, places the HTML parts to
- * match, and returns the scene geometry for motion.ts. Colours are theme
- * variables, so a theme switch needs no redraw.
+ * Redraws every layer for the hero's current size with the day or night
+ * palette, places the HTML parts to match, and returns the scene geometry
+ * for motion.ts.
  */
 export function drawScene(hero: HTMLElement): Geometry {
-  const c = C;
+  const night = isNight();
+  hero.dataset.time = night ? 'night' : 'day';
+  const c = colors(night);
   fitHero(hero);
   const v = makeView(hero.clientWidth, hero.clientHeight);
   hero.style.setProperty('--scene-scale', String(v.s));
@@ -889,11 +871,9 @@ export function drawScene(hero: HTMLElement): Geometry {
     svg.setAttribute('viewBox', `${v.x0} ${v.y0} ${v.vw} ${v.vh}`);
     svg.setAttribute('preserveAspectRatio', 'xMidYMax meet');
     const rc = rough.svg(svg);
-    const tone = (svg.dataset.tone ?? 'day') as Tone;
     for (const draw of LAYERS[svg.dataset.layer ?? ''] ?? []) {
-      draw({ rc, svg, c, tone, v, text, geo });
+      draw({ rc, svg, c, night, v, text, geo });
     }
-    liftVars(svg);
   });
   return geo;
 }

@@ -46,15 +46,15 @@ const isActive = (href: string) =>
     btn?.setAttribute('aria-label', `Switch to ${next} theme`);
   };
 
-  // Ease the whole page between palettes (see .theme-anim in global.css);
-  // skipped with reduced motion, where the switch stays instant.
+  // Ease the page chrome and the sky between palettes (.theme-anim in
+  // global.css and HeroScene.astro); skipped with reduced motion.
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   let easing = 0;
   const easeSwitch = () => {
     if (reduced.matches) return;
     root.classList.add('theme-anim');
     clearTimeout(easing);
-    easing = window.setTimeout(() => root.classList.remove('theme-anim'), 600);
+    easing = window.setTimeout(() => root.classList.remove('theme-anim'), 250);
   };
 
   btn?.addEventListener('click', () => {
