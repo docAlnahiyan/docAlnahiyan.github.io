@@ -15,6 +15,7 @@
 
 import rough from 'roughjs';
 import type { RoughSVG } from 'roughjs/bin/svg';
+import { drawBoat, type BoatParts } from './boat';
 
 const NS = 'http://www.w3.org/2000/svg';
 
@@ -45,13 +46,13 @@ export function colors(night: boolean) {
         char: '#e8a07f', mtn: '#5a7d4e', mtnO: '#7fa86d', road: '#7a5f45',
         washTop: '#1f3a4d', washBot: '#13303f', flow: '#49a7da',
         sun: '#e8a54a', moon: '#f0e7d6', star: '#f3eee4', brain: '#ea9c7e',
-        book: '#c7c0b2', bird: '#f4f1ea',
+        book: '#c7c0b2', bird: '#f4f1ea', lamp: '#ffd48c',
       }
     : {
         char: '#c96442', mtn: '#6f9b57', mtnO: '#4f7540', road: '#9c7a52',
         washTop: '#bfe6fb', washBot: '#4fbfed', flow: '#1f9fe0',
         sun: '#e8954a', moon: '#e7dcc6', star: '#9a9280', brain: '#a8482b',
-        book: '#5c584f', bird: '#8a8378',
+        book: '#5c584f', bird: '#8a8378', lamp: '#ffcf8a',
       };
 }
 
@@ -389,6 +390,8 @@ export interface Geometry {
   idleX: number;
   /** Button centres on the peaks, left to right; empty when they are hidden. */
   buttons: Pt[];
+  /** The boat's moving parts, for its tick in the motion loop. */
+  boat?: BoatParts;
 }
 
 /** The three peaks (mock apex) that carry Research, Publications, Projects. */
@@ -504,41 +507,11 @@ function riverFlow({ svg, c, v }: Ctx) {
 }
 
 /**
- * A wooden boat with a small rower, sailing left to right with the current
- * across the whole visible river, rocking gently, then looping (§4.7).
+ * The rowing boat with its night lantern (§4.7; boat.ts), floating on the
+ * river's middle flow line and travelling left to right.
  */
-function boat({ rc, svg, c, v }: Ctx) {
-  const s = 0.95;
-  // Library boat: hull spans x 64–156, gunwale at y 98. Re-centre on the gunwale.
-  const ox = 110;
-  const oy = 98;
-  const hullW = 92 * s;
-  const waterline = 560 + MY;
-
-  const sail = el('g', { class: 'sail' });
-  sail.setAttribute('transform', `translate(${v.x(30)} ${waterline})`);
-  sail.style.setProperty('--from', `${v.x0 - hullW}px, ${waterline}px`);
-  sail.style.setProperty('--to', `${v.x0 + v.vw + hullW}px, ${waterline}px`);
-  sail.style.animationDelay = '-8s';
-
-  const rock = el('g', { class: 'rock' });
-  const body = el('g', { transform: `scale(${s}) translate(${-ox} ${-oy})` });
-  const wood = { stroke: c.road, strokeWidth: 2.4 / s, roughness: 1.5, seed: 31 };
-  body.appendChild(
-    rc.path('M64,98 L156,98 Q152,120 110,122 Q68,120 64,98 Z', {
-      ...wood, fill: c.road, fillStyle: 'dots', fillWeight: 1.6 / s, hachureGap: 7 / s,
-    }),
-  );
-  body.appendChild(rc.line(64, 98, 156, 98, { ...wood, strokeWidth: 2.2 / s, roughness: 1.4 }));
-  // The rower; an empty boat can't move.
-  const rower = { stroke: c.char, strokeWidth: 2.2 / s, roughness: 1.6, seed: 37 };
-  body.appendChild(rc.circle(108, 66, 15, rower));
-  body.appendChild(rc.line(108, 73, 108, 96, rower));
-  body.appendChild(rc.line(108, 80, 122, 88, rower));
-  body.appendChild(rc.line(116, 76, 138, 110, { ...rower, roughness: 1.5 }));
-  rock.appendChild(body);
-  sail.appendChild(rock);
-  svg.appendChild(sail);
+function boat({ rc, svg, c, night, v, geo }: Ctx) {
+  geo.boat = drawBoat(rc, svg, c, night, v, 560 + MY);
 }
 
 /** A winding mud ribbon, higher on the left, drawn over the waterline (§4.8). */

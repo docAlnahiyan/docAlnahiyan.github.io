@@ -53,6 +53,7 @@ const peakLinks = [
 <script>
   import { drawScene, onResize, onThemeChange } from './hero/scene';
   import { explorer, repelText, startLoop } from './hero/motion';
+  import { boatTick } from './hero/boat';
 
   const hero = document.getElementById('hero');
   if (hero) {
@@ -74,6 +75,7 @@ const peakLinks = [
       setLoop = startLoop(hero, [
         repelText(hero, text, () => hero.querySelectorAll('.fly path')),
         explorer(hero, () => geo),
+        boatTick(() => geo.boat),
       ]);
     }
 
@@ -212,29 +214,17 @@ const peakLinks = [
     50% { opacity: 1; }
   }
 
-  /* Birds and boat cross the full width; scene.ts sets --from and --to in
-     pixels for the current hero size. With reduced motion they rest at the
-     position given in their transform attribute. */
+  /* Birds cross the full width; scene.ts sets --from and --to in pixels for
+     the current hero size. With reduced motion they rest at the position
+     given in their transform attribute. (The boat is moved by the motion
+     loop; see hero/boat.ts.) */
   .scene :global(.fly) {
-    animation: cross 24s linear infinite;
-  }
-  .scene :global(.sail) {
     animation: cross 24s linear infinite;
   }
   @keyframes cross {
     from { transform: translate(var(--from)); }
     to { transform: translate(var(--to)); }
   }
-  .scene :global(.rock) {
-    animation: rock 3.2s ease-in-out infinite;
-    transform-box: fill-box;
-    transform-origin: center;
-  }
-  @keyframes rock {
-    0%, 100% { transform: translateY(0) rotate(-1.6deg); }
-    50% { transform: translateY(-2px) rotate(1.6deg); }
-  }
-
   /* Mountain nav buttons: real links over the scene, each with a rough
      placard (drawn by scene.ts) behind its label. */
   .peaks {

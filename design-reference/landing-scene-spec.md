@@ -112,10 +112,15 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - **Flow direction:** **left → right** (same as the boat, opposite the birds).
 - **Night:** deeper-blue wash + a few twinkling **glints** `#cfe6f2` on the water.
 
-### 4.7 Boat — one, continuous, **left → right**, slow
-- **Path:** sails along the river, **bottom-left → bottom-right** (~y 90%), exits right, **loops** back in from the left (infinite). **Same direction as the water flow, opposite the birds.**
-- **Speed:** slow — **~22–26s** per crossing (`sail` keyframe). Gentle **rock** (±1.6° + 2px bob, `rock` keyframe ~3.2s).
-- **Shape:** wooden dotted hull (`#9c7a52` day / `#7a5f45` night) with a **small explorer aboard** (clay stroke) holding an **oar** dipping into the water. *(An empty boat can't move.)*
+### 4.7 Boat — rowing, **left → right**, with a night lantern
+> Ported from `design-reference/boat-demo.html` into `src/components/hero/boat.ts`. Drawn in the demo's own coordinates (waterline y 270, hull centred on x 420) inside a group scaled **0.6** onto the hero's waterline (mock y 560); stroke widths are compensated so they read like the rest of the scene.
+- **Path:** rows along the river, **left → right**, exits right, **loops** back in from the left (infinite). **Same direction as the water flow, opposite the birds.** Starts a third of the way across.
+- **Speed (real, varying):** the boat is moved by the shared rAF loop, not a CSS keyframe. Its speed drifts smoothly between ~0.35× and ~1.65× a mean of 66 scene units/s (≈ 24 s per crossing on a desktop). Everything else is **derived from that travel speed** (0 drifting … 1 racing): stroke rate `hz = 0.18 + 0.95·v` strokes/s, the wake's length / wiggle / opacity, the splash size, and a touch more rock.
+- **Stroke:** the oar rotates about its rowlock through **catch → drive → finish → lift → recover** (`sweep = cos 2πp`, lift on the recovery half, `φ = 138 − 22·sweep + 16·lift`). The rower's **arm follows the oar handle** (dynamic path, slight elbow) and the **torso leans** back on the drive, forward on the recovery. A small **splash** at the catch while the blade is in the water. The whole boat **rocks and bobs** gently.
+- **Wake:** a wiggly line trailing from the stern, in the river's flow colour; longer, livelier and stronger with speed. (The river's own dotted flow lines are the current and stay at their own pace.)
+- **Shape & colours:** hatched wooden hull over a solid river-coloured backing (so flow dots don't show through), road-brown wood (`#9c7a52` day / `#7a5f45` night) for hull, oar and lantern pole; clay rower (`#c96442` / `#e8a07f`). *(An empty boat can't move.)*
+- **Lantern (night only):** a bow lantern on a pole. At night it lights: a flickering radial **halo** and **flame** (`lamp` `#ffd48c`), and a **shimmering reflection** — nine soft, blurred dashes wobbling on the water beneath it. By day the lantern is drawn unlit (no halo, no reflection). Follows the site's day/night state; redraws on theme change.
+- **Reduced motion:** one composed still pose (mid-drive, steady lantern at night, no splash). The boat pauses with the rest of the hero when the tab is hidden or the hero is off-screen.
 
 ### 4.8 Muddy road — **winding "snake" ribbon**, above the river, static
 > Port from `design-reference/landscape-mock.html` (the `road` block there is approved).
@@ -228,7 +233,7 @@ One `requestAnimationFrame` loop drives everything cursor-reactive. Track the cu
 - One shared `requestAnimationFrame` loop; avoid per-element timers.
 - `will-change: transform` on moving groups; prefer `transform`/`opacity` only.
 - **Pause** the rAF loop and CSS/SMIL when the tab is hidden (`visibilitychange`) and when the hero is scrolled out of view (`IntersectionObserver`) — saves battery.
-- Birds/boat/orbit via CSS/SMIL are cheap; the rAF loop only needs to touch the explorer, dog, and the repel letters.
+- Birds/orbit via CSS/SMIL are cheap; the rAF loop touches the explorer, dog, repel letters and the boat (its travel speed drives the stroke, so it can't be a fixed keyframe).
 - Keep `rough.js` seeds stable per object so re-draws (theme change) don't reshuffle the sketch jitter distractingly (optional: pass a fixed `seed`).
 
 ---
@@ -278,7 +283,7 @@ public/
 - [ ] Dog follows with a lag, tail wagging, with an occasional hop.
 - [ ] Clicking a **mountain nav button** (Research/Publications/Projects) plays the genie/jump dive **into** it + ripple, then navigates; keyboard navigates instantly.
 - [ ] Birds: 3–4, slow, right→left, cross the sun, loop; white glow at night.
-- [ ] Boat: slow, left→right along the river, loops; rower aboard; river flows left→right.
+- [ ] Boat: rows left→right along the river and loops; full oar stroke whose rate follows the boat's speed; wake and splash; lantern + water reflection at night only; river flows left→right.
 - [ ] Mountains clustered on the right, tallest right, tapering left; sun/moon above the right peaks.
 - [ ] Brain⟲books orbit, medium, centered horizontally, raised into the open sky (~36% height).
 - [ ] Day/night follows the theme toggle; all objects recolor; stars only at night.
