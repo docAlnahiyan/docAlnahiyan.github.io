@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Publication Detail — Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0; --surface:#fffdf9; --surface-2:#f2ece0; --ink:#201e1a; --ink-2:#5c584f; --ink-3:#6e6a60;
+    --border:#e8e1d4; --accent:#c96442; --accent-ink:#a8482b; --accent-soft:#f6e7df;
+    --font-display:"Newsreader",Georgia,serif; --font-body:"IBM Plex Sans",system-ui,sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;
+    --border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;
+    --border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;color-scheme:dark}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent-ink);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:20}
+  .brand{font-family:var(--font-display);font-weight:600;font-size:17px}
+  .nav{display:flex;gap:18px;font-size:13px;color:var(--ink-2)}
+  .nav a{color:var(--ink-2)}
+  .theme{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:999px;
+    padding:6px 12px;font-family:var(--font-mono);font-size:12px;cursor:pointer}
+
+  .wrap{max-width:860px;margin:0 auto;padding:38px 24px 90px}
+  .crumb{font-size:12.5px;color:var(--ink-3);font-family:var(--font-mono);letter-spacing:.02em;margin-bottom:18px}
+  .crumb a{color:var(--ink-3)}
+
+  /* at-a-glance */
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .chip{font-family:var(--font-mono);font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);
+    background:var(--surface);color:var(--ink-2)}
+  .chip.status{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink);font-weight:500}
+  h1.title{font-family:var(--font-display);font-weight:600;font-size:34px;line-height:1.18;letter-spacing:-.01em;margin:0 0 10px}
+  .plain{font-size:17px;color:var(--ink-2);font-family:var(--font-display);font-style:italic;margin:0 0 16px}
+  .authors{font-size:14px;color:var(--ink-2);margin-bottom:18px}
+  .authors b{color:var(--ink);font-weight:600}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-family:var(--font-body);font-size:13px;font-weight:500;
+    border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:9px;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn:hover{border-color:var(--accent)}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 6px}
+  .badge{flex:1 1 180px;border:1px solid var(--border);border-radius:12px;padding:13px 15px;background:var(--surface)}
+  .badge .n{font-family:var(--font-display);font-weight:600;font-size:22px;color:var(--accent-ink);line-height:1.1}
+  .badge .l{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+
+  .rule{height:1px;background:var(--border);margin:34px 0}
+
+  h2.sec{font-family:var(--font-display);font-weight:600;font-size:23px;margin:0 0 12px}
+  .idea p{margin:0 0 13px;font-size:16px}
+
+  /* dig deeper */
+  .dig{margin-top:40px;border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface)}
+  .dig-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+  .dig-head .arrow{color:var(--accent);font-size:18px}
+  .dig-head h2{font-family:var(--font-display);font-weight:600;font-size:20px;margin:0}
+  .tabs{display:flex;gap:4px;padding:10px 14px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
+  .tab{font-family:var(--font-body);font-size:13.5px;font-weight:500;color:var(--ink-2);background:transparent;border:none;
+    padding:10px 14px;border-radius:9px 9px 0 0;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  .tab:hover{color:var(--ink)}
+  .tab.on{color:var(--accent-ink);border-bottom-color:var(--accent);background:var(--surface-2)}
+  .panel{display:none;padding:20px}
+  .panel.on{display:block}
+  .cap{font-size:13.5px;color:var(--ink-3);margin:0 0 14px;font-family:var(--font-mono)}
+
+  /* figure frame — the sim keeps its own light look, framed as an interactive figure */
+  .figure{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+  .figcap{font-size:12.5px;color:var(--ink-3);padding:10px 14px 0;font-style:italic}
+
+  /* how it works */
+  .chan-card{border:1px solid var(--border);border-radius:12px;padding:15px 16px;margin-bottom:14px;background:var(--surface-2)}
+  .chan-card h3{margin:0 0 5px;font-size:15px;font-family:var(--font-body);font-weight:600}
+  .chan-card .tag{font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);text-transform:uppercase;letter-spacing:.05em}
+  .chan-card p{margin:6px 0 0;font-size:14.5px;color:var(--ink-2)}
+  .mathtoggle{margin:4px 0 16px;font-family:var(--font-mono);font-size:12.5px;color:var(--accent-ink);background:none;border:none;cursor:pointer;padding:0}
+  .math{display:none}
+  .math.on{display:block}
+  .eq{font-family:var(--font-mono);font-size:14px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:8px;padding:11px 14px;margin:9px 0;overflow-x:auto}
+  .eq .lbl{color:var(--ink-3);font-size:12px;display:block;margin-bottom:3px}
+
+  table.worlds{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:6px}
+  table.worlds th,table.worlds td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}
+  table.worlds th{font-family:var(--font-mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);font-weight:600}
+  table.worlds td.num{text-align:right;font-variant-numeric:tabular-nums}
+  table.worlds .prof{font-family:var(--font-mono);font-size:12px;color:var(--ink-2)}
+
+  pre.cite{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:8px;padding:13px;overflow-x:auto;color:var(--ink-2);line-height:1.5}
+
+  /* ---------- scoped simulation ---------- */
+  .sim{
+    --ink:#1F2A37; --muted:#64748B; --line:#E2E8F0; --panel:#F8FAFC;
+    --navy:#1F3A5F; --navy-soft:#E8EEF5; --red:#C0392B; --red-soft:#FBEAE8;
+    --green:#1E7A54; --green-soft:#E7F4EE; --amber:#B7791F; --amber-soft:#FBF3E2;
+    --floor:#F1F4F8; --shelf:#CBD5E1; --shelf-dark:#94A3B8;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:#fff;
+  }
+  .sim .simhead{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--line)}
+  .sim .simhead .k{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;color:var(--navy);font-weight:700;text-transform:uppercase}
+  .sim .clock{font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--muted);font-weight:600}
+  .sim .steps{display:flex;gap:7px;padding:8px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+  .sim .step{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+  .sim .step b{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:var(--navy);color:#fff;font-size:9.5px;font-weight:700}
+  .sim .step .arrow{color:var(--line)}
+  .sim .mainrow{display:flex;align-items:stretch}
+  .sim .floor-wrap{flex:1 1 auto;position:relative;background:var(--panel);display:flex;align-items:center;justify-content:center;padding:12px 14px;min-width:0}
+  .sim canvas{background:var(--floor);border-radius:10px;box-shadow:0 1px 0 var(--line);max-width:100%;height:auto}
+  .sim .banner{position:absolute;top:18px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:12px;font-weight:600;
+    padding:7px 14px;border-radius:20px;box-shadow:0 6px 18px rgba(192,57,43,.28);opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;z-index:5;max-width:92%}
+  .sim .banner.show{opacity:1}
+  .sim .attr{flex:0 0 300px;border-left:1px solid var(--line);padding:13px 14px;display:flex;flex-direction:column;gap:11px;background:#fff}
+  .sim .attr h4{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--navy);font-weight:700;margin:0}
+  .sim .attr .sub{font-size:11px;color:var(--muted);line-height:1.5;margin:0}
+  .sim .chan{border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+  .sim .chan .ch-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:2px}
+  .sim .chan .ch-name{font-size:12px;font-weight:700}
+  .sim .chan .ch-tag{font-size:9.5px;color:var(--muted);font-weight:600}
+  .sim .chan .ch-desc{font-size:10.5px;color:var(--muted);line-height:1.4;margin-bottom:8px}
+  .sim .rank{display:flex;align-items:center;gap:7px;margin-top:5px;font-size:11.5px}
+  .sim .rank .pos{width:14px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700;text-align:right}
+  .sim .rank .who{width:44px;font-weight:700;font-family:"SF Mono",ui-monospace,Menlo,monospace;color:var(--ink)}
+  .sim .rank .barwrap{flex:1 1 auto;height:8px;background:var(--panel);border-radius:5px;overflow:hidden}
+  .sim .rank .bar{height:100%;border-radius:5px;transition:width .4s}
+  .sim .rank .scoreval{width:38px;text-align:right;font-variant-numeric:tabular-nums;font-size:10.5px;color:var(--muted)}
+  .sim .rank.truth .who{color:var(--red)}
+  .sim .rank.truth .who::after{content:" ✓";color:var(--red);font-weight:700}
+  .sim .chanA .bar{background:var(--navy)} .sim .chanA .rank.truth .bar{background:var(--red)}
+  .sim .chanB .bar{background:var(--amber)} .sim .chanB .rank.truth .bar{background:var(--red)}
+  .sim .reveal-note{font-size:11px;color:var(--red);background:var(--red-soft);border:1px solid #E7B7B0;border-radius:8px;padding:8px 10px;line-height:1.5;display:none}
+  .sim .reveal-note.show{display:block}
+  .sim .bar-ctrl{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .sim .stats{display:flex;gap:18px}
+  .sim .stat{display:flex;flex-direction:column;gap:1px}
+  .sim .stat .k{font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .sim .stat .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .sim .stat .v.red{color:var(--red)}
+  .sim .spacer{flex:1 1 auto}
+  .sim button.simbtn{font:inherit;font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 11px;border-radius:8px;cursor:pointer;transition:.12s}
+  .sim button.simbtn:hover{border-color:var(--shelf-dark)}
+  .sim button.simbtn.primary{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .sim button.simbtn.danger{background:#fff;color:var(--red);border-color:#E7B7B0}
+  .sim button.simbtn.gold{background:#fff;color:var(--amber);border-color:#E6CF9B}
+  .sim .speed{display:flex;gap:4px}
+  .sim .speed button{padding:6px 9px}
+  .sim .speed button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .sim .toggles{display:flex;gap:12px}
+  .sim .toggles label{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:5px;cursor:pointer}
+  .sim details.logbox{border-top:1px solid var(--line)}
+  .sim details.logbox summary{padding:10px 16px;font-size:12px;color:var(--navy);font-weight:600;cursor:pointer;list-style:none}
+  .sim details.logbox summary::-webkit-details-marker{display:none}
+  .sim details.logbox summary::before{content:"▸ ";color:var(--muted)}
+  .sim details.logbox[open] summary::before{content:"▾ "}
+  .sim .log-head{display:grid;grid-template-columns:56px 66px 1fr 80px 54px 1.2fr;gap:14px;padding:8px 20px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+    font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .sim .log-head .r{text-align:right}
+  .sim .log{height:190px;overflow-y:auto;padding:2px 12px 12px}
+  .sim .row{display:grid;grid-template-columns:56px 66px 1fr 80px 54px 1.2fr;gap:14px;align-items:center;padding:8px 9px;margin-top:5px;border-radius:8px;font-size:12px;
+    background:#fff;border:1px solid var(--line);font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;animation:simpop .3s ease}
+  @keyframes simpop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .sim .row .t{color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+  .sim .row .emp{font-weight:700;color:var(--navy)}
+  .sim .row .act{color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sim .row .zone{color:var(--muted);font-size:10.5px}
+  .sim .row .qty{text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+  .sim .row .qty.neg{color:var(--red)} .sim .row .qty.pos{color:var(--green)}
+  .sim .row .note{color:var(--muted);font-size:10.5px;font-family:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sim .row.flag{background:var(--red-soft);border-color:#E7B7B0}
+  .sim .row.flag .act{color:var(--red);font-weight:700}
+  .sim .row.count{background:var(--navy-soft);border-color:#C6D5E6}
+  .sim .row.count .act,.sim .row.count .emp{color:var(--navy)}
+  .sim .legend{display:flex;flex-wrap:wrap;gap:8px 14px;padding:9px 16px;border-top:1px solid var(--line);background:var(--panel)}
+  .sim .lg{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--muted)}
+  .sim .dot{width:9px;height:9px;border-radius:50%} .sim .sq{width:10px;height:10px;border-radius:3px}
+  @media (max-width:760px){ .sim .mainrow{flex-direction:column} .sim .attr{flex:1 1 auto;border-left:none;border-top:1px solid var(--line)} }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">Al-Nahiyan Khushbu</span>
+  <nav class="nav"><a href="#">Home</a><a href="#">Research</a><a href="#">Publications</a><a href="#">Projects</a><a href="#">CV</a></nav>
+  <button class="theme" id="theme">☀︎ / ☾</button>
+</div>
+
+<div class="wrap">
+  <div class="crumb"><a href="#">Research</a> &nbsp;›&nbsp; Warehouse theft attribution</div>
+
+  <!-- 1 · at-a-glance -->
+  <div class="chips">
+    <span class="chip status">Pre-print · under review</span>
+    <span class="chip">Insider fraud</span>
+    <span class="chip">Positive-unlabelled learning</span>
+    <span class="chip">Sep 28, 2026</span>
+  </div>
+  <h1 class="title">Catching Theft When the Records Lie</h1>
+  <p class="plain">Catching warehouse theft even when the thief edits the records to hide it.</p>
+  <p class="authors"><b>MD Junaeid Alam</b> (Trine University) · <b>Al-Nahiyan Khushbu</b> (Southwest Jiaotong University)</p>
+  <div class="actions">
+    <button class="btn primary">Request full paper</button>
+    <button class="btn">Code</button>
+    <button class="btn">Cite</button>
+  </div>
+  <div class="badges">
+    <div class="badge"><div class="n">#1</div><div class="l">True thief at the top of the review list</div></div>
+    <div class="badge"><div class="n">8 / 9</div><div class="l">Simulated worlds, true actor recovered</div></div>
+    <div class="badge"><div class="n">0</div><div class="l">False alarms on 1.07M real transactions</div></div>
+  </div>
+
+  <div class="rule"></div>
+
+  <!-- 2 · the idea -->
+  <div class="idea">
+    <h2 class="sec">The idea, in plain words</h2>
+    <p>A large share of warehouse loss is not burglary or error but the people inside the operation — and the hardest case is someone who both removes stock and edits the record to match the depleted shelf.</p>
+    <p>That is why auditing fails: when the same person takes the goods and writes the entry, the books stay internally consistent, so inspecting records reveals nothing.</p>
+    <p>The move is to stop auditing records and <b>attribute physical loss to people</b> — comparing each employee against their own baseline access, and producing a ranked shortlist for human review, never an automated accusation.</p>
+  </div>
+
+  <!-- 3 · dig deeper -->
+  <div class="dig">
+    <div class="dig-head"><span class="arrow">⤵</span><h2>Dig deeper</h2></div>
+    <div class="tabs">
+      <button class="tab on" data-tab="run">See it run</button>
+      <button class="tab" data-tab="how">How it works</button>
+      <button class="tab" data-tab="res">Results</button>
+      <button class="tab" data-tab="paper">Paper &amp; code</button>
+    </div>
+
+    <!-- TAB: See it run -->
+    <div class="panel on" data-panel="run">
+      <p class="cap">How to read this: watch honest operations, inject the two kinds of theft, then hit “Reveal sealed file” to see who the method flagged.</p>
+      <div class="figure">
+        <div class="sim">
+          <div class="simhead"><span class="k">Live warehouse simulation</span><span class="clock" id="clock">Day 1 · 08:00</span></div>
+          <div class="steps">
+            <span class="step"><b>1</b> Honest operations</span><span class="arrow">→</span>
+            <span class="step"><b>2</b> Theft hides in the record · truth sealed</span><span class="arrow">→</span>
+            <span class="step"><b>3</b> Counts open loss windows</span><span class="arrow">→</span>
+            <span class="step"><b>4</b> Channels rank who to review</span>
+          </div>
+          <div class="mainrow">
+            <div class="floor-wrap">
+              <canvas id="cv" width="1020" height="440"></canvas>
+              <div class="banner" id="banner"></div>
+            </div>
+            <aside class="attr">
+              <div><h4>Who to review</h4></div>
+              <p class="sub">Each employee ranked against their <em>own</em> baseline. No one is accused — this is a shortlist.</p>
+              <div class="chan chanA">
+                <div class="ch-head"><span class="ch-name">A · Presence lift</span><span class="ch-tag">physical</span></div>
+                <div class="ch-desc">In loss windows more than their routine predicts? &gt;1× = over-exposed.</div>
+                <div id="rankA"></div>
+              </div>
+              <div class="chan chanB">
+                <div class="ch-head"><span class="ch-name">B · Write-off anomaly</span><span class="ch-tag">record edit</span></div>
+                <div class="ch-desc">Writes off far more value than peers? Scored vs the peer median.</div>
+                <div id="rankB"></div>
+              </div>
+              <div class="reveal-note" id="revealNote"></div>
+            </aside>
+          </div>
+          <div class="bar-ctrl">
+            <div class="stats">
+              <div class="stat"><span class="k">Actions</span><span class="v" id="s-actions">0</span></div>
+              <div class="stat"><span class="k">In stock</span><span class="v" id="s-stock">0</span></div>
+              <div class="stat"><span class="k">Loss windows</span><span class="v red" id="s-loss">0</span></div>
+            </div>
+            <div class="spacer"></div>
+            <button class="simbtn primary" id="btn-play">❚❚ Pause</button>
+            <button class="simbtn danger" id="btn-theft">Inject physical theft</button>
+            <button class="simbtn danger" id="btn-edit">Inject record edit</button>
+            <button class="simbtn gold" id="btn-reveal">Reveal sealed file</button>
+            <div class="speed">
+              <button class="simbtn on" data-sp="1">1×</button>
+              <button class="simbtn" data-sp="2">2×</button>
+              <button class="simbtn" data-sp="4">4×</button>
+            </div>
+            <div class="toggles">
+              <label><input type="checkbox" id="tg-cam" checked> Cameras</label>
+              <label><input type="checkbox" id="tg-path"> Paths</label>
+            </div>
+          </div>
+          <details class="logbox">
+            <summary>Show transaction log</summary>
+            <div class="log-head"><span>Time</span><span>Worker</span><span>Action</span><span class="r">Zone</span><span class="r">Qty</span><span>Note</span></div>
+            <div class="log" id="log"></div>
+          </details>
+          <div class="legend">
+            <div class="lg"><span class="dot" style="background:#2E6FE0"></span>Picker</div>
+            <div class="lg"><span class="dot" style="background:#16A34A"></span>Approver (edits records)</div>
+            <div class="lg"><span class="dot" style="background:#E0902A"></span>Counter</div>
+            <div class="lg"><span class="dot" style="background:#C0392B"></span>Dishonest act</div>
+            <div class="lg" style="margin-left:auto;font-style:italic">Injected theft goes to a sealed file, never the log.</div>
+          </div>
+        </div>
+      </div>
+      <p class="figcap">Interactive figure — the two culprits are chosen at random each load, so the method has to find them.</p>
+    </div>
+
+    <!-- TAB: How it works -->
+    <div class="panel" data-panel="how">
+      <p class="cap">Two channels, one principle: judge each person against their own baseline, not the group.</p>
+      <div class="chan-card">
+        <span class="tag">Channel A — physical theft</span>
+        <h3>Exposure-adjusted presence lift</h3>
+        <p>Physical removal lowers the shelf but not the book, so a later cycle count opens a loss window. The thief turns up in those windows more often than their ordinary access predicts. A lift above 1 marks that over-exposure.</p>
+      </div>
+      <div class="chan-card">
+        <span class="tag">Channel B — record-editing theft</span>
+        <h3>Peer-relative write-off anomaly</h3>
+        <p>Editing the book to match the shelf leaves no window — but it leaves a trace: write-offs. An approver who writes off far more value than peers who hold the same authority stands out, scored robustly against the peer median.</p>
+      </div>
+      <button class="mathtoggle" id="mathBtn">＋ Show the math</button>
+      <div class="math" id="mathBox">
+        <div class="eq"><span class="lbl">Discrepancy at a count, and window loss</span>δᵢ = bᵢ − cᵢ &nbsp;&nbsp;·&nbsp;&nbsp; ℓ(w) = max(0, δᵢ − δᵢ₋₁)</div>
+        <div class="eq"><span class="lbl">Positive (loss) window label — otherwise unlabelled</span>y(w) = positive &nbsp;if&nbsp; ℓ(w) ≥ τ &nbsp;or&nbsp; u(w) &gt; 0</div>
+        <div class="eq"><span class="lbl">Channel A — Beta-smoothed posterior presence, then lift over the global rate r₀</span>θ̂ₑ = (α₀ + kₑ) / (α₀ + β₀ + nₑ) &nbsp;&nbsp;·&nbsp;&nbsp; Lₑ = θ̂ₑ / r₀</div>
+        <div class="eq"><span class="lbl">Channel B — robust z-score of write-off value against the approver peer group</span>Zₑ = (Vₑ − median) / max(MAD, ε)</div>
+        <p style="font-size:13px;color:var(--ink-2);margin:12px 0 0">The pipeline: calibrated honest operations pass a 15-check validation, a theft injector writes every true event to a <b>sealed ground-truth channel</b> used only for scoring, and the two channels read the visible record alone.</p>
+      </div>
+    </div>
+
+    <!-- TAB: Results -->
+    <div class="panel" data-panel="res">
+      <p class="cap">Nine simulated worlds spanning three adversary profiles × three theft rates. Delivered rate is the true theft rate in each.</p>
+      <table class="worlds">
+        <thead><tr><th>World</th><th>Profile</th><th class="r">Delivered rate</th><th class="r">Theft events</th><th class="r">Units taken</th></tr></thead>
+        <tbody>
+          <tr><td class="prof">careless_low</td><td>Careless</td><td class="num">0.15%</td><td class="num">183</td><td class="num">412</td></tr>
+          <tr><td class="prof">strategic_low</td><td>Strategic</td><td class="num">0.18%</td><td class="num">89</td><td class="num">508</td></tr>
+          <tr><td class="prof">careful_low</td><td>Careful</td><td class="num">0.19%</td><td class="num">200</td><td class="num">551</td></tr>
+          <tr><td class="prof">careless_mid</td><td>Careless</td><td class="num">0.36%</td><td class="num">320</td><td class="num">1025</td></tr>
+          <tr><td class="prof">strategic_mid</td><td>Strategic</td><td class="num">0.44%</td><td class="num">158</td><td class="num">1244</td></tr>
+          <tr><td class="prof">careful_mid</td><td>Careful</td><td class="num">0.49%</td><td class="num">455</td><td class="num">1403</td></tr>
+          <tr><td class="prof">careless_high</td><td>Careless</td><td class="num">1.06%</td><td class="num">765</td><td class="num">3002</td></tr>
+          <tr><td class="prof">strategic_high</td><td>Strategic</td><td class="num">1.23%</td><td class="num">378</td><td class="num">3490</td></tr>
+          <tr><td class="prof">careful_high</td><td>Careful</td><td class="num">1.47%</td><td class="num">1241</td><td class="num">4174</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:14px;color:var(--ink-2);margin-top:14px">Across these worlds the two channels place every true actor at the top of the review list in <b>8 of 9</b> cases at no false-accusation cost. On a real transaction dataset of ~1.07M records the method raises <b>no false alarms</b> on legitimate activity. The colluding picker–approver pair is the hardest case.</p>
+    </div>
+
+    <!-- TAB: Paper & code -->
+    <div class="panel" data-panel="paper">
+      <p class="cap">Pre-print, currently under review. Full PDF available on request.</p>
+      <div class="actions" style="margin-bottom:18px">
+        <button class="btn primary">Request full paper</button>
+        <button class="btn">View code</button>
+      </div>
+      <h3 style="font-family:var(--font-body);font-size:14px;font-weight:600;margin:0 0 8px">Cite</h3>
+      <pre class="cite">@unpublished{alam2026catching,
+  title   = {Catching Theft When the Records Lie: Exposure-Based
+             Attribution of Inventory Shrinkage in Pharmaceutical Warehouses},
+  author  = {Alam, MD Junaeid and Khushbu, Al-Nahiyan},
+  year    = {2026},
+  note    = {Pre-print, under review}
+}</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+/* theme toggle */
+(function(){
+  var root=document.documentElement;
+  try{var s=localStorage.getItem('ppt');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme');
+    var night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches);
+    var n=night?'light':'dark';root.setAttribute('data-theme',n);
+    try{localStorage.setItem('ppt',n);}catch(e){}
+  });
+  /* tabs */
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click',function(){
+      document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+      document.querySelectorAll('.panel').forEach(x=>x.classList.remove('on'));
+      t.classList.add('on');
+      document.querySelector('.panel[data-panel="'+t.dataset.tab+'"]').classList.add('on');
+    });
+  });
+  /* show the math */
+  document.getElementById('mathBtn').addEventListener('click',function(){
+    var b=document.getElementById('mathBox');var on=b.classList.toggle('on');
+    this.textContent=on?'－ Hide the math':'＋ Show the math';
+  });
+})();
+
+/* ---------- warehouse simulation ---------- */
+(() => {
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const C={ picker:'#2E6FE0', approver:'#16A34A', counter:'#E0902A', cam:'#1F3A5F', path:'#B8C4D2',
+    zoneLine:'#D4DCE6', shelf:'#CBD5E1', shelfEdge:'#9AA8B8' };
+
+  const M=16, GAP=14, cols=3, rows=2;
+  const zw=(W-M*2-GAP*(cols-1))/cols, zh=(H-M*2-GAP*(rows-1))/rows;
+  const zoneMeta=[
+    {name:'Z1 · PICKING',risk:1,tiers:['Cheap','Mid']},
+    {name:'Z2 · HIGH-VALUE VAULT',risk:3,tiers:['Controlled','Expensive']},
+    {name:'Z3 · BULK STORE',risk:1,tiers:['Cheap','Mid']},
+    {name:'Z4 · COLD CHAIN',risk:2,tiers:['Expensive','Mid']},
+    {name:'Z5 · RECEIVING',risk:1,tiers:['Mid','Cheap']},
+    {name:'Z6 · DISPATCH',risk:2,tiers:['Mid','Expensive']},
+  ];
+  const ZTINT=[
+    {fill:'#EAF2FD',line:'#AFCDEE',label:'#2563B0',shelf:'#C8DCF3',shelfEdge:'#8FB4E0'},
+    {fill:'#FBF0DD',line:'#E8C97F',label:'#B07611',shelf:'#F0DBA6',shelfEdge:'#D9B85F'},
+    {fill:'#E7F5EC',line:'#A9DCC0',label:'#1E8A58',shelf:'#C7E8D5',shelfEdge:'#8CCBA7'},
+    {fill:'#E3F3F6',line:'#A4D6DE',label:'#1296A8',shelf:'#C2E5EB',shelfEdge:'#86C8D2'},
+    {fill:'#F0ECFA',line:'#C9BAEA',label:'#6B4CC4',shelf:'#DAD0F1',shelfEdge:'#B3A0E0'},
+    {fill:'#FDEFE3',line:'#F2CDA3',label:'#C77A2C',shelf:'#F7DBC2',shelfEdge:'#E6B684'},
+  ];
+  const zones=[];
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){const i=r*cols+c;
+    zones.push({id:'Z'+(i+1),name:zoneMeta[i].name,risk:zoneMeta[i].risk,tiers:zoneMeta[i].tiers,tint:ZTINT[i],
+      x:M+c*(zw+GAP),y:M+r*(zh+GAP),w:zw,h:zh});}
+  const zoneById={}; zones.forEach(z=>zoneById[z.id]=z);
+
+  function makeShelves(z){const sh=[];const c2=3,r2=2,padX=16,padTop=38,padBot=14,gapX=18,gapY=20;
+    const sw=(z.w-padX*2-gapX*(c2-1))/c2, shh=(z.h-padTop-padBot-gapY*(r2-1))/r2;
+    for(let r=0;r<r2;r++) for(let c=0;c<c2;c++) sh.push({x:z.x+padX+c*(sw+gapX),y:z.y+padTop+r*(shh+gapY),w:sw,h:shh,zone:z.id});
+    return sh;}
+  let shelves=[]; zones.forEach(z=>shelves=shelves.concat(makeShelves(z)));
+  const shelvesInZone={}; zones.forEach(z=>shelvesInZone[z.id]=shelves.filter(s=>s.zone===z.id));
+  const cams=zones.map(z=>({x:z.x+9,y:z.y+9,a:Math.atan2(z.h,z.w)}));
+  const CAM_R=Math.min(zw,zh)*1.05, CAM_SPREAD=Math.PI*0.30;
+  const roleColor={picker:C.picker,approver:C.approver,counter:C.counter};
+  const shelfPoint=s=>({x:s.x+s.w/2,y:s.y+s.h+9});
+  const zoneCenter=z=>({x:z.x+z.w/2,y:z.y+z.h/2});
+  const randShelf=()=>shelves[(Math.random()*shelves.length)|0];
+  const randShelfIn=zid=>{const a=shelvesInZone[zid];return a[(Math.random()*a.length)|0];};
+
+  const TIERVAL={Cheap:2,Mid:15,Expensive:120,Controlled:300};
+  const MEDS={Cheap:['Saline 500ml','Paracetamol 500mg','Ibuprofen 200mg','Syringe 5ml'],
+    Mid:['Amoxicillin 500mg','Metformin 850mg','Atorvastatin 20mg','Omeprazole 20mg'],
+    Expensive:['Insulin glargine','Enoxaparin','Filgrastim','Adalimumab'],
+    Controlled:['Morphine 10mg','Oxycodone 5mg','Fentanyl patch','Methadone 10mg']};
+  function pickMed(zid){const z=zoneById[zid];const tier=z.tiers[(Math.random()*z.tiers.length)|0];
+    return {name:MEDS[tier][(Math.random()*MEDS[tier].length)|0],tier,val:TIERVAL[tier]};}
+
+  const roster=[];
+  for(let i=1;i<=11;i++) roster.push({id:'E-'+String(i).padStart(2,'0'),role:'picker'});
+  for(let i=12;i<=14;i++) roster.push({id:'E-'+String(i).padStart(2,'0'),role:'approver'});
+  for(let i=15;i<=16;i++) roster.push({id:'E-'+String(i).padStart(2,'0'),role:'counter'});
+  const workers=roster.map((r,i)=>{const z=zones[i%zones.length];
+    const sx=z.x+28+Math.random()*(z.w-56),sy=z.y+32+Math.random()*(z.h-56);const s=randShelf(),p=shelfPoint(s);
+    return {...r,x:sx,y:sy,tx:p.x,ty:p.y,target:s,state:'move',wait:0,speed:1.0+Math.random()*0.7,flash:0,path:[],pendingTheft:false,pendingEdit:false};});
+  const byId={}; workers.forEach(w=>byId[w.id]=w);
+  const pickers=workers.filter(w=>w.role==='picker'), approvers=workers.filter(w=>w.role==='approver');
+  const physThief=pickers[(Math.random()*pickers.length)|0].id;
+  const recThief=approvers[(Math.random()*approvers.length)|0].id;
+  const thiefZoneBias='Z2';
+
+  let stock={}, realStock={}; zones.forEach(z=>{stock[z.id]=4000;realStock[z.id]=4000;});
+  let simMin=8*60, day=1;
+  const pad=n=>String(n).padStart(2,'0');
+  const clockStr=()=>`Day ${day} · ${pad((simMin/60|0)%24)}:${pad(simMin%60|0)}`;
+  const ts=()=>`${pad((simMin/60|0)%24)}:${pad((simMin%60)|0)}`;
+
+  const kA={}, nA={}; workers.forEach(w=>{kA[w.id]=0;nA[w.id]=0;});
+  const windowActors={}; zones.forEach(z=>windowActors[z.id]=new Set());
+  const woValue={}; approvers.forEach(a=>woValue[a.id]=0);
+  function noteActivity(e,z){windowActors[z].add(e);}
+
+  const logEl=document.getElementById('log');
+  let actionCount=0, lossCount=0; const answerFile=[];
+  function addRow({emp,act,zone,qty,note,cls}){
+    const row=document.createElement('div');row.className='row'+(cls?(' '+cls):'');
+    const q=qty>0?('+'+qty):(qty<0?String(qty):'—'); const qcls=qty<0?'neg':(qty>0?'pos':'');
+    row.innerHTML=`<span class="t">${ts()}</span><span class="emp">${emp}</span><span class="act">${act}</span>`+
+      `<span class="zone" style="text-align:right">${zone}</span><span class="qty ${qcls}">${q}</span><span class="note">${note||''}</span>`;
+    logEl.prepend(row); while(logEl.children.length>40) logEl.removeChild(logEl.lastChild);
+  }
+  function doPick(w){const z=w.target.zone;const m=pickMed(z);const qty=-(2+((Math.random()*8)|0));
+    stock[z]+=qty;realStock[z]+=qty;actionCount++;noteActivity(w.id,z);addRow({emp:w.id,act:'pick '+m.name,zone:z,qty,note:m.tier});}
+  function doPutaway(w){const z=w.target.zone;const m=pickMed(z);const qty=(4+((Math.random()*10)|0));
+    stock[z]+=qty;realStock[z]+=qty;actionCount++;noteActivity(w.id,z);addRow({emp:w.id,act:'putaway '+m.name,zone:z,qty,note:m.tier});}
+  function doAdjust(w){const z=w.target.zone;const qty=-(1+((Math.random()*3)|0));
+    stock[z]+=qty;realStock[z]+=qty;actionCount++;noteActivity(w.id,z);addRow({emp:w.id,act:'adjust stock',zone:z,qty});}
+  function doApprove(w){const z=w.target.zone;const m=pickMed(z);actionCount++;noteActivity(w.id,z);
+    const qty=1+((Math.random()*3)|0);woValue[w.id]+=qty*m.val;addRow({emp:w.id,act:'approve write-off',zone:z,qty:0,note:`${qty}× ${m.name} · signed`});}
+  function doTheft(w){const z=(w.id===physThief&&Math.random()<0.7)?thiefZoneBias:w.target.zone;const m=pickMed(z);
+    const stolen=-(15+((Math.random()*25)|0));realStock[z]+=stolen;w.flash=1;noteActivity(w.id,z);
+    answerFile.push({t:ts(),emp:w.id,zone:z,qty:stolen,trick:'physical removal'});
+    flashBanner(`Hidden removal by ${w.id} in ${z} — ${m.name}. Sealed, absent from the log.`);
+    stock[z]+=-2;actionCount++;addRow({emp:w.id,act:'adjust stock',zone:z,qty:-2,note:'looks normal'});}
+  function doEdit(w){const z=w.target.zone;const m=pickMed('Z2');const qty=8+((Math.random()*14)|0);const v=qty*TIERVAL[m.tier];
+    realStock[z]-=qty;stock[z]-=qty;woValue[w.id]+=v;w.flash=1;actionCount++;noteActivity(w.id,z);
+    answerFile.push({t:ts(),emp:w.id,zone:z,qty:-qty,trick:'fake write-off'});
+    flashBanner(`${w.id} wrote off ${qty}× ${m.name} — books reconcile, no window. Sealed.`);
+    addRow({emp:w.id,act:'approve write-off',zone:z,qty:0,note:`${qty}× ${m.name} · signed`});}
+
+  function runCount(zoneId){
+    const z=zoneId||zones[(Math.random()*zones.length)|0].id;
+    const counter=workers.find(w=>w.role==='counter');
+    const short=stock[z]-realStock[z]; const actors=windowActors[z]; const positive=short>0;
+    actors.forEach(e=>{nA[e]++;if(positive)kA[e]++;}); windowActors[z]=new Set();
+    if(positive){lossCount++;stock[z]=realStock[z];
+      addRow({emp:counter?counter.id:'E-15',act:'cycle count',zone:z,qty:-short,note:`SHORT ${short} · loss window`,cls:'flag'});
+      flashBanner(`Cycle count in ${z}: ${short} units missing — loss window opened`);
+    }else{addRow({emp:counter?counter.id:'E-15',act:'cycle count',zone:z,qty:0,note:'all correct',cls:'count'});}
+    updateAttribution();
+  }
+  const bEl=document.getElementById('banner'); let bTimer=null;
+  function flashBanner(m){bEl.textContent=m;bEl.classList.add('show');clearTimeout(bTimer);bTimer=setTimeout(()=>bEl.classList.remove('show'),2800);}
+
+  let revealed=false;
+  function channelA(){let K=0,N=0;workers.forEach(w=>{K+=kA[w.id];N+=nA[w.id];});const r0=N>0?K/N:0;
+    const kappa=5,a0=r0*kappa,b0=(1-r0)*kappa;
+    const rows=pickers.map(w=>{const post=(a0+kA[w.id])/(a0+b0+nA[w.id]);return {id:w.id,score:r0>0?post/r0:1};}).sort((p,q)=>q.score-p.score);
+    return {rows};}
+  function channelB(){const vals=approvers.map(a=>woValue[a.id]).sort((x,y)=>x-y);const median=vals.length?vals[(vals.length-1)>>1]:0;
+    const devs=approvers.map(a=>Math.abs(woValue[a.id]-median)).sort((x,y)=>x-y);const mad=devs.length?devs[(devs.length-1)>>1]:0;const eps=50;
+    const rows=approvers.map(a=>({id:a.id,score:(woValue[a.id]-median)/Math.max(mad,eps)})).sort((p,q)=>q.score-p.score);return {rows};}
+  function renderRank(elId,rowsArr,fmt){const el=document.getElementById(elId);const top=rowsArr.slice(0,4);
+    const maxAbs=Math.max(0.001,...top.map(r=>Math.abs(r.score)));
+    el.innerHTML=top.map((r,i)=>{const isThief=revealed&&(r.id===physThief||r.id===recThief);const w=Math.max(4,Math.min(100,(r.score/maxAbs)*100));
+      return `<div class="rank ${isThief?'truth':''}"><span class="pos">${i+1}</span><span class="who">${r.id}</span>`+
+        `<span class="barwrap"><span class="bar" style="width:${w}%"></span></span><span class="scoreval">${fmt(r.score)}</span></div>`;}).join('');}
+  function updateAttribution(){renderRank('rankA',channelA().rows,s=>s.toFixed(2)+'×');renderRank('rankB',channelB().rows,s=>s.toFixed(1)+'σ');}
+  function doReveal(){revealed=true;const A=channelA().rows,B=channelB().rows;
+    const rA=A.findIndex(r=>r.id===physThief)+1,rB=B.findIndex(r=>r.id===recThief)+1;
+    const phys=answerFile.filter(a=>a.trick==='physical removal').length,edit=answerFile.filter(a=>a.trick==='fake write-off').length;
+    const note=document.getElementById('revealNote');note.classList.add('show');
+    note.innerHTML=`<b>Sealed file opened.</b> ${phys} removals by <b>${physThief}</b>, ${edit} edits by <b>${recThief}</b>.<br>`+
+      `Channel A ranks ${physThief} at <b>#${rA||'—'}</b>/${A.length} · Channel B ranks ${recThief} at <b>#${rB||'—'}</b>/${B.length}.`;
+    updateAttribution();flashBanner('Sealed file revealed — compare the true actors to the list');}
+
+  function assignTarget(w){
+    if(w.role==='counter'){const z=zones[(Math.random()*zones.length)|0];const c=zoneCenter(z);w.tx=c.x;w.ty=c.y;w.target={zone:z.id,center:true};}
+    else{let s;if(w.id===physThief&&w.pendingTheft&&Math.random()<0.7)s=randShelfIn(thiefZoneBias);else s=randShelf();
+      const p=shelfPoint(s);w.tx=p.x;w.ty=p.y;w.target=s;}
+    w.state='move';}
+  function arrive(w){w.state='work';w.wait=16+((Math.random()*26)|0);const r=Math.random();
+    if(w.pendingTheft){doTheft(w);w.pendingTheft=false;}
+    else if(w.pendingEdit){doEdit(w);w.pendingEdit=false;}
+    else if(w.role==='counter'&&w.target.center){runCount(w.target.zone);}
+    else if(w.role==='approver'){r<0.6?doApprove(w):doAdjust(w);}
+    else{if(r<0.62)doPick(w);else if(r<0.85)doPutaway(w);else doAdjust(w);}}
+
+  let playing=true, speed=1;
+  const btnPlay=document.getElementById('btn-play');
+  btnPlay.onclick=()=>{playing=!playing;btnPlay.textContent=playing?'❚❚ Pause':'▶ Play';};
+  document.getElementById('btn-theft').onclick=()=>{byId[physThief].pendingTheft=true;flashBanner(`${physThief} is heading to divert stock…`);};
+  document.getElementById('btn-edit').onclick=()=>{byId[recThief].pendingEdit=true;flashBanner(`${recThief} is heading to sign an inflated write-off…`);};
+  document.getElementById('btn-reveal').onclick=doReveal;
+  document.querySelectorAll('.speed button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('.speed button').forEach(x=>x.classList.remove('on'));b.classList.add('on');speed=+b.dataset.sp;};});
+  const tgCam=document.getElementById('tg-cam'),tgPath=document.getElementById('tg-path');
+
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function drawZone(z){ctx.fillStyle=z.tint.fill;ctx.strokeStyle=z.tint.line;ctx.lineWidth=1.8;roundRect(z.x,z.y,z.w,z.h,9);ctx.fill();ctx.stroke();
+    ctx.textAlign='left';ctx.fillStyle=z.tint.label;ctx.font='700 10px -apple-system,Segoe UI,Roboto,sans-serif';ctx.fillText(z.name,z.x+12,z.y+20);
+    if(z.risk===3){ctx.fillStyle='#C0392B';ctx.font='700 8px -apple-system,Segoe UI,sans-serif';ctx.fillText('● HIGH RISK',z.x+12,z.y+31);}}
+  function drawShelf(s){const t=zoneById[s.zone].tint;ctx.fillStyle=t.shelf;ctx.strokeStyle=t.shelfEdge;ctx.lineWidth=1;roundRect(s.x,s.y,s.w,s.h,3);ctx.fill();ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;for(let i=1;i<3;i++){const yy=s.y+s.h*i/3;ctx.beginPath();ctx.moveTo(s.x+2,yy);ctx.lineTo(s.x+s.w-2,yy);ctx.stroke();}}
+  function drawCamera(cam){if(tgCam.checked){const g=ctx.createRadialGradient(cam.x,cam.y,8,cam.x,cam.y,CAM_R);
+    g.addColorStop(0,'rgba(31,58,95,.15)');g.addColorStop(1,'rgba(31,58,95,0)');ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(cam.x,cam.y);
+    ctx.arc(cam.x,cam.y,CAM_R,cam.a-CAM_SPREAD,cam.a+CAM_SPREAD);ctx.closePath();ctx.fill();}
+    ctx.fillStyle=C.cam;ctx.beginPath();ctx.arc(cam.x,cam.y,5,0,7);ctx.fill();}
+  function drawWorker(w){
+    if(tgPath.checked&&w.path.length>1){ctx.strokeStyle=C.path;ctx.lineWidth=1.1;ctx.setLineDash([3,4]);ctx.beginPath();
+      ctx.moveTo(w.path[0].x,w.path[0].y);for(const p of w.path)ctx.lineTo(p.x,p.y);ctx.stroke();ctx.setLineDash([]);}
+    if(w.flash>0){ctx.strokeStyle=`rgba(192,57,43,${w.flash})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(w.x,w.y,12+(1-w.flash)*12,0,7);ctx.stroke();w.flash-=0.02;if(w.flash<0)w.flash=0;}
+    const col=roleColor[w.role];ctx.fillStyle=col;ctx.beginPath();ctx.arc(w.x,w.y,6.5,0,7);ctx.fill();
+    if(revealed&&(w.id===physThief||w.id===recThief)){ctx.strokeStyle='#C0392B';ctx.lineWidth=2.2;ctx.beginPath();ctx.arc(w.x,w.y,11,0,7);ctx.stroke();}
+    ctx.fillStyle='#fff';ctx.font='700 7px Segoe UI';ctx.textAlign='center';ctx.fillText(w.id.slice(2),w.x,w.y+2.5);
+    if(w.state==='work'){ctx.strokeStyle=col;ctx.lineWidth=1.3;ctx.beginPath();ctx.arc(w.x,w.y,10,0,7);ctx.stroke();}}
+  function render(){ctx.clearRect(0,0,W,H);zones.forEach(drawZone);shelves.forEach(drawShelf);cams.forEach(drawCamera);workers.forEach(drawWorker);}
+
+  let countTimer=0, autoTheftTimer=1400, autoEditTimer=2200;
+  function step(dt){simMin+=dt*0.6;if(simMin>=24*60){simMin-=24*60;day++;}
+    document.getElementById('clock').textContent=clockStr();
+    workers.forEach(w=>{
+      if(w.state==='move'){const dx=w.tx-w.x,dy=w.ty-w.y,d=Math.hypot(dx,dy);
+        if(d<2){arrive(w);}else{const v=w.speed*dt*1.5;w.x+=dx/d*Math.min(v,d);w.y+=dy/d*Math.min(v,d);
+          if(w.path.length===0||Math.hypot(w.x-w.path[w.path.length-1].x,w.y-w.path[w.path.length-1].y)>7){w.path.push({x:w.x,y:w.y});if(w.path.length>30)w.path.shift();}}}
+      else if(w.state==='work'){w.wait-=dt;if(w.wait<=0){w.path=[];assignTarget(w);}}});
+    countTimer+=dt;if(countTimer>700){countTimer=0;runCount();}
+    autoTheftTimer-=dt;if(autoTheftTimer<=0){autoTheftTimer=2200+Math.random()*1600;byId[physThief].pendingTheft=true;}
+    autoEditTimer-=dt;if(autoEditTimer<=0){autoEditTimer=3000+Math.random()*2000;byId[recThief].pendingEdit=true;}
+    document.getElementById('s-actions').textContent=actionCount.toLocaleString();
+    let tot=0;Object.values(stock).forEach(v=>tot+=v);document.getElementById('s-stock').textContent=tot.toLocaleString();
+    document.getElementById('s-loss').textContent=lossCount;}
+  let last=performance.now();
+  function frame(now){const dt=Math.min(48,now-last)/16.67;last=now;if(playing){for(let i=0;i<speed;i++)step(dt);}render();requestAnimationFrame(frame);}
+  updateAttribution();requestAnimationFrame(frame);
+  if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){playing=false;btnPlay.textContent='▶ Play';}
+})();
+</script>
+</body>
+</html>
