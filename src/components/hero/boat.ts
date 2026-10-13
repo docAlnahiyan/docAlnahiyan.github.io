@@ -23,13 +23,18 @@ const K = 0.6;
 /** Demo waterline and the boat's centre. */
 const WATER = 270;
 const CX = 420;
+/**
+ * The rower and his rowlock sit just left of the hull's centre; they move
+ * together, so the stroke geometry is unchanged.
+ */
+const ROWER_X = -42;
 /** Oar pivot (rowlock), outboard and inboard oar lengths. */
-const P = { x: 430, y: 258 };
+const P = { x: 430 + ROWER_X, y: 258 };
 const LO = 132;
 const LI = 58;
 /** Rower's hip and shoulder, and the lantern's centre. */
-const HIP = { x: 452, y: 258 };
-const SHOULDER = { x: 446, y: 232 };
+const HIP = { x: 452 + ROWER_X, y: 258 };
+const SHOULDER = { x: 446 + ROWER_X, y: 232 };
 const LX = 528.5;
 const LY = 228;
 const DEG = 180 / Math.PI;
@@ -115,11 +120,12 @@ export function drawBoat(rc: RoughSVG, svg: SVGSVGElement, c: Palette, night: bo
   const glow = night ? el<SVGCircleElement>('circle', { cx: LX, cy: LY, r: 46, fill: 'url(#hero-lamp-glow)' }, body) : undefined;
   const flame = night ? el<SVGCircleElement>('circle', { cx: LX, cy: LY, r: 3.4, fill: c.lamp }, body) : undefined;
 
-  // Rower: torso and head lean together; the leg stays put; the arm follows the oar handle.
+  // Rower: torso and head lean together; the leg stays put, stretched toward
+  // the bow on the same side as his arms; the arm follows the oar handle.
   const torso = el<SVGGElement>('g', {}, body);
   torso.appendChild(rc.line(HIP.x, HIP.y, SHOULDER.x, SHOULDER.y, { ...rower, strokeWidth: w(4), seed: 36 }));
   torso.appendChild(rc.circle(SHOULDER.x - 4, SHOULDER.y - 14, 20, { ...rower, strokeWidth: w(2.2), fill: c.char, fillStyle: 'solid', roughness: 1.2, seed: 37 }));
-  body.appendChild(rc.line(HIP.x, HIP.y, 410, 262, { ...rower, strokeWidth: w(3), seed: 38 }));
+  body.appendChild(rc.line(HIP.x, HIP.y, HIP.x + 42, 262, { ...rower, strokeWidth: w(3), seed: 38 }));
   const arm = el<SVGPathElement>('path', { fill: 'none', stroke: c.char, 'stroke-width': w(3), 'stroke-linecap': 'round' }, body);
 
   // The oar turns about the pivot; its local +x points to the blade.
