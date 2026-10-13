@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parkinson Model Explainer — Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0; --surface:#fffdf9; --surface-2:#f2ece0; --ink:#201e1a; --ink-2:#5c584f; --ink-3:#6e6a60;
+    --border:#e8e1d4; --accent:#c96442; --accent-ink:#a8482b; --accent-soft:#f6e7df;
+    --ctrl:#3b6fb0; --ctrl-soft:#e8f0f9; --pd:#c0564b; --prod:#c99a3f; --ctl:#3f8f6b;
+    --font-display:"Newsreader",Georgia,serif; --font-body:"IBM Plex Sans",system-ui,sans-serif; --font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;
+    --border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ctrl:#6ea3df;--ctrl-soft:#26303a;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;
+    --border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ctrl:#6ea3df;--ctrl-soft:#26303a;color-scheme:dark}
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent-ink)}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);
+    position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:30}
+  .brand{font-family:var(--font-display);font-weight:600;font-size:17px}
+  .nav{display:flex;gap:18px;font-size:13px;color:var(--ink-2)}
+  .theme{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:var(--font-mono);font-size:12px;cursor:pointer}
+
+  .wrap{max-width:900px;margin:0 auto;padding:40px 24px 100px}
+  .crumb{font-size:12.5px;color:var(--ink-3);font-family:var(--font-mono);margin-bottom:18px}
+  .crumb a{color:var(--ink-3)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{font-family:var(--font-mono);font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2)}
+  .chip.award{background:var(--accent-soft);border-color:transparent;color:var(--accent-ink);font-weight:500}
+  h1{font-family:var(--font-display);font-weight:600;font-size:33px;line-height:1.18;margin:0 0 10px}
+  .plain{font-size:17px;color:var(--ink-2);font-family:var(--font-display);font-style:italic;margin:0 0 14px}
+  .authors{font-size:14px;color:var(--ink-2);margin-bottom:6px}
+  .authors b{color:var(--ink)}
+
+  /* progress rail */
+  .rail{position:fixed;left:max(16px,calc(50% - 560px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:20}
+  .rail button{display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;color:var(--ink-3);font-family:var(--font-mono);font-size:11px;padding:0;text-align:left}
+  .rail .pip{width:9px;height:9px;border-radius:50%;background:var(--border);flex:0 0 auto;transition:.2s}
+  .rail button.on .pip{background:var(--accent);transform:scale(1.3)}
+  .rail button.on{color:var(--ink)}
+  .rail .lbl{opacity:0;transition:.2s;white-space:nowrap}
+  .rail:hover .lbl,.rail button.on .lbl{opacity:1}
+  @media (max-width:1180px){.rail{display:none}}
+
+  .stage{border-top:1px solid var(--border);padding:38px 0;opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+  .stage.in{opacity:1;transform:none}
+  .stage .kick{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .stage h2{font-family:var(--font-display);font-weight:600;font-size:24px;margin:0 0 10px}
+  .stage p{font-size:15.5px;color:var(--ink-2);margin:0 0 12px;max-width:62ch}
+  .note{font-size:12.5px;color:var(--ink-3);font-style:italic}
+
+  .viz{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:16px}
+
+  /* stage 1 cohorts */
+  .cohorts{display:flex;gap:14px;flex-wrap:wrap}
+  .cohort{flex:1 1 180px;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--surface-2)}
+  .cohort .nm{font-weight:600;font-size:15px}
+  .cohort .nm.ctl{color:var(--ctl)} .cohort .nm.prod{color:var(--prod)} .cohort .nm.pd{color:var(--pd)}
+  .cohort .ds{font-size:13px;color:var(--ink-2);margin-top:4px}
+  .stackmini{display:flex;margin-top:10px}
+  .stackmini span{width:22px;height:28px;border-radius:3px;border:1px solid var(--border);background:#000 center/cover no-repeat;margin-right:-8px;box-shadow:1px 0 0 var(--surface-2)}
+  .stackmini span:nth-child(1){background-image:url('mri/slice_05.png')}
+  .stackmini span:nth-child(2){background-image:url('mri/slice_06.png')}
+  .stackmini span:nth-child(3){background-image:url('mri/slice_07.png')}
+  .stackmini span:nth-child(4){background-image:url('mri/slice_08.png')}
+
+  /* stage 2 slices */
+  .slice-row{display:flex;gap:22px;align-items:center;flex-wrap:wrap}
+  .volume{position:relative;width:150px;height:150px;flex:0 0 auto}
+  .volume span{position:absolute;left:0;width:120px;height:120px;border:1px solid #556;border-radius:6px;background:#0d0d10 center/cover no-repeat;box-shadow:1px 1px 3px rgba(0,0,0,.25)}
+  .bigslice{flex:1 1 240px;display:flex;flex-direction:column;align-items:center;gap:8px;min-width:220px}
+  .bigslice img{width:230px;height:230px;object-fit:contain;background:#000;border-radius:10px;border:1px solid var(--border)}
+  .scrub{width:100%;max-width:280px}
+  .scrub input{width:100%}
+  .slicelbl{font-family:var(--font-mono);font-size:12px;color:var(--ink-2)}
+  .midtag{font-family:var(--font-mono);font-size:11px;color:var(--accent-ink);font-weight:600}
+
+  /* stage 3 preprocess */
+  .pipe{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .pstep{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+  .pstep .thumb{width:92px;height:92px;border-radius:8px;border:1px solid var(--border);background:#000;overflow:hidden;position:relative}
+  .pstep .thumb img{width:100%;height:100%;object-fit:cover}
+  .pstep .cap{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-2);max-width:96px;line-height:1.35}
+  .parrow{color:var(--ink-3);font-size:18px}
+  .m-reg img{filter:none}
+  .m-reg .cross{position:absolute;inset:0}
+  .m-reg .cross::before,.m-reg .cross::after{content:"";position:absolute;background:rgba(90,160,240,.7)}
+  .m-reg .cross::before{left:50%;top:0;bottom:0;width:1px} .m-reg .cross::after{top:50%;left:0;right:0;height:1px}
+  .m-skull img{clip-path:ellipse(42% 46% at 50% 50%)}
+  .m-norm img{filter:contrast(1.35) brightness(1.08)}
+  .m-resize img{clip-path:ellipse(42% 46% at 50% 50%);filter:contrast(1.35) brightness(1.08);image-rendering:pixelated;transform:scale(.82)}
+  .m-aug img{clip-path:ellipse(42% 46% at 50% 50%);transform:rotate(-8deg) scaleX(-1);filter:contrast(1.1)}
+
+  /* stage 4 cnn */
+  .cnn{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+  .fmap{background:linear-gradient(135deg,var(--ctrl-soft),var(--surface-2));border:1px solid var(--border);border-radius:6px}
+  .cnn .blk{display:flex;flex-direction:column;align-items:center;gap:7px;min-width:72px}
+  .cnn .blk .lab{font-family:var(--font-mono);font-size:9.5px;color:var(--ink-3);text-align:center;line-height:1.4}
+  .cnn .blk .lab b{color:var(--ink-2);font-weight:600;display:block}
+  .cnn .blk{cursor:pointer}
+  .cnn .blk .fmapc{display:block;transition:transform .15s}
+  .cnn .blk:hover .fmapc{transform:translateY(-2px)}
+
+  /* stage 5 transformer */
+  .tokens{display:flex;gap:5px;flex-wrap:wrap;justify-content:center;max-width:430px;margin:0 auto}
+  .tok{width:20px;height:20px;border-radius:4px;background:var(--ctrl);opacity:.85}
+  .attnsvg{display:block;margin:14px auto 0;max-width:100%}
+  #txSvg{width:100%;height:auto;display:block;max-width:680px;margin:0 auto}
+
+  /* stage 6 output */
+  .out-row{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+  .slicebox{position:relative;width:240px;height:240px;flex:0 0 auto;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:#000}
+  .slicebox img{width:100%;height:100%;object-fit:contain}
+  .heat{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .4s;mix-blend-mode:screen}
+  .heat.on{opacity:.9}
+  .outpanel{flex:1 1 280px;min-width:260px}
+  .switch{display:flex;gap:6px;margin-bottom:14px}
+  .switch button{font-family:var(--font-body);font-size:12.5px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);padding:7px 12px;border-radius:8px;cursor:pointer}
+  .switch button.on{color:#fff}
+  .switch button.ctl.on{background:var(--ctl);border-color:var(--ctl)}
+  .switch button.prod.on{background:var(--prod);border-color:var(--prod)}
+  .switch button.pd.on{background:var(--pd);border-color:var(--pd)}
+  .probs{display:flex;flex-direction:column;gap:9px;margin-bottom:8px}
+  .prob{display:flex;align-items:center;gap:10px;font-size:13px}
+  .prob .nm{width:78px;font-weight:500}
+  .prob .track{flex:1 1 auto;height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+  .prob .fill{height:100%;border-radius:6px;transition:width .5s}
+  .prob .pct{width:42px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-2)}
+  .prob.ctl .fill{background:var(--ctl)} .prob.prod .fill{background:var(--prod)} .prob.pd .fill{background:var(--pd)}
+  .verdict{font-size:13.5px;margin:8px 0 0}
+  .verdict b{font-family:var(--font-display);font-size:16px}
+  .toggle-attn{margin-top:12px;font-family:var(--font-mono);font-size:12px;color:var(--accent-ink);background:none;border:1px solid var(--border);border-radius:8px;padding:7px 11px;cursor:pointer}
+  .metrics{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+  .metric{border:1px solid var(--border);border-radius:10px;padding:9px 13px;background:var(--surface-2);min-width:92px}
+  .metric .v{font-family:var(--font-display);font-weight:600;font-size:19px}
+  .metric .k{font-family:var(--font-mono);font-size:10px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em}
+  .bench{margin-top:18px;border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface-2)}
+  .bench-title{font-family:var(--font-body);font-weight:600;font-size:13px;margin-bottom:8px}
+  .bench svg{width:100%;height:auto;display:block}
+  .bench-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:8px;font-size:11.5px;color:var(--ink-2)}
+  .bench-legend span{display:flex;align-items:center;gap:6px}
+  .bench-legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .flag{background:var(--accent-soft);border:1px solid transparent;border-radius:10px;padding:11px 14px;font-size:12.5px;color:var(--accent-ink);margin-top:14px}
+
+  @media (prefers-reduced-motion:reduce){.stage{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="brand">Al-Nahiyan Khushbu</span>
+  <nav class="nav"><a href="#">Home</a><a href="#">Research</a><a href="#">Publications</a><a href="#">Projects</a></nav>
+  <button class="theme" id="theme">☀︎ / ☾</button>
+</div>
+
+<div class="rail" id="rail"></div>
+
+<div class="wrap">
+  <div class="crumb"><a href="#">Research</a> &nbsp;›&nbsp; Parkinson's from brain MRI</div>
+  <div class="chips">
+    <span class="chip award">Best Paper · IARCE 2024</span>
+    <span class="chip">Medical imaging</span>
+    <span class="chip">CNN + Transformer</span>
+    <span class="chip">PPMI</span>
+  </div>
+  <h1>Reading Parkinson's from a brain MRI</h1>
+  <p class="plain">A hybrid CNN–Transformer that sorts a structural brain scan into Control, Prodromal, or Parkinson's — and shows where it looked.</p>
+  <p class="authors"><b>Al-Nahiyan Khushbu</b>, Yang, Liu & Zhang · 80.5% accuracy, AUC 0.84</p>
+  <p class="note">Walk down the page to follow one scan from the archive to a prediction. Scrub, switch cohorts, and toggle the attention map as you go.</p>
+
+  <!-- STAGE 1 -->
+  <section class="stage" id="s1">
+    <div class="kick">Stage 1 · The data</div>
+    <h2>PPMI — three cohorts</h2>
+    <p>Scans come from the <b>Parkinson's Progression Markers Initiative (PPMI)</b>: T1-weighted structural MRI from three groups the model learns to separate. Access needs a data-use agreement, so no raw scans are hosted here — the brain shown throughout is the open MNI152 template, for illustration.</p>
+    <div class="viz">
+      <div class="cohorts">
+        <div class="cohort"><div class="nm ctl">Control</div><div class="ds">No Parkinson's. The healthy baseline.</div><div class="stackmini"><span></span><span></span><span></span><span></span></div></div>
+        <div class="cohort"><div class="nm prod">Prodromal</div><div class="ds">Early, at-risk stage — before clinical diagnosis.</div><div class="stackmini"><span></span><span></span><span></span><span></span></div></div>
+        <div class="cohort"><div class="nm pd">Parkinson's (PD)</div><div class="ds">Clinically diagnosed Parkinson's disease.</div><div class="stackmini"><span></span><span></span><span></span><span></span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 2 -->
+  <section class="stage" id="s2">
+    <div class="kick">Stage 2 · One scan</div>
+    <h2>A 3D volume → the middle axial slice</h2>
+    <p>Each scan is a 3D stack of slices. Rather than process the whole volume, the model takes the <b>middle axial slice</b> — one representative 2D image. Scrub the stack: the highlighted frame is the slice that goes forward.</p>
+    <div class="viz">
+      <div class="slice-row">
+        <div class="volume" id="volume" aria-hidden="true"></div>
+        <div class="bigslice">
+          <img id="sliceImg" src="mri/slice_06.png" alt="Axial brain MRI slice">
+          <div class="scrub"><input type="range" id="scrub" min="0" max="12" value="6"></div>
+          <div class="slicelbl">slice <span id="sliceNum">7</span> / 13 &nbsp;<span class="midtag" id="midtag">← middle slice (used)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STAGE 3 -->
+  <section class="stage" id="s3">
+    <div class="kick">Stage 3 · Preprocess</div>
+    <h2>Preparing the slice</h2>
+    <p>Before the network sees it, the slice is standardised so every scan is comparable.</p>
+    <div class="viz">
+      <div class="pipe">
+        <div class="pstep m-reg"><div class="thumb"><img src="mri/slice_06.png" alt=""><div class="cross"></div></div><div class="cap">Register → MNI PD25</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Middle axial slice</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep m-resize"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Resize 224×224</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep m-norm"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Normalize µ=0.5, σ=0.5</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep m-aug"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Augment (train)</div></div>
+      </div>
+      <p class="note" style="margin-top:14px;text-align:center">Volumes are registered to the MNI PD25-T1MPRAGE (1 mm) template in MATLAB; the single-channel slice is duplicated across RGB for ResNet18. Training-only augmentation: rotation ±10°, horizontal flip, colour jitter, and affine shifts.</p>
+    </div>
+  </section>
+
+  <!-- STAGE 4 -->
+  <section class="stage" id="s4">
+    <div class="kick">Stage 4 · CNN</div>
+    <h2>ResNet18 reads local structure</h2>
+    <p>The 2D slice passes through <b>ResNet18</b>. Each block shrinks the image spatially and deepens it into more feature channels — capturing local structure: edges, tissue boundaries, shapes.</p>
+    <div class="viz">
+      <div class="cnn" id="cnn"></div>
+      <p class="note" style="margin-top:22px;text-align:center">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The stacks show feature maps shrinking spatially and deepening in channels — hover a layer to watch its maps recompute.</p>
+    </div>
+  </section>
+
+  <!-- STAGE 5 -->
+  <section class="stage" id="s5">
+    <div class="kick">Stage 5 · Transformer</div>
+    <h2>The Transformer relates distant regions</h2>
+    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder (6 layers, 8 heads)</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
+    <div class="viz">
+      <svg id="txSvg" viewBox="0 0 680 510" role="img" aria-label="Transformer encoder: tokens with positional encoding into six encoder blocks, each with multi-head self-attention and feed-forward sublayers with residual add and norm, then global average pooling, dropout and a fully-connected three-class head; a side panel shows the self-attention weight matrix across tokens for eight heads"></svg>
+      <p class="note" style="text-align:center;margin-top:10px">The 7×7×512 feature map is flattened to 49 tokens (d = 512) with positional encodings, then passed through <b>6 encoder blocks</b> — each: multi-head self-attention (8 heads) → Add &amp; Norm → feed-forward (dropout) → Add &amp; Norm. Global average pooling (no CLS token) → dropout p = 0.5 → fully-connected head → the three classes.</p>
+    </div>
+  </section>
+
+  <!-- STAGE 6 -->
+  <section class="stage" id="s6">
+    <div class="kick">Stage 6 · Prediction & attention</div>
+    <h2>The verdict — and where it looked</h2>
+    <p>A classification head turns the Transformer's output into three probabilities. Pick an example cohort to see a typical prediction, and toggle the <b>attention map</b> to see which regions of the slice drove it.</p>
+    <div class="viz">
+      <div class="out-row">
+        <div class="slicebox">
+          <img src="mri/slice_mid.png" alt="Axial brain MRI slice">
+        </div>
+        <div class="outpanel">
+          <div class="switch">
+            <button class="ctl on" data-c="ctl">Control</button>
+            <button class="prod" data-c="prod">Prodromal</button>
+            <button class="pd" data-c="pd">PD</button>
+          </div>
+          <div class="probs">
+            <div class="prob ctl"><span class="nm">Control</span><span class="track"><span class="fill" id="f-ctl"></span></span><span class="pct" id="p-ctl">0%</span></div>
+            <div class="prob prod"><span class="nm">Prodromal</span><span class="track"><span class="fill" id="f-prod"></span></span><span class="pct" id="p-prod">0%</span></div>
+            <div class="prob pd"><span class="nm">PD</span><span class="track"><span class="fill" id="f-pd"></span></span><span class="pct" id="p-pd">0%</span></div>
+          </div>
+          <p class="verdict">Predicted: <b id="verdict">Control</b></p>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="v">80.5%</div><div class="k">Accuracy</div></div>
+        <div class="metric"><div class="v">80.5%</div><div class="k">Precision</div></div>
+        <div class="metric"><div class="v">79.9%</div><div class="k">Recall</div></div>
+        <div class="metric"><div class="v">0.80</div><div class="k">F1</div></div>
+        <div class="metric"><div class="v">0.84</div><div class="k">AUC-ROC</div></div>
+      </div>
+      <div class="bench">
+        <div class="bench-title">Benchmark — hybrid vs 3D CNN baselines (PPMI test set, %)</div>
+        <svg id="benchChart" viewBox="0 0 560 270" role="img" aria-label="Grouped bar chart comparing precision, recall, F1 and accuracy for the hybrid CNN-Transformer against 3D VGG16 and 3D DenseNet121"></svg>
+        <div class="bench-legend">
+          <span><i style="background:var(--accent)"></i>CNN-Transformer (ours)</span>
+          <span><i style="background:var(--ctrl)"></i>3D VGG16</span>
+          <span><i style="background:var(--ink-3)"></i>3D DenseNet121</span>
+        </div>
+        <p class="note" style="margin-top:8px">Slightly lower precision, but clearly higher recall and F1 — the balance that matters most in a clinical screen. Axis 70–85%.</p>
+      </div>
+      <p class="note" style="margin-top:14px"><b>Next step:</b> region-level interpretability — showing which brain area drives each prediction. The published model reports classification only and notes this as future work.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement;
+  try{var s=localStorage.getItem('pkt');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme');
+    var night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches);
+    var n=night?'light':'dark';root.setAttribute('data-theme',n);
+    try{localStorage.setItem('pkt',n);}catch(e){}
+  });
+
+  // reveal on scroll + progress rail
+  var stages=[].slice.call(document.querySelectorAll('.stage'));
+  var labels=['Data','One scan','Preprocess','CNN','Transformer','Prediction'];
+  var rail=document.getElementById('rail');
+  stages.forEach(function(st,i){
+    var b=document.createElement('button');
+    b.innerHTML='<span class="pip"></span><span class="lbl">'+labels[i]+'</span>';
+    b.onclick=function(){st.scrollIntoView({behavior:'smooth',block:'start'});};
+    rail.appendChild(b);
+  });
+  var pips=[].slice.call(rail.querySelectorAll('button'));
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){
+      if(e.isIntersecting){
+        e.target.classList.add('in');
+        var i=stages.indexOf(e.target);
+        pips.forEach(function(p,j){p.classList.toggle('on',j===i);});
+      }
+    });
+  },{threshold:.25});
+  stages.forEach(function(st){io.observe(st);});
+
+  // stage 2: volume stack + scrubber
+  var vol=document.getElementById('volume');
+  var volSlices=['03','04','05','06','07','08','09'];
+  for(var i=0;i<7;i++){var sp=document.createElement('span');sp.style.top=(i*5)+'px';sp.style.left=(i*4)+'px';sp.style.opacity=(0.55+i*0.064).toFixed(2);sp.style.backgroundImage="url('mri/slice_"+volSlices[i]+".png')";vol.appendChild(sp);}
+  var scrub=document.getElementById('scrub'), img=document.getElementById('sliceImg'),
+      num=document.getElementById('sliceNum'), midtag=document.getElementById('midtag');
+  function pad(n){return (n<10?'0':'')+n;}
+  scrub.addEventListener('input',function(){
+    var v=+scrub.value;
+    img.src='mri/slice_'+pad(v)+'.png';
+    num.textContent=v+1;
+    midtag.style.display=(v===6)?'inline':'none';
+  });
+
+  // stage 4: CNN feature maps (shrink spatially, deepen)
+  var cnn=document.getElementById('cnn');
+  var cnnReduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // s = front-face size, cells = grid per side (spatial), depth = stacked slices (channels)
+  var maps=[
+    {s:74,cells:7,depth:1,d:'224² · 3ch',l:'input'},
+    {s:64,cells:6,depth:2,d:'56² · 64',l:'conv1'},
+    {s:54,cells:5,depth:3,d:'28² · 128',l:'block2'},
+    {s:44,cells:4,depth:4,d:'14² · 256',l:'block3'},
+    {s:34,cells:3,depth:5,d:'7² · 512',l:'block4'}
+  ];
+  var STEP=4;
+  function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function randAct(n){var a=[];for(var i=0;i<n*n;i++)a.push(Math.random());return a;}
+  function drawStack(cv,m,act){
+    var ctx=cv.getContext('2d'); var s=m.s, off=m.depth*STEP, W=s+off, H=s+off;
+    cv.width=W; cv.height=H; ctx.clearRect(0,0,W,H);
+    for(var d=m.depth-1; d>=1; d--){               // back slices = channels
+      var x=d*STEP, y=(m.depth-d)*STEP;
+      ctx.fillStyle='rgba(59,111,176,'+(0.10+0.04*d)+')';
+      ctx.strokeStyle='rgba(59,111,176,0.35)'; ctx.lineWidth=1;
+      rr(ctx,x,y,s,s,4); ctx.fill(); ctx.stroke();
+    }
+    var fy=off, cs=s/m.cells;                        // front face = feature map
+    for(var r2=0;r2<m.cells;r2++) for(var c2=0;c2<m.cells;c2++){
+      ctx.fillStyle='rgba(43,95,170,'+(0.15+act[r2*m.cells+c2]*0.75)+')';
+      ctx.fillRect(c2*cs+0.5, fy+r2*cs+0.5, cs-1, cs-1);
+    }
+    ctx.strokeStyle='rgba(59,111,176,0.55)'; ctx.lineWidth=1; rr(ctx,0,fy,s,s,4); ctx.stroke();
+  }
+  maps.forEach(function(m,i){
+    var blk=document.createElement('div');blk.className='blk';
+    var cv=document.createElement('canvas');cv.className='fmapc';
+    drawStack(cv,m,randAct(m.cells));
+    var lab=document.createElement('div');lab.className='lab';lab.innerHTML='<b>'+m.l+'</b>'+m.d;
+    blk.appendChild(cv);blk.appendChild(lab);cnn.appendChild(blk);
+    if(!cnnReduce){
+      blk.addEventListener('mouseenter',function(){
+        var f=0, iv=setInterval(function(){ drawStack(cv,m,randAct(m.cells)); if(++f>=5) clearInterval(iv); },90);
+      });
+    }
+    if(i<maps.length-1){var ar=document.createElement('span');ar.className='parrow';ar.textContent='→';cnn.appendChild(ar);}
+  });
+
+  // stage 5: transformer encoder diagram
+  (function(){
+    var svg=document.getElementById('txSvg'); if(!svg) return;
+    var NS='http://www.w3.org/2000/svg';
+    function E(n,a,t){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(t!=null)e.textContent=t;svg.appendChild(e);return e;}
+    function box(x,y,w,h,o){o=o||{};E('rect',{x:x,y:y,width:w,height:h,rx:(o.r!=null?o.r:7),fill:(o.fill||'var(--surface)'),stroke:(o.stroke||'var(--border)'),'stroke-width':(o.sw||1.2)});}
+    function tx(x,y,t,o){o=o||{};E('text',{x:x,y:y,'text-anchor':(o.a||'middle'),'font-size':(o.fs||11),fill:(o.fill||'var(--ink)'),'font-family':(o.ff||'var(--font-body)'),'font-weight':(o.fw||400)},t);}
+    function arr(x,y1,y2){E('line',{x1:x,y1:y1,x2:x,y2:y2,stroke:'var(--ink-3)','stroke-width':1.3,'marker-end':'url(#txah)'});}
+    var defs=E('defs',{}); var mk=document.createElementNS(NS,'marker');
+    mk.setAttribute('id','txah');mk.setAttribute('markerWidth','7');mk.setAttribute('markerHeight','7');mk.setAttribute('refX','5.5');mk.setAttribute('refY','3');mk.setAttribute('orient','auto');
+    var ap=document.createElementNS(NS,'path');ap.setAttribute('d','M0,0 L6,3 L0,6 Z');ap.setAttribute('fill','var(--ink-3)');mk.appendChild(ap);defs.appendChild(mk);
+
+    // input tokens + positional encoding
+    tx(205,16,'From CNN · 7×7×512 → 49 tokens (d = 512)',{fs:10.5,fill:'var(--ink-2)'});
+    for(var k=0;k<10;k++) E('rect',{x:70+k*27,y:26,width:16,height:22,rx:3,fill:'var(--ctrl)',opacity:(0.4+Math.random()*0.5).toFixed(2)});
+    tx(205,62,'+ positional encoding',{fs:9.5,fill:'var(--ink-3)',ff:'var(--font-mono)'});
+    arr(205,68,86);
+
+    // encoder block, stacked ×6
+    box(48,98,316,214,{fill:'var(--surface-2)'}); box(44,102,316,214,{fill:'var(--surface-2)'});
+    box(40,106,316,214,{fill:'var(--surface)',stroke:'var(--ctrl)',sw:1.6});
+    tx(60,124,'Transformer encoder',{fs:11.5,fw:600,a:'start'});
+    tx(344,124,'× 6',{fs:11,fw:700,fill:'var(--ctrl)',a:'end'});
+    box(60,132,278,40,{fill:'var(--ctrl-soft)',stroke:'var(--ctrl)'});
+    tx(199,150,'Multi-Head Self-Attention',{fs:11,fw:600,fill:'var(--ctrl)'});
+    tx(199,163,'8 heads · Q · K · V',{fs:8.5,fill:'var(--ink-3)',ff:'var(--font-mono)'});
+    arr(199,172,180);
+    box(60,180,278,22,{fill:'var(--surface-2)'}); tx(199,195,'Add & Norm',{fs:10});
+    arr(199,202,210);
+    box(60,210,278,40,{fill:'var(--surface-2)'}); tx(199,228,'Feed-Forward',{fs:11,fw:600}); tx(199,241,'dropout',{fs:8.5,fill:'var(--ink-3)',ff:'var(--font-mono)'});
+    arr(199,250,258);
+    box(60,258,278,22,{fill:'var(--surface-2)'}); tx(199,273,'Add & Norm',{fs:10});
+    E('path',{d:'M72,132 C46,132 46,191 58,191',fill:'none',stroke:'var(--ctrl)','stroke-width':1,'stroke-dasharray':'3 3','marker-end':'url(#txah)',opacity:.7});
+    E('path',{d:'M72,210 C46,210 46,269 58,269',fill:'none',stroke:'var(--ctrl)','stroke-width':1,'stroke-dasharray':'3 3','marker-end':'url(#txah)',opacity:.7});
+    arr(199,300,330);
+
+    // head
+    box(86,330,228,28,{fill:'var(--surface-2)'}); tx(200,349,'Global Average Pooling',{fs:11});
+    arr(200,358,366);
+    box(110,366,180,26,{fill:'var(--surface-2)'}); tx(200,383,'Dropout · p = 0.5',{fs:10.5});
+    arr(200,392,400);
+    box(120,400,160,28,{fill:'var(--ctrl-soft)',stroke:'var(--ctrl)'}); tx(200,418,'Fully Connected',{fs:11,fw:600,fill:'var(--ctrl)'});
+    arr(200,428,438);
+    [['Control','var(--ctl)',48],['Prodromal','var(--prod)',156],['PD','var(--pd)',264]].forEach(function(c){
+      box(c[2],440,98,28,{r:14,fill:'var(--surface)',stroke:c[1],sw:1.6}); tx(c[2]+49,458,c[0],{fs:10.5,fw:600,fill:c[1]});
+      E('line',{x1:200,y1:438,x2:c[2]+49,y2:440,stroke:'var(--ink-3)','stroke-width':1,opacity:.5});
+    });
+
+    // self-attention inset
+    box(398,106,266,196,{fill:'var(--surface-2)'});
+    tx(531,126,'Self-attention',{fs:11,fw:600});
+    tx(531,142,'softmax(QKᵀ / √dₖ) · V',{fs:9.5,ff:'var(--font-mono)',fill:'var(--ink-2)'});
+    var mX=486,mY=152,cs=15;
+    for(var r=0;r<6;r++)for(var c2=0;c2<6;c2++){ var it=(r===c2?0.85:0.12+Math.random()*0.5);
+      E('rect',{x:mX+c2*cs,y:mY+r*cs,width:cs-1,height:cs-1,fill:'rgba(43,95,170,'+it.toFixed(2)+')'}); }
+    tx(531,mY+6*cs+16,'attention weights · tokens × tokens',{fs:8,fill:'var(--ink-3)',ff:'var(--font-mono)'});
+    tx(531,mY+6*cs+32,'× 8 heads, concatenated',{fs:9.5,fill:'var(--ctrl)',ff:'var(--font-mono)'});
+    E('line',{x1:338,y1:152,x2:398,y2:152,stroke:'var(--ctrl)','stroke-width':1,'stroke-dasharray':'3 3',opacity:.6});
+  })();
+
+  // stage 6: cohort switch + probs + attention heat
+  var EX={
+    ctl:{p:[82,12,6],v:'Control'},
+    prod:{p:[20,60,20],v:'Prodromal'},
+    pd:{p:[8,22,70],v:'PD'}
+  };
+  function setProbs(c){
+    var e=EX[c];
+    document.getElementById('f-ctl').style.width=e.p[0]+'%';document.getElementById('p-ctl').textContent=e.p[0]+'%';
+    document.getElementById('f-prod').style.width=e.p[1]+'%';document.getElementById('p-prod').textContent=e.p[1]+'%';
+    document.getElementById('f-pd').style.width=e.p[2]+'%';document.getElementById('p-pd').textContent=e.p[2]+'%';
+    document.getElementById('verdict').textContent=e.v;
+  }
+  document.querySelectorAll('.switch button').forEach(function(b){
+    b.addEventListener('click',function(){
+      document.querySelectorAll('.switch button').forEach(function(x){x.classList.remove('on');});
+      b.classList.add('on');setProbs(b.dataset.c);
+    });
+  });
+
+  setProbs('ctl');
+})();
+
+/* Stage 6 — benchmark grouped bar chart (Table I) */
+(function(){
+  var svg=document.getElementById('benchChart'); if(!svg) return;
+  var NS='http://www.w3.org/2000/svg';
+  var W=560,H=270, mL=34,mR=12,mT=14,mB=54, LO=70, HI=85;
+  var pw=W-mL-mR, ph=H-mT-mB, base=mT+ph;
+  var metrics=['Precision','Recall','F1','Accuracy'];
+  var models=[
+    {k:'ct', c:'var(--accent)', v:[80.49,79.89,79.80,80.51]},
+    {k:'vgg',c:'var(--ctrl)',   v:[82.80,73.74,73.81,78.36]},
+    {k:'dn', c:'var(--ink-3)',  v:[82.48,75.15,75.51,77.55]}
+  ];
+  function Y(val){ return mT + ph*(1-(val-LO)/(HI-LO)); }
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  [70,75,80,85].forEach(function(g){
+    var y=Y(g);
+    svg.appendChild(el('line',{x1:mL,y1:y,x2:W-mR,y2:y,stroke:'var(--border)','stroke-width':1}));
+    var t=el('text',{x:mL-5,y:y+3,'text-anchor':'end','font-size':9,fill:'var(--ink-3)','font-family':'var(--font-mono)'});t.textContent=g;svg.appendChild(t);
+  });
+  var gw=pw/metrics.length, barPad=12, innerPad=5, bw=(gw-barPad*2-innerPad*2)/3;
+  metrics.forEach(function(m,gi){
+    var gx=mL+gi*gw;
+    var gl=el('text',{x:gx+gw/2,y:H-mB+18,'text-anchor':'middle','font-size':11,fill:'var(--ink-2)','font-family':'var(--font-body)'});gl.textContent=m;svg.appendChild(gl);
+    models.forEach(function(md,mi){
+      var val=md.v[gi], x=gx+barPad+mi*(bw+innerPad), y=Y(val), h=base-y;
+      svg.appendChild(el('rect',{x:x,y:y,width:bw,height:h,rx:2,fill:md.c,opacity:md.k==='ct'?1:0.82}));
+      var vl=el('text',{x:x+bw/2,y:y-3,'text-anchor':'middle','font-size':8,fill:'var(--ink-2)','font-family':'var(--font-mono)'});vl.textContent=val.toFixed(1);svg.appendChild(vl);
+    });
+  });
+})();
+</script>
+</body>
+</html>

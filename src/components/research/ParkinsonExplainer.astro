@@ -1,12 +1,10 @@
 ---
 // Six-stage scroll explainer for the 2D Parkinson's paper, ported from
-// design-reference/parkinson-explainer.html (spec: parkinson-page-spec.md).
+// design-reference/parkinson-explainer-v2.html (spec: parkinson-page-spec.md).
 // The brain shown throughout is the open MNI152 template, not patient data.
 //
-// Pipeline and architecture details follow the paper. The attention overlay
-// is an illustrative schematic (the paper reports classification only) and
-// the Stage 6 probabilities are example outputs, not from specific scans;
-// both are labelled as such on the page.
+// Pipeline, architecture and benchmark figures follow the paper. The Stage 6
+// probabilities are example outputs, not from specific scans.
 
 const MRI = '/research/parkinson/mri';
 const slice = (i: number) => `${MRI}/slice_${String(i).padStart(2, '0')}.png`;
@@ -45,23 +43,133 @@ const preprocess = [
   { cls: 'm-aug', cap: 'Augment (train)' },
 ];
 
-// Stage 4: the standard ResNet18 stages.
+// Stage 4: the standard ResNet18 stages. s = front-face size, cells = grid
+// per side (spatial), depth = stacked slices (channels). Drawn by the script.
 const maps = [
-  { s: 88, d: '224² · 3ch', l: 'input' },
-  { s: 72, d: '56² · 64', l: 'conv1' },
-  { s: 54, d: '28² · 128', l: 'block2' },
-  { s: 38, d: '14² · 256', l: 'block3' },
-  { s: 26, d: '7² · 512', l: 'block4' },
+  { s: 74, cells: 7, depth: 1, d: '224² · 3ch', l: 'input' },
+  { s: 64, cells: 6, depth: 2, d: '56² · 64', l: 'conv1' },
+  { s: 54, cells: 5, depth: 3, d: '28² · 128', l: 'block2' },
+  { s: 44, cells: 4, depth: 4, d: '14² · 256', l: 'block3' },
+  { s: 34, cells: 3, depth: 5, d: '7² · 512', l: 'block4' },
 ];
 
-// Stage 5: tokens and a schematic of self-attention between them.
-const tokens = Array.from({ length: 28 }, () => (0.55 + rand() * 0.45).toFixed(2));
-const nodes = 9, y0 = 16, y1 = 104;
-const xs = Array.from({ length: nodes }, (_, i) => 28 + i * (374 / (nodes - 1)));
-const lines: { x1: number; x2: number; o: string }[] = [];
-for (let i = 0; i < nodes; i++)
-  for (let j = 0; j < nodes; j++)
-    if (rand() < 0.28) lines.push({ x1: xs[i], x2: xs[j], o: (0.12 + rand() * 0.3).toFixed(2) });
+// SVG helpers for the two diagrams below, built once at build time.
+// Colours go in style="" so the site's day/night tokens apply.
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const el = (n: string, a: Record<string, string | number>, style = '', text?: string) => {
+  const attrs = Object.entries(a).map(([k, v]) => ` ${k}="${v}"`).join('');
+  const st = style ? ` style="${style}"` : '';
+  return text == null ? `<${n}${attrs}${st}/>` : `<${n}${attrs}${st}>${esc(text)}</${n}>`;
+};
+
+// Stage 5: the Transformer encoder diagram (680 × 510).
+function encoderSvg() {
+  const out: string[] = [];
+  const box = (x: number, y: number, w: number, h: number, o: { r?: number; fill?: string; stroke?: string; sw?: number } = {}) =>
+    out.push(el('rect', { x, y, width: w, height: h, rx: o.r ?? 7 },
+      `fill:${o.fill ?? 'var(--surface)'};stroke:${o.stroke ?? 'var(--border)'};stroke-width:${o.sw ?? 1.2}`));
+  const tx = (x: number, y: number, t: string, o: { a?: string; fs?: number; fill?: string; ff?: string; fw?: number } = {}) =>
+    out.push(el('text', { x, y, 'text-anchor': o.a ?? 'middle', 'font-size': o.fs ?? 11, 'font-weight': o.fw ?? 400 },
+      `fill:${o.fill ?? 'var(--ink)'};font-family:${o.ff ?? 'var(--font-body)'}`, t));
+  const arr = (x: number, y1: number, y2: number) =>
+    out.push(el('line', { x1: x, y1, x2: x, y2, 'stroke-width': 1.3, 'marker-end': 'url(#txah)' }, 'stroke:var(--ink-3)'));
+  out.push('<defs><marker id="txah" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto">' +
+    el('path', { d: 'M0,0 L6,3 L0,6 Z' }, 'fill:var(--ink-3)') + '</marker></defs>');
+
+  // Input tokens + positional encoding.
+  tx(205, 16, 'From CNN · 7×7×512 → 49 tokens (d = 512)', { fs: 10.5, fill: 'var(--ink-2)' });
+  for (let k = 0; k < 10; k++)
+    out.push(el('rect', { x: 70 + k * 27, y: 26, width: 16, height: 22, rx: 3, opacity: (0.4 + rand() * 0.5).toFixed(2) }, 'fill:var(--ctrl)'));
+  tx(205, 62, '+ positional encoding', { fs: 9.5, fill: 'var(--ink-3)', ff: 'var(--font-mono)' });
+  arr(205, 68, 86);
+
+  // Encoder block, stacked × 6.
+  box(48, 98, 316, 214, { fill: 'var(--surface-2)' });
+  box(44, 102, 316, 214, { fill: 'var(--surface-2)' });
+  box(40, 106, 316, 214, { fill: 'var(--surface)', stroke: 'var(--ctrl)', sw: 1.6 });
+  tx(60, 124, 'Transformer encoder', { fs: 11.5, fw: 600, a: 'start' });
+  tx(344, 124, '× 6', { fs: 11, fw: 700, fill: 'var(--ctrl)', a: 'end' });
+  box(60, 132, 278, 40, { fill: 'var(--ctrl-soft)', stroke: 'var(--ctrl)' });
+  tx(199, 150, 'Multi-Head Self-Attention', { fs: 11, fw: 600, fill: 'var(--ctrl)' });
+  tx(199, 163, '8 heads · Q · K · V', { fs: 8.5, fill: 'var(--ink-3)', ff: 'var(--font-mono)' });
+  arr(199, 172, 180);
+  box(60, 180, 278, 22, { fill: 'var(--surface-2)' });
+  tx(199, 195, 'Add & Norm', { fs: 10 });
+  arr(199, 202, 210);
+  box(60, 210, 278, 40, { fill: 'var(--surface-2)' });
+  tx(199, 228, 'Feed-Forward', { fs: 11, fw: 600 });
+  tx(199, 241, 'dropout', { fs: 8.5, fill: 'var(--ink-3)', ff: 'var(--font-mono)' });
+  arr(199, 250, 258);
+  box(60, 258, 278, 22, { fill: 'var(--surface-2)' });
+  tx(199, 273, 'Add & Norm', { fs: 10 });
+  // Residual skips.
+  for (const [a, b] of [[132, 191], [210, 269]])
+    out.push(el('path', { d: `M72,${a} C46,${a} 46,${b} 58,${b}`, fill: 'none', 'stroke-width': 1, 'stroke-dasharray': '3 3', 'marker-end': 'url(#txah)', opacity: 0.7 }, 'stroke:var(--ctrl)'));
+  arr(199, 300, 330);
+
+  // Head.
+  box(86, 330, 228, 28, { fill: 'var(--surface-2)' });
+  tx(200, 349, 'Global Average Pooling', { fs: 11 });
+  arr(200, 358, 366);
+  box(110, 366, 180, 26, { fill: 'var(--surface-2)' });
+  tx(200, 383, 'Dropout · p = 0.5', { fs: 10.5 });
+  arr(200, 392, 400);
+  box(120, 400, 160, 28, { fill: 'var(--ctrl-soft)', stroke: 'var(--ctrl)' });
+  tx(200, 418, 'Fully Connected', { fs: 11, fw: 600, fill: 'var(--ctrl)' });
+  arr(200, 428, 438);
+  for (const [name, col, x] of [['Control', 'var(--ctl)', 48], ['Prodromal', 'var(--prod)', 156], ['PD', 'var(--pd)', 264]] as const) {
+    box(x, 440, 98, 28, { r: 14, fill: 'var(--surface)', stroke: col, sw: 1.6 });
+    tx(x + 49, 458, name, { fs: 10.5, fw: 600, fill: col });
+    out.push(el('line', { x1: 200, y1: 438, x2: x + 49, y2: 440, 'stroke-width': 1, opacity: 0.5 }, 'stroke:var(--ink-3)'));
+  }
+
+  // Self-attention inset.
+  box(398, 106, 266, 196, { fill: 'var(--surface-2)' });
+  tx(531, 126, 'Self-attention', { fs: 11, fw: 600 });
+  tx(531, 142, 'softmax(QKᵀ / √dₖ) · V', { fs: 9.5, ff: 'var(--font-mono)', fill: 'var(--ink-2)' });
+  const mX = 486, mY = 152, cs = 15;
+  for (let r = 0; r < 6; r++)
+    for (let c = 0; c < 6; c++) {
+      const it = r === c ? 0.85 : 0.12 + rand() * 0.5;
+      out.push(el('rect', { x: mX + c * cs, y: mY + r * cs, width: cs - 1, height: cs - 1, fill: `rgba(43,95,170,${it.toFixed(2)})` }));
+    }
+  tx(531, mY + 6 * cs + 16, 'attention weights · tokens × tokens', { fs: 8, fill: 'var(--ink-3)', ff: 'var(--font-mono)' });
+  tx(531, mY + 6 * cs + 32, '× 8 heads, concatenated', { fs: 9.5, fill: 'var(--ctrl)', ff: 'var(--font-mono)' });
+  out.push(el('line', { x1: 338, y1: 152, x2: 398, y2: 152, 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0.6 }, 'stroke:var(--ctrl)'));
+  return out.join('');
+}
+
+// Stage 6: benchmark grouped bar chart (the paper's Table I), 560 × 270.
+function benchSvg() {
+  const out: string[] = [];
+  const W = 560, H = 270, mL = 34, mR = 12, mT = 14, mB = 54, LO = 70, HI = 85;
+  const pw = W - mL - mR, ph = H - mT - mB, base = mT + ph;
+  const metrics = ['Precision', 'Recall', 'F1', 'Accuracy'];
+  const models = [
+    { k: 'ct', c: 'var(--accent)', v: [80.49, 79.89, 79.8, 80.51] },
+    { k: 'vgg', c: 'var(--ctrl)', v: [82.8, 73.74, 73.81, 78.36] },
+    { k: 'dn', c: 'var(--ink-3)', v: [82.48, 75.15, 75.51, 77.55] },
+  ];
+  const Y = (val: number) => mT + ph * (1 - (val - LO) / (HI - LO));
+  for (const g of [70, 75, 80, 85]) {
+    const y = Y(g);
+    out.push(el('line', { x1: mL, y1: y, x2: W - mR, y2: y, 'stroke-width': 1 }, 'stroke:var(--border)'));
+    out.push(el('text', { x: mL - 5, y: y + 3, 'text-anchor': 'end', 'font-size': 9 }, 'fill:var(--ink-3);font-family:var(--font-mono)', String(g)));
+  }
+  const gw = pw / metrics.length, barPad = 12, innerPad = 5, bw = (gw - barPad * 2 - innerPad * 2) / 3;
+  metrics.forEach((m, gi) => {
+    const gx = mL + gi * gw;
+    out.push(el('text', { x: gx + gw / 2, y: H - mB + 18, 'text-anchor': 'middle', 'font-size': 11 }, 'fill:var(--ink-2);font-family:var(--font-body)', m));
+    models.forEach((md, mi) => {
+      const val = md.v[gi], x = gx + barPad + mi * (bw + innerPad), y = Y(val);
+      out.push(el('rect', { x, y, width: bw, height: base - y, rx: 2, opacity: md.k === 'ct' ? 1 : 0.82 }, `fill:${md.c}`));
+      out.push(el('text', { x: x + bw / 2, y: y - 3, 'text-anchor': 'middle', 'font-size': 8 }, 'fill:var(--ink-2);font-family:var(--font-mono)', val.toFixed(1)));
+    });
+  });
+  return out.join('');
+}
+const encoder = encoderSvg();
+const bench = benchSvg();
 
 const scores = [
   { v: '80.5%', k: 'Accuracy' },
@@ -92,7 +200,9 @@ const scores = [
           <div class="cohort">
             <div class={`nm ${c.c}`}>{c.name}</div>
             <div class="ds">{c.desc}</div>
-            <div class="stackmini" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <div class="stackmini" aria-hidden="true">
+              {[5, 6, 7, 8].map((n) => <span style={`background-image:url('${slice(n)}')`}></span>)}
+            </div>
           </div>
         ))}
       </div>
@@ -160,13 +270,13 @@ const scores = [
           <>
             {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
             <div class="blk">
-              <div class="fmap" style={`width:${m.s}px;height:${m.s}px`} aria-hidden="true"></div>
+              <canvas class="fmapc" data-s={m.s} data-cells={m.cells} data-depth={m.depth} aria-hidden="true"></canvas>
               <div class="lab"><b>{m.l}</b>{m.d}</div>
             </div>
           </>
         ))}
       </div>
-      <p class="note center spaced">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The sizes shown are the standard ResNet18 stages.</p>
+      <p class="note center spaced">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The stacks show feature maps shrinking spatially and deepening in channels — hover a layer to watch its maps recompute.</p>
     </div>
   </section>
 
@@ -175,20 +285,14 @@ const scores = [
     <h2 id="s5-title">The Transformer relates distant regions</h2>
     <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder (6 layers, 8 heads)</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
     <div class="viz">
-      <div class="tokens" aria-hidden="true">
-        {tokens.map((o) => <div class="tok" style={`opacity:${o}`}></div>)}
-      </div>
-      <svg class="attnsvg" width="430" height="120" viewBox="0 0 430 120" aria-hidden="true">
-        {lines.map((l) => <line x1={l.x1} y1={y0} x2={l.x2} y2={y1} opacity={l.o} />)}
-        {xs.map((x) => (
-          <>
-            <circle cx={x} cy={y0} r="6" />
-            <circle cx={x} cy={y1} r="6" />
-          </>
-        ))}
-        <text x="4" y="12">tokens</text>
-      </svg>
-      <p class="note center">Each block is multi-head attention → feed-forward → dropout → layer-norm. The sequence is pooled by global average pooling (no CLS token), then dropout (p = 0.5) and a fully-connected head output the three classes.</p>
+      <svg
+        class="tx"
+        viewBox="0 0 680 510"
+        role="img"
+        aria-label="Transformer encoder: tokens with positional encoding into six encoder blocks, each with multi-head self-attention and feed-forward sublayers with residual add and norm, then global average pooling, dropout and a fully-connected three-class head; a side panel shows the self-attention weight matrix across tokens for eight heads"
+        set:html={encoder}
+      />
+      <p class="note center tx-note">The 7×7×512 feature map is flattened to 49 tokens (d = 512) with positional encodings, then passed through <b>6 encoder blocks</b> — each: multi-head self-attention (8 heads) → Add &amp; Norm → feed-forward (dropout) → Add &amp; Norm. Global average pooling (no CLS token) → dropout p = 0.5 → fully-connected head → the three classes.</p>
     </div>
   </section>
 
@@ -200,7 +304,6 @@ const scores = [
       <div class="out-row">
         <div class="slicebox">
           <img src={`${MRI}/slice_mid.png`} width="240" height="240" alt="Axial brain MRI slice (MNI152 template)" loading="lazy" />
-          <canvas class="heat" data-ref="heat" width="240" height="240" aria-hidden="true"></canvas>
         </div>
         <div class="outpanel">
           <div class="switch" role="group" aria-label="Example cohort">
@@ -218,7 +321,6 @@ const scores = [
             ))}
           </div>
           <p class="verdict" aria-live="polite">Predicted: <b data-ref="verdict">Control</b></p>
-          <button type="button" class="toggle-attn" data-ref="attn" aria-pressed="false">Show attention (illustrative)</button>
         </div>
       </div>
       <div class="scores">
@@ -226,8 +328,22 @@ const scores = [
           <div class="score"><div class="v">{s.v}</div><div class="k">{s.k}</div></div>
         ))}
       </div>
-      <p class="note benchmark">Compared against 3D CNN baselines, the hybrid model leads on the clinically important metrics — recall 79.9% and F1 0.80 — ahead of 3D VGG16 (78.4% accuracy) and 3D DenseNet121 (77.6%).</p>
-      <div class="flag">Region-level interpretability — identifying which brain area drives the prediction — is noted as future work in the paper; the published model reports classification only. The overlay above is an illustrative schematic, not a model output.</div>
+      <div class="bench">
+        <div class="bench-title">Benchmark — hybrid vs 3D CNN baselines (PPMI test set, %)</div>
+        <svg
+          viewBox="0 0 560 270"
+          role="img"
+          aria-label="Grouped bar chart comparing precision, recall, F1 and accuracy for the hybrid CNN-Transformer against 3D VGG16 and 3D DenseNet121"
+          set:html={bench}
+        />
+        <div class="bench-legend">
+          <span><i style="background:var(--accent)"></i>CNN-Transformer (ours)</span>
+          <span><i style="background:var(--ctrl)"></i>3D VGG16</span>
+          <span><i style="background:var(--ink-3)"></i>3D DenseNet121</span>
+        </div>
+        <p class="note bench-note">Slightly lower precision, but clearly higher recall and F1 — the balance that matters most in a clinical screen. Axis 70–85%.</p>
+      </div>
+      <p class="note next-step"><b>Next step:</b> region-level interpretability — showing which brain area drives each prediction. The published model reports classification only and notes this as future work.</p>
     </div>
   </section>
 </div>
@@ -300,6 +416,55 @@ const scores = [
       scrub.setAttribute('aria-valuetext', `slice ${v + 1} of 13${v === middle ? ', middle slice (used)' : ''}`);
     });
 
+    // Stage 4: each ResNet18 stage as a stack of feature maps — a grid of
+    // activations on the front face, slices behind it for channels.
+    // Hovering a stage recomputes its maps for a few frames.
+    const STEP = 4;
+    const dpr = Math.min(2, Math.max(1, window.devicePixelRatio || 1));
+    const randAct = (n: number) => Array.from({ length: n * n }, Math.random);
+    function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+      ctx.beginPath(); ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+    }
+    function drawStack(cv: HTMLCanvasElement, act: number[]) {
+      const ctx = cv.getContext('2d');
+      if (!ctx) return;
+      const s = Number(cv.dataset.s), cells = Number(cv.dataset.cells), depth = Number(cv.dataset.depth);
+      const off = depth * STEP, W = s + off, H = s + off;
+      cv.width = W * dpr; cv.height = H * dpr;
+      cv.style.width = `${W}px`; cv.style.height = `${H}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+      for (let d = depth - 1; d >= 1; d--) {
+        // Back slices = channels.
+        ctx.fillStyle = `rgba(59,111,176,${0.1 + 0.04 * d})`;
+        ctx.strokeStyle = 'rgba(59,111,176,0.35)'; ctx.lineWidth = 1;
+        rr(ctx, d * STEP, (depth - d) * STEP, s, s, 4); ctx.fill(); ctx.stroke();
+      }
+      // Front face = feature map.
+      const fy = off, cs = s / cells;
+      for (let r = 0; r < cells; r++)
+        for (let c = 0; c < cells; c++) {
+          ctx.fillStyle = `rgba(43,95,170,${0.15 + act[r * cells + c] * 0.75})`;
+          ctx.fillRect(c * cs + 0.5, fy + r * cs + 0.5, cs - 1, cs - 1);
+        }
+      ctx.strokeStyle = 'rgba(59,111,176,0.55)'; ctx.lineWidth = 1;
+      rr(ctx, 0, fy, s, s, 4); ctx.stroke();
+    }
+    for (const cv of root.querySelectorAll<HTMLCanvasElement>('.fmapc')) {
+      const cells = Number(cv.dataset.cells);
+      drawStack(cv, randAct(cells));
+      cv.closest('.blk')?.addEventListener('mouseenter', () => {
+        if (reduced.matches) return;
+        let f = 0;
+        const iv = setInterval(() => {
+          drawStack(cv, randAct(cells));
+          if (++f >= 5) clearInterval(iv);
+        }, 90);
+      });
+    }
+
     // Stage 6: example predictions per cohort. Illustrative outputs, not
     // from specific scans (spec §6).
     const EX: Record<string, { p: [number, number, number]; v: string }> = {
@@ -307,26 +472,6 @@ const scores = [
       prod: { p: [20, 60, 20], v: 'Prodromal' },
       pd: { p: [8, 22, 70], v: 'PD' },
     };
-    const heat = $<HTMLCanvasElement>('heat');
-    const hx = heat?.getContext('2d');
-    // Illustrative attention schematic, not a model output (see the note).
-    function drawHeat(c: string) {
-      if (!hx) return;
-      hx.clearRect(0, 0, 240, 240);
-      // Emphasis near the central deep-brain region; stronger for PD.
-      const spots =
-        c === 'pd' ? [[120, 128, 52, 1]] : c === 'prod' ? [[120, 126, 46, 0.7], [120, 126, 20, 0.5]] : [[120, 120, 70, 0.35]];
-      for (const [x, y, r, a] of spots) {
-        const g = hx.createRadialGradient(x, y, 4, x, y, r);
-        g.addColorStop(0, `rgba(230,70,50,${a})`);
-        g.addColorStop(0.5, `rgba(235,150,40,${a * 0.55})`);
-        g.addColorStop(1, 'rgba(235,150,40,0)');
-        hx.fillStyle = g;
-        hx.beginPath();
-        hx.arc(x, y, r, 0, 7);
-        hx.fill();
-      }
-    }
     const cohortBtns = [...root.querySelectorAll<HTMLButtonElement>('.switch button')];
     function setCohort(c: string) {
       const e = EX[c];
@@ -342,17 +487,9 @@ const scores = [
         b.classList.toggle('on', b.dataset.c === c);
         b.setAttribute('aria-pressed', String(b.dataset.c === c));
       }
-      drawHeat(c);
     }
     cohortBtns.forEach((b) => b.addEventListener('click', () => setCohort(b.dataset.c!)));
 
-    const attn = $<HTMLButtonElement>('attn');
-    attn?.addEventListener('click', () => {
-      const on = !heat?.classList.contains('on');
-      heat?.classList.toggle('on', on);
-      attn.setAttribute('aria-pressed', String(on));
-      attn.textContent = on ? 'Hide attention (illustrative)' : 'Show attention (illustrative)';
-    });
     setCohort('ctl');
   }
 </script>
@@ -484,9 +621,6 @@ const scores = [
   .note.spaced {
     margin-top: 22px;
   }
-  .note.benchmark {
-    margin: 12px 0 0;
-  }
   .viz {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -530,7 +664,7 @@ const scores = [
     margin-right: -8px;
     border: 1px solid var(--border);
     border-radius: 3px;
-    background: #111;
+    background: #000 center / cover no-repeat;
     box-shadow: 1px 0 0 var(--surface-2);
   }
 
@@ -680,17 +814,20 @@ const scores = [
   .cnn {
     gap: 6px;
   }
-  .fmap {
-    background: linear-gradient(135deg, var(--ctrl-soft), var(--surface-2));
-    border: 1px solid var(--border);
-    border-radius: 6px;
-  }
   .blk {
+    cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 7px;
     min-width: 72px;
+  }
+  .fmapc {
+    display: block;
+    transition: transform .15s;
+  }
+  .blk:hover .fmapc {
+    transform: translateY(-2px);
   }
   .lab {
     font-family: var(--font-mono);
@@ -706,37 +843,15 @@ const scores = [
   }
 
   /* Stage 5 */
-  .tokens {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 5px;
-    max-width: 430px;
+  .tx {
+    display: block;
+    width: 100%;
+    max-width: 680px;
+    height: auto;
     margin: 0 auto;
   }
-  .tok {
-    width: 20px;
-    height: 20px;
-    border-radius: 4px;
-    background: var(--ctrl);
-  }
-  .attnsvg {
-    display: block;
-    max-width: 100%;
-    height: auto;
-    margin: 14px auto 0;
-  }
-  .attnsvg line {
-    stroke: var(--ctrl);
-    stroke-width: .8;
-  }
-  .attnsvg circle {
-    fill: var(--ctrl);
-  }
-  .attnsvg text {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    fill: var(--ink-3);
+  .note.tx-note {
+    margin-top: 10px;
   }
 
   /* Stage 6 */
@@ -760,19 +875,6 @@ const scores = [
     width: 100%;
     height: 100%;
     object-fit: contain;
-  }
-  .heat {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    opacity: 0;
-    mix-blend-mode: screen;
-    transition: opacity .4s;
-  }
-  .heat:global(.on) {
-    opacity: .9;
   }
   .outpanel {
     flex: 1 1 280px;
@@ -848,20 +950,6 @@ const scores = [
     font-family: var(--font-display);
     font-size: 16px;
   }
-  .toggle-attn {
-    margin-top: 12px;
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--accent-ink);
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 7px 11px;
-    cursor: pointer;
-  }
-  .toggle-attn:hover {
-    border-color: var(--accent);
-  }
   .scores {
     display: flex;
     flex-wrap: wrap;
@@ -887,13 +975,51 @@ const scores = [
     text-transform: uppercase;
     color: var(--ink-3);
   }
-  .flag {
-    margin-top: 14px;
-    padding: 11px 14px;
-    border-radius: 10px;
-    background: var(--accent-wash);
-    font-size: 12.5px;
-    color: var(--accent-ink);
+  .bench {
+    margin-top: 18px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+    background: var(--surface-2);
+  }
+  .bench-title {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .bench svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .bench-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--ink-2);
+  }
+  .bench-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .bench-legend i {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 3px;
+  }
+  .stage .note.bench-note {
+    margin: 8px 0 0;
+  }
+  .stage .note.next-step {
+    margin: 14px 0 0;
+  }
+  .stage .note b {
+    color: var(--ink);
   }
 
   @media (max-width: 479.98px) {
