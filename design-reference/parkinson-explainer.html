@@ -94,6 +94,7 @@
   .m-skull img{clip-path:ellipse(42% 46% at 50% 50%)}
   .m-norm img{filter:contrast(1.35) brightness(1.08)}
   .m-resize img{clip-path:ellipse(42% 46% at 50% 50%);filter:contrast(1.35) brightness(1.08);image-rendering:pixelated;transform:scale(.82)}
+  .m-aug img{clip-path:ellipse(42% 46% at 50% 50%);transform:rotate(-8deg) scaleX(-1);filter:contrast(1.1)}
 
   /* stage 4 cnn */
   .cnn{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
@@ -200,17 +201,17 @@
     <p>Before the network sees it, the slice is standardised so every scan is comparable.</p>
     <div class="viz">
       <div class="pipe">
-        <div class="pstep"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Raw slice</div></div>
+        <div class="pstep m-reg"><div class="thumb"><img src="mri/slice_06.png" alt=""><div class="cross"></div></div><div class="cap">Register → MNI PD25</div></div>
         <span class="parrow">→</span>
-        <div class="pstep m-reg"><div class="thumb"><img src="mri/slice_06.png" alt=""><div class="cross"></div></div><div class="cap">Register to template</div></div>
+        <div class="pstep"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Middle axial slice</div></div>
         <span class="parrow">→</span>
-        <div class="pstep m-skull"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Brain extraction</div></div>
+        <div class="pstep m-resize"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Resize 224×224</div></div>
         <span class="parrow">→</span>
-        <div class="pstep m-norm"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Intensity normalize</div></div>
+        <div class="pstep m-norm"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Normalize µ=0.5, σ=0.5</div></div>
         <span class="parrow">→</span>
-        <div class="pstep m-resize"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Resize to CNN input</div></div>
+        <div class="pstep m-aug"><div class="thumb"><img src="mri/slice_06.png" alt=""></div><div class="cap">Augment (train)</div></div>
       </div>
-      <p class="note" style="margin-top:14px;text-align:center">Steps shown illustratively — confirm the exact pipeline (registration target, skull-strip method, normalization, input size) and I'll label each precisely.</p>
+      <p class="note" style="margin-top:14px;text-align:center">Volumes are registered to the MNI PD25-T1MPRAGE (1 mm) template in MATLAB; the single-channel slice is duplicated across RGB for ResNet18. Training-only augmentation: rotation ±10°, horizontal flip, colour jitter, and affine shifts.</p>
     </div>
   </section>
 
@@ -221,7 +222,7 @@
     <p>The 2D slice passes through <b>ResNet18</b>. Each block shrinks the image spatially and deepens it into more feature channels — capturing local structure: edges, tissue boundaries, shapes.</p>
     <div class="viz">
       <div class="cnn" id="cnn"></div>
-      <p class="note" style="margin-top:22px;text-align:center">Feature-map sizes shown schematically — confirm the ResNet18 output dimensions and I'll set exact numbers.</p>
+      <p class="note" style="margin-top:22px;text-align:center">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The sizes shown are the standard ResNet18 stages.</p>
     </div>
   </section>
 
@@ -229,11 +230,11 @@
   <section class="stage" id="s5">
     <div class="kick">Stage 5 · Transformer</div>
     <h2>The Transformer relates distant regions</h2>
-    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
+    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder (6 layers, 8 heads)</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
     <div class="viz">
       <div class="tokens" id="tokens"></div>
       <svg class="attnsvg" id="attnsvg" width="430" height="120" viewBox="0 0 430 120"></svg>
-      <p class="note" style="text-align:center">Confirm the number of Transformer layers, heads, and whether a CLS token is used.</p>
+      <p class="note" style="text-align:center">Each block is multi-head attention → feed-forward → dropout → layer-norm. The sequence is pooled by global average pooling (no CLS token), then dropout (p = 0.5) and a fully-connected head output the three classes.</p>
     </div>
   </section>
 
@@ -260,7 +261,7 @@
             <div class="prob pd"><span class="nm">PD</span><span class="track"><span class="fill" id="f-pd"></span></span><span class="pct" id="p-pd">0%</span></div>
           </div>
           <p class="verdict">Predicted: <b id="verdict">Control</b></p>
-          <button class="toggle-attn" id="attnBtn">Show attention map</button>
+          <button class="toggle-attn" id="attnBtn">Show attention (illustrative)</button>
         </div>
       </div>
       <div class="metrics">
@@ -270,7 +271,8 @@
         <div class="metric"><div class="v">0.80</div><div class="k">F1</div></div>
         <div class="metric"><div class="v">0.84</div><div class="k">AUC-ROC</div></div>
       </div>
-      <div class="flag">The attention overlay is a placeholder shape. Since your paper has real attention maps, share that figure (or where attention concentrates per cohort) and I'll swap in the genuine map so this stage is exact.</div>
+      <p class="note" style="margin-top:12px">Compared against 3D CNN baselines, the hybrid model leads on the clinically important metrics — recall 79.9% and F1 0.80 — ahead of 3D VGG16 (78.4% accuracy) and 3D DenseNet121 (77.6%).</p>
+      <div class="flag">Region-level interpretability — identifying which brain area drives the prediction — is noted as future work in the paper; the published model reports classification only. The overlay above is an illustrative schematic, not a model output.</div>
     </div>
   </section>
 </div>
@@ -384,7 +386,7 @@
   var heatOn=false;
   document.getElementById('attnBtn').addEventListener('click',function(){
     heatOn=!heatOn;heat.classList.toggle('on',heatOn);
-    this.textContent=heatOn?'Hide attention map':'Show attention map';
+    this.textContent=heatOn?'Hide attention (illustrative)':'Show attention (illustrative)';
   });
   setProbs('ctl');
 })();
