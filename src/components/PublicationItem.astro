@@ -3,6 +3,7 @@ import type { Publication } from '../lib/content';
 import PaperTags from './PaperTags.astro';
 import CopyButton from './CopyButton.astro';
 import { authorsHtml, doiUrl, fullDate, requestPaperMailto } from '../lib/format';
+import { themeForPublication } from './research/themes';
 
 interface Props {
   pub: Publication;
@@ -17,6 +18,8 @@ const abstractParas = d.abstract ? d.abstract.split(/\n\s*\n/) : [];
 const canRequest = !d.url;
 const when = d.date ? fullDate(d.date) : String(d.year);
 const afterVenue = `${d.pages ? `, ${d.pages}` : ''}, ${when}.`;
+// Papers with an interactive research page link to it.
+const theme = themeForPublication(pub.id);
 ---
 
 <article class="pub" id={pub.id}>
@@ -51,6 +54,7 @@ const afterVenue = `${d.pages ? `, ${d.pages}` : ''}, ${when}.`;
     {canRequest && (
       <a class="btn ghost small" href={requestPaperMailto(requestEmail, d.title)}>Request full paper</a>
     )}
+    {theme && <a class="explore" href={theme.href}>Explore →</a>}
   </div>
 </article>
 
@@ -141,5 +145,10 @@ const afterVenue = `${d.pages ? `, ${d.pages}` : ''}, ${when}.`;
   }
   .pub .actions {
     margin-top: 14px;
+  }
+  .explore {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    margin-left: 4px;
   }
 </style>

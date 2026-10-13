@@ -1,44 +1,116 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import ExpandItem from '../../components/ExpandItem.astro';
 import PaperTags from '../../components/PaperTags.astro';
-import Metrics from '../../components/Metrics.astro';
+import { THEMES } from '../../components/research/themes';
 import { getResearch } from '../../lib/content';
 import { getEntry } from 'astro:content';
 
-const items = await Promise.all(
+// One card per research theme: the hand-built interactive pages first, then
+// the research entries from the admin. Built to grow; the grid stacks on
+// phones.
+const themeCards = await Promise.all(
+  THEMES.map(async (t) => {
+    const pub = await getEntry('publications', t.publication);
+    if (!pub) throw new Error(`Research theme "${t.title}" links to missing publication "${t.publication}".`);
+    return { title: t.title, summary: t.summary, tags: t.tags, href: t.href, status: pub.data.status, pub };
+  }),
+);
+const entryCards = await Promise.all(
   (await getResearch()).map(async (r) => ({
-    entry: r,
+    title: r.data.title,
+    summary: r.data.subtitle,
+    tags: r.data.tags,
+    href: `/research/${r.id}/`,
+    status: r.data.status,
     pub: r.data.publication ? await getEntry(r.data.publication) : undefined,
   })),
 );
-
-const iconFor = (tags: string[]) =>
-  tags.some((t) => /3d/i.test(t)) ? 'brain' : tags.some((t) => /2d|mri/i.test(t)) ? 'slices' : 'brain';
+const cards = [...themeCards, ...entryCards];
 ---
 
 <BaseLayout
   title="Research"
-  description="Research by Al-Nahiyan Khushbu on hybrid CNN–Transformer models for early Parkinson's disease detection from brain MRI."
+  description="Research by Al-Nahiyan Khushbu: attributing warehouse theft to people when records are falsified, and hybrid CNN–Transformer models for early Parkinson's disease detection from brain MRI."
 >
   <div class="wrap view">
     <header class="page-head">
       <h1>Research</h1>
-      <p>Each entry opens with a short summary. <b>Dig deeper</b> leads to the full page, with a walkthrough of how the model works.</p>
+      <p>Each theme opens with the idea in plain words, then lets you dig deeper into how it works, the results and the paper.</p>
     </header>
 
-    {items.map(({ entry, pub }) => (
-      <ExpandItem
-        href={`/research/${entry.id}/`}
-        title={entry.data.title}
-        subtitle={entry.data.subtitle}
-        icon={iconFor(entry.data.tags)}
-        thumbnail={entry.data.thumbnail}
-      >
-        <PaperTags slot="tags" inline status={entry.data.status} publication={pub} extra={entry.data.tags} />
-        <p>{entry.data.short_summary}</p>
-        <Metrics items={entry.data.metrics} />
-      </ExpandItem>
-    ))}
+    <ul class="themes">
+      {cards.map((c) => (
+        <li class="theme-card">
+          <PaperTags status={c.status} publication={c.pub} extra={c.tags} />
+          <h2><a href={c.href}>{c.title}</a></h2>
+          <p class="summary">{c.summary}</p>
+          <span class="explore" aria-hidden="true">Explore →</span>
+        </li>
+      ))}
+    </ul>
   </div>
 </BaseLayout>
+
+<style>
+  .themes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* The title link covers the whole card, so anywhere on it opens the page. */
+  .theme-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 18px 20px 16px;
+  }
+  .theme-card:hover,
+  .theme-card:focus-within {
+    border-color: var(--accent);
+  }
+  .theme-card h2 {
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 4px 0 8px;
+  }
+  .theme-card h2 a {
+    color: var(--ink);
+  }
+  .theme-card h2 a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .theme-card h2 a:hover {
+    text-decoration: none;
+  }
+  .theme-card h2 a:focus-visible {
+    outline: none;
+  }
+  .theme-card h2 a:focus-visible::after {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .summary {
+    font-size: 14.5px;
+    color: var(--ink-2);
+    margin: 0 0 14px;
+  }
+  .explore {
+    margin-top: auto;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--accent-ink);
+  }
+  .theme-card:hover .explore {
+    text-decoration: underline;
+  }
+</style>
