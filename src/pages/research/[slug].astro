@@ -5,12 +5,17 @@ import PaperTags from '../../components/PaperTags.astro';
 import Metrics from '../../components/Metrics.astro';
 import CopyButton from '../../components/CopyButton.astro';
 import { WALKTHROUGHS } from '../../components/walkthroughs/registry';
+import { REPLACED_PAGES } from '../../components/research/themes';
 import { getProfile, getResearch, type Research } from '../../lib/content';
 import { authorsHtml, doiUrl, requestPaperMailto } from '../../lib/format';
 
+// Entries with a hand-built page get no page here; their old address
+// redirects to the new one (astro.config.mjs).
 export async function getStaticPaths() {
   const items = await getResearch();
-  return items.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  return items
+    .filter((entry) => !REPLACED_PAGES[entry.id])
+    .map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
 }
 
 const { entry } = Astro.props as { entry: Research };

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PaperTags from '../../components/PaperTags.astro';
-import { THEMES } from '../../components/research/themes';
+import { REPLACED_PAGES, THEMES } from '../../components/research/themes';
 import { getResearch } from '../../lib/content';
 import { getEntry } from 'astro:content';
 
@@ -20,7 +20,7 @@ const entryCards = await Promise.all(
     title: r.data.title,
     summary: r.data.subtitle,
     tags: r.data.tags,
-    href: `/research/${r.id}/`,
+    href: REPLACED_PAGES[r.id] ?? `/research/${r.id}/`,
     status: r.data.status,
     pub: r.data.publication ? await getEntry(r.data.publication) : undefined,
   })),
