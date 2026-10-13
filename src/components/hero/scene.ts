@@ -617,6 +617,15 @@ function orbit({ rc, svg, c, v, text, geo }: Ctx) {
   book.appendChild(rc.path('M0,2 C-13,-6 -30,-8 -44,-5 L-44,15 C-30,14 -13,16 0,22 Z', page));
   book.appendChild(rc.path('M0,2 C13,-6 30,-8 44,-5 L44,15 C30,14 13,16 0,22 Z', page));
   book.appendChild(el('line', { x1: 0, y1: 2, x2: 0, y2: 22, stroke: c.book, 'stroke-width': 2.8 }));
+  // Cover and page-stack thickness, and a pencil resting on the right page
+  // (design-reference/figures-demo.html), in the book's own coordinates so
+  // they turn with it.
+  const ink = { stroke: c.book, roughness: 1.2 };
+  book.appendChild(rc.path('M-44,15 L-44,20 C-24,27 24,27 44,20 L44,15', { ...ink, strokeWidth: 2.3, fill: 'none', seed: 44 }));
+  book.appendChild(rc.path('M-38,18 C-18,23 18,23 38,18', { ...ink, strokeWidth: 1.2, fill: 'none', roughness: 1.4, seed: 45 }));
+  book.appendChild(rc.line(38, -7, 15, 11, { ...ink, strokeWidth: 3, roughness: 0.8, seed: 46 }));
+  book.appendChild(rc.path('M15,11 L10,17 L20,12 Z', { ...ink, strokeWidth: 1.2, fill: c.book, fillStyle: 'solid', roughness: 0.8, seed: 47 }));
+  book.appendChild(rc.line(38, -7, 41.5, -10.5, { ...ink, strokeWidth: 3.4, roughness: 0.8, seed: 48 }));
   g.appendChild(brain);
   g.appendChild(book);
   g.appendChild(
@@ -630,52 +639,111 @@ function orbit({ rc, svg, c, v, text, geo }: Ctx) {
 
 // ---------------------------------------------------------------- characters
 
-// Ported from design-reference/explorer-proto.html. Each figure is drawn once,
-// origin at the feet, with every limb in its own group so motion.ts can swing
-// it. Until motion.ts takes over (or with reduced motion), they stand at the
-// idle spot on the road.
+// Drawings from design-reference/figures-demo.html; movement from
+// design-reference/explorer-proto.html (motion.ts). Each figure is drawn once
+// in the demo's coordinates, scaled to the hero's figure size with its feet
+// at the origin, facing right. Every limb is a line from its joint along +x,
+// in a group tagged with data-limb and its joint (data-jx, data-jy), so
+// motion.ts can swing it: rotate 90° points straight down. Until motion.ts
+// takes over (or with reduced motion), they stand at the idle spot on the
+// road in the demo's still pose.
 
-/** The explorer: about 72 units tall, limbs tagged for the walk cycle. */
+/** A limb: a line of `len` from the joint, turned by `setLimb`. */
+function limb(rc: RoughSVG, parent: Element, name: string, jx: number, jy: number, len: number, o: object) {
+  const g = el('g', { 'data-limb': name, 'data-jx': jx, 'data-jy': jy });
+  g.appendChild(rc.line(0, 0, len, 0, o));
+  parent.appendChild(g);
+  return g;
+}
+
+/** Points a limb `deg` degrees from +x (90 = straight down). Also used by motion.ts. */
+export function setLimb(g: Element | null | undefined, deg: number) {
+  if (!g) return;
+  const e = g as SVGElement;
+  g.setAttribute('transform', `translate(${e.dataset.jx} ${e.dataset.jy}) rotate(${deg.toFixed(2)})`);
+}
+
+/** Explorer geometry in demo units (shared with motion.ts). */
+export const EXPLORER = { shX: 752, shY: 204, armLen: 22, ground: 264 };
+
+/** Places the walking stick from the front hand (arm at `deg`) to the ground just ahead. */
+export function plantStick(stick: Element | null | undefined, deg: number, bob = 0) {
+  if (!stick) return;
+  const r = (deg * Math.PI) / 180;
+  const hx = EXPLORER.shX + EXPLORER.armLen * Math.cos(r);
+  const hy = EXPLORER.shY + EXPLORER.armLen * Math.sin(r) + bob;
+  stick.setAttribute('x1', hx.toFixed(1));
+  stick.setAttribute('y1', hy.toFixed(1));
+  stick.setAttribute('x2', (hx + 10).toFixed(1));
+  stick.setAttribute('y2', String(EXPLORER.ground));
+}
+
+/**
+ * The explorer: brimmed hat, backpack, walking stick. About 74 units tall
+ * (demo scale 0.82, feet at the origin).
+ */
 function explorer({ rc, svg, c, geo }: Ctx) {
-  const o = { stroke: c.char, strokeWidth: 2.4, roughness: 1.4, seed: 51 };
+  const F = c.char;
   const wrap = el('g', { 'data-actor': 'explorer' });
-  const body = el('g');
-  body.appendChild(rc.circle(0, -62, 22, o));
-  body.appendChild(rc.line(0, -51, 0, -24, o));
-  const limb = (name: string, jx: number, jy: number, x2: number, y2: number) => {
-    const g = el('g', { 'data-limb': name });
-    g.appendChild(rc.line(jx, jy, x2, y2, o));
-    body.appendChild(g);
-  };
-  limb('armL', 0, -46, -15, -34);
-  limb('armR', 0, -46, 15, -34);
-  limb('legL', 0, -24, -11, 0);
-  limb('legR', 0, -24, 11, 0);
-  wrap.appendChild(body);
+  const fig = el('g', { transform: 'scale(0.82) translate(-752 -262)' });
+  const body = el('g', { 'data-limb': 'body' });
+  body.appendChild(rc.rectangle(735, 206, 15, 22, { stroke: F, strokeWidth: 1.8, fill: F, fillStyle: 'hachure', hachureGap: 5, fillWeight: 0.6, roughness: 1.3, seed: 51 }));
+  body.appendChild(rc.line(752, 200, 752, 232, { stroke: F, strokeWidth: 3.4, roughness: 1.1, seed: 52 }));
+  body.appendChild(rc.circle(752, 184, 22, { stroke: F, strokeWidth: 2.2, fill: F, fillStyle: 'solid', roughness: 1.1, seed: 53 }));
+  body.appendChild(rc.path('M 738 178 C 748 170, 758 170, 768 178', { stroke: F, strokeWidth: 2, roughness: 1.1, seed: 54 }));
+  body.appendChild(rc.line(733, 179, 773, 179, { stroke: F, strokeWidth: 2.2, roughness: 1, seed: 55 }));
+  fig.appendChild(body);
+  const arm = { stroke: F, strokeWidth: 2.8, roughness: 1.1, seed: 56 };
+  const leg = { stroke: F, strokeWidth: 3.4, roughness: 1.1, seed: 57 };
+  // Back arm swings; front arm holds the stick.
+  setLimb(limb(rc, fig, 'armB', EXPLORER.shX, EXPLORER.shY, EXPLORER.armLen, arm), 74);
+  setLimb(limb(rc, fig, 'armF', EXPLORER.shX, EXPLORER.shY, EXPLORER.armLen, arm), 116);
+  setLimb(limb(rc, fig, 'legA', 752, 232, 30, leg), 112);
+  setLimb(limb(rc, fig, 'legB', 752, 232, 30, leg), 70);
+  const stick = el('line', { 'data-limb': 'stick', stroke: F, 'stroke-width': 2, 'stroke-linecap': 'round' });
+  fig.appendChild(stick);
+  plantStick(stick, 116);
+  wrap.appendChild(fig);
   const x = geo.idleX;
   wrap.setAttribute('transform', `translate(${x} ${geo.roadY(x)}) scale(${geo.fig})`);
   svg.appendChild(wrap);
 }
 
-/** The dog: smaller, four legs, a wagging tail, trailing the explorer. */
+/** Dog geometry in demo units (shared with motion.ts). */
+export const DOG = { tailX: 403, tailY: 214 };
+
+/**
+ * The dog: ellipse body and neck, a head with snout, nose, eye and two ears,
+ * four legs for a diagonal trot, a wagging tail. About 47 units tall (demo
+ * scale 0.52, feet at y 6 so it stands on the road like the old one).
+ */
 function dog({ rc, svg, c, geo }: Ctx) {
-  const o = { stroke: c.char, strokeWidth: 2.1, roughness: 1.4, seed: 53 };
+  const F = c.char;
   const wrap = el('g', { 'data-actor': 'dog' });
-  const body = el('g');
-  body.appendChild(rc.ellipse(0, -16, 46, 20, o));
-  body.appendChild(rc.circle(26, -22, 16, o));
-  body.appendChild(rc.path('M20,-28 L24,-38 L31,-30', o));
-  body.appendChild(rc.path('M33,-20 q9,0 10,5 q-7,2 -11,-1', o));
-  for (const [name, lx] of [['l1', -16], ['l2', -6], ['l3', 6], ['l4', 16]] as const) {
-    const g = el('g', { 'data-limb': name, 'data-x': lx });
-    g.appendChild(rc.line(lx, -7, lx, 6, o));
-    body.appendChild(g);
-  }
-  const tail = el('g', { 'data-limb': 'tail' });
-  tail.appendChild(rc.path('M-22,-20 q-11,-2 -8,-15', o));
-  body.appendChild(tail);
-  body.appendChild(rc.circle(30, -24, 2.4, { fill: c.char, fillStyle: 'solid', stroke: 'none', seed: 55 }));
-  wrap.appendChild(body);
+  const fig = el('g', { transform: 'translate(0 6) scale(0.52) translate(-455 -260)' });
+  const body = el('g', { 'data-limb': 'body' });
+  const fill = { fill: F, fillStyle: 'hachure', fillWeight: 0.6 };
+  body.appendChild(rc.ellipse(444, 224, 86, 36, { stroke: F, strokeWidth: 2.2, ...fill, hachureGap: 7, roughness: 1.5, seed: 61 }));
+  body.appendChild(rc.line(474, 212, 492, 200, { stroke: F, strokeWidth: 2.2, roughness: 1.2, seed: 62 }));
+  body.appendChild(rc.ellipse(506, 198, 32, 26, { stroke: F, strokeWidth: 2.1, ...fill, hachureGap: 6, roughness: 1.4, seed: 63 }));
+  body.appendChild(rc.path('M 518 196 C 532 196, 536 202, 532 208 C 526 210, 518 208, 516 204 Z', { stroke: F, strokeWidth: 1.8, fill: F, fillStyle: 'solid', roughness: 1.2, seed: 64 }));
+  body.appendChild(rc.path('M 494 188 L 489 172 L 502 184 Z', { stroke: F, strokeWidth: 1.6, fill: F, fillStyle: 'hachure', hachureGap: 3, roughness: 1.2, seed: 65 }));
+  body.appendChild(rc.path('M 508 186 L 510 170 L 519 184 Z', { stroke: F, strokeWidth: 1.6, fill: F, fillStyle: 'hachure', hachureGap: 3, roughness: 1.2, seed: 66 }));
+  body.appendChild(el('circle', { cx: 510, cy: 195, r: 1.8, fill: F }));
+  body.appendChild(el('circle', { cx: 531, cy: 202, r: 2.2, fill: F }));
+  fig.appendChild(body);
+  const tail = el('g', { 'data-limb': 'tail', transform: `translate(${DOG.tailX} ${DOG.tailY}) rotate(14)` });
+  tail.appendChild(rc.path('M 0 0 C -10 -2, -18 -12, -16 -26', { stroke: F, strokeWidth: 2.4, roughness: 1.3, seed: 67 }));
+  fig.appendChild(tail);
+  // Near legs are heavier than far ones. Diagonal pairs move together:
+  // front-near with back-far, front-far with back-near.
+  const near = { stroke: F, strokeWidth: 3.2, roughness: 1.1, seed: 68 };
+  const far = { stroke: F, strokeWidth: 2.4, roughness: 1.1, seed: 69 };
+  setLimb(limb(rc, fig, 'fn', 470, 238, 22, near), 104);
+  setLimb(limb(rc, fig, 'ff', 460, 238, 22, far), 76);
+  setLimb(limb(rc, fig, 'bn', 420, 238, 22, near), 76);
+  setLimb(limb(rc, fig, 'bf', 430, 238, 22, far), 104);
+  wrap.appendChild(fig);
   const x = Math.max(geo.roadMin, geo.idleX - 64 * geo.fig);
   wrap.setAttribute('transform', `translate(${x} ${geo.roadY(x) - 6}) scale(${geo.fig})`);
   svg.appendChild(wrap);

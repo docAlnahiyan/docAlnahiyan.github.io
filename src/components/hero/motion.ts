@@ -2,6 +2,8 @@
 // one shared requestAnimationFrame loop for everything that reacts to the
 // cursor. The repel-text physics are ported from design-reference/repel-text.html.
 
+import { DOG, plantStick, setLimb } from './scene';
+
 /** Called once per frame with the hero's current position on screen. */
 export type Tick = (frame: Frame) => void;
 
@@ -282,14 +284,14 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
   const dg = { x: ex.x - 64 * geo.fig, phase: 0, facing: 1, hopIn: 1.2, hop: -1, hopY: 0 };
 
   // The drawing is replaced on resize and theme change; look the parts up again.
-  let parts: Record<string, SVGGElement | null> = {};
+  let parts: Record<string, SVGElement | null> = {};
   let exWrap: SVGGElement | null = null;
   let dogWrap: SVGGElement | null = null;
   const lookUp = () => {
     exWrap = heroEl.querySelector('[data-actor="explorer"]');
     dogWrap = heroEl.querySelector('[data-actor="dog"]');
     parts = {};
-    heroEl.querySelectorAll<SVGGElement>('[data-limb]').forEach((g) => {
+    heroEl.querySelectorAll<SVGElement>('[data-limb]').forEach((g) => {
       const owner = g.closest('[data-actor]')?.getAttribute('data-actor');
       parts[`${owner}:${g.dataset.limb}`] = g;
     });
@@ -347,29 +349,38 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
     setTimeout(() => ring.remove(), 700);
   };
 
-  const rot = (g: SVGGElement | null, deg: number, cx: number, cy: number) =>
-    g?.setAttribute('transform', `rotate(${deg.toFixed(2)},${cx},${cy})`);
-
+  // Walk cycles from design-reference/figures-demo.html, driven by the
+  // gait phase and stride above. Angles: 90 = limb straight down.
   const renderEx = (y: number, step: number) => {
     const amp = clamp(step * 7, 6, 26); // bigger stride when running
-    const a = Math.sin(ex.phase) * amp;
-    rot(parts['explorer:legL'], a, 0, -24);
-    rot(parts['explorer:legR'], -a, 0, -24);
-    rot(parts['explorer:armL'], -a * 0.9, 0, -46);
-    rot(parts['explorer:armR'], a * 0.9, 0, -46);
-    const bob = -Math.abs(Math.sin(ex.phase)) * (step > 0.2 ? 3.2 : 1.2);
-    exWrap?.setAttribute('transform', `translate(${ex.x.toFixed(2)} ${(y + bob).toFixed(2)}) scale(${ex.facing * geo.fig},${geo.fig})`);
+    const p = ex.phase;
+    setLimb(parts['explorer:legA'], 90 + amp * Math.sin(p));
+    setLimb(parts['explorer:legB'], 90 + amp * Math.sin(p + Math.PI));
+    // Back arm swings against the front leg; the front arm reaches forward
+    // with the stick, which plants on the ground just ahead.
+    setLimb(parts['explorer:armB'], 90 - amp * 0.82 * Math.sin(p));
+    const front = 116 + amp * 0.45 * Math.sin(p + Math.PI);
+    setLimb(parts['explorer:armF'], front);
+    const bob = 1.6 * Math.sin(p * 2);
+    parts['explorer:body']?.setAttribute('transform', `translate(0 ${bob.toFixed(2)})`);
+    plantStick(parts['explorer:stick'], front, bob);
+    exWrap?.setAttribute('transform', `translate(${ex.x.toFixed(2)} ${y.toFixed(2)}) scale(${ex.facing * geo.fig},${geo.fig})`);
     exWrap?.setAttribute('opacity', '1');
   };
 
   const renderDog = (step: number) => {
     const amp = clamp(step * 7, 5, 20);
-    const a = Math.sin(dg.phase) * amp;
-    for (const [leg, sign] of [['l1', 1], ['l2', -1], ['l3', 1], ['l4', -1]] as const) {
-      const g = parts[`dog:${leg}`];
-      rot(g, a * sign, Number(g?.dataset.x ?? 0), -7);
-    }
-    rot(parts['dog:tail'], Math.sin(dg.phase * 2.2) * 12, -22, -20);
+    const p = dg.phase;
+    // Diagonal trot: front-near with back-far, the other pair opposite.
+    const a = 90 + amp * Math.sin(p);
+    const b = 90 + amp * Math.sin(p + Math.PI);
+    setLimb(parts['dog:fn'], a);
+    setLimb(parts['dog:bf'], a);
+    setLimb(parts['dog:ff'], b);
+    setLimb(parts['dog:bn'], b);
+    const bob = 1.6 * Math.sin(p * 2);
+    parts['dog:body']?.setAttribute('transform', `translate(0 ${bob.toFixed(2)})`);
+    parts['dog:tail']?.setAttribute('transform', `translate(${DOG.tailX} ${(DOG.tailY + bob).toFixed(2)}) rotate(${(18 * Math.sin(p * 2.2)).toFixed(1)})`);
     const y = geo.roadY(dg.x) - 6 - dg.hopY;
     dogWrap?.setAttribute('transform', `translate(${dg.x.toFixed(2)} ${y.toFixed(2)}) scale(${dg.facing * geo.fig},${geo.fig})`);
   };
