@@ -1,0 +1,158 @@
+---
+// "Dig deeper" block (design-reference/research-page-spec.md §3.4): a bordered
+// card with tabs, one panel showing at a time. Each panel is a named slot.
+// Without JavaScript every panel shows, one after another.
+interface Props {
+  tabs: { id: string; label: string }[];
+}
+
+const { tabs } = Astro.props;
+---
+
+<section class="dig" aria-labelledby="dig-title">
+  <div class="dig-head">
+    <span class="arrow" aria-hidden="true">⤵</span>
+    <h2 id="dig-title">Dig deeper</h2>
+  </div>
+  <div class="tabs" role="tablist" aria-labelledby="dig-title">
+    {tabs.map((t, i) => (
+      <button
+        class="tab"
+        type="button"
+        role="tab"
+        id={`tab-${t.id}`}
+        aria-controls={`dig-${t.id}`}
+        aria-selected={i === 0 ? 'true' : 'false'}
+        tabindex={i === 0 ? 0 : -1}
+        data-tab={t.id}
+      >
+        {t.label}
+      </button>
+    ))}
+  </div>
+  {tabs.map((t) => (
+    <div class="panel" role="tabpanel" id={`dig-${t.id}`} aria-labelledby={`tab-${t.id}`} data-panel={t.id}>
+      <slot name={t.id} />
+    </div>
+  ))}
+</section>
+
+<script>
+  const dig = document.querySelector<HTMLElement>('.dig');
+  if (dig) {
+    const tabs = [...dig.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+    const panels = [...dig.querySelectorAll<HTMLElement>('[role="tabpanel"]')];
+
+    function show(id: string, focus = false) {
+      for (const t of tabs) {
+        const on = t.dataset.tab === id;
+        t.setAttribute('aria-selected', String(on));
+        t.tabIndex = on ? 0 : -1;
+        if (on && focus) t.focus();
+      }
+      for (const p of panels) p.hidden = p.dataset.panel !== id;
+    }
+
+    dig.classList.add('js');
+    show(tabs[0].dataset.tab!);
+    tabs.forEach((t, i) => {
+      t.addEventListener('click', () => show(t.dataset.tab!));
+      // Arrow keys move between tabs, as screen readers expect of a tablist.
+      t.addEventListener('keydown', (e) => {
+        const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+        const jump = { Home: 0, End: tabs.length - 1 }[e.key];
+        if (step === undefined && jump === undefined) return;
+        e.preventDefault();
+        const next = jump ?? (i + step! + tabs.length) % tabs.length;
+        show(tabs[next].dataset.tab!, true);
+      });
+    });
+
+    // Links elsewhere on the page (such as "Cite") open a tab and bring the
+    // block into view; so does arriving with its #dig-… address.
+    const open = (id: string) => {
+      if (!tabs.some((t) => t.dataset.tab === id)) return false;
+      show(id);
+      dig.scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      return true;
+    };
+    document.addEventListener('click', (e) => {
+      const link = (e.target as Element).closest<HTMLElement>('[data-open-tab]');
+      if (link && open(link.dataset.openTab!)) e.preventDefault();
+    });
+    if (location.hash.startsWith('#dig-')) open(location.hash.slice(5));
+  }
+</script>
+
+<style>
+  .dig {
+    margin-top: 40px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--surface);
+    scroll-margin-top: 80px;
+  }
+  .dig-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .arrow {
+    color: var(--accent);
+    font-size: 18px;
+  }
+  .dig-head h2 {
+    font-weight: 600;
+    font-size: 20px;
+  }
+  .tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 10px 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  /* Before the script runs (or without it) the tabs do nothing, so hide them
+     and let every panel show. */
+  .dig:not(.js) .tabs {
+    display: none;
+  }
+  .tab {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    border-radius: 9px 9px 0 0;
+    margin-bottom: -1px;
+    padding: 10px 14px;
+    cursor: pointer;
+  }
+  .tab:hover {
+    color: var(--ink);
+  }
+  .tab[aria-selected='true'] {
+    color: var(--accent-ink);
+    border-bottom-color: var(--accent);
+    background: var(--surface-2);
+  }
+  .panel {
+    padding: 20px;
+  }
+  .panel[hidden] {
+    display: none;
+  }
+  @media (max-width: 479.98px) {
+    .panel {
+      padding: 16px 14px;
+    }
+    .tab {
+      padding: 9px 11px;
+    }
+  }
+</style>

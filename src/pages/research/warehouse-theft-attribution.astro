@@ -1,0 +1,435 @@
+---
+// Research theme page, ported from design-reference/pub-page-demo.html
+// (spec: design-reference/research-page-spec.md §3). The paper's record (title,
+// date, BibTeX, code link) comes from its publications entry, so this page
+// and the publications list never disagree.
+import { getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CopyButton from '../../components/CopyButton.astro';
+import DigDeeper from '../../components/research/DigDeeper.astro';
+import WarehouseSim from '../../components/research/WarehouseSim.astro';
+import { getProfile } from '../../lib/content';
+import { fullDate, requestPaperMailto } from '../../lib/format';
+
+const pub = await getEntry('publications', 'inventory-shrinkage-attribution');
+if (!pub) throw new Error('Missing publication "inventory-shrinkage-attribution".');
+const profile = await getProfile();
+const p = pub.data;
+
+const requestHref = requestPaperMailto(profile.links.email, p.title);
+// TODO: add code_url to the publication entry when the code is public; the
+// Code buttons become links then.
+const codeHref = p.code_url;
+
+const tabs = [
+  { id: 'run', label: 'See it run' },
+  { id: 'how', label: 'How it works' },
+  { id: 'res', label: 'Results' },
+  { id: 'paper', label: 'Paper & code' },
+];
+
+const worlds = [
+  ['careless_low', 'Careless', '0.15%', 183, 412],
+  ['strategic_low', 'Strategic', '0.18%', 89, 508],
+  ['careful_low', 'Careful', '0.19%', 200, 551],
+  ['careless_mid', 'Careless', '0.36%', 320, 1025],
+  ['strategic_mid', 'Strategic', '0.44%', 158, 1244],
+  ['careful_mid', 'Careful', '0.49%', 455, 1403],
+  ['careless_high', 'Careless', '1.06%', 765, 3002],
+  ['strategic_high', 'Strategic', '1.23%', 378, 3490],
+  ['careful_high', 'Careful', '1.47%', 1241, 4174],
+] as const;
+---
+
+<BaseLayout
+  title="Catching Theft When the Records Lie"
+  description="Catching warehouse theft even when the thief edits the records to hide it — attributing physical loss to people, with a live simulation. Preprint, not peer-reviewed."
+  type="article"
+>
+  <article class="wrap view research">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/research/">Research</a> <span aria-hidden="true">›</span> <span aria-current="page">Warehouse theft attribution</span>
+    </nav>
+
+    {/* 1 · at a glance */}
+    <ul class="chips">
+      <li class="chip status">Pre-print · under review</li>
+      <li class="chip">Insider fraud</li>
+      <li class="chip">Positive-unlabelled learning</li>
+      {p.date && <li class="chip"><time datetime={p.date.toISOString().slice(0, 10)}>{fullDate(p.date)}</time></li>}
+    </ul>
+    <h1 class="title">Catching Theft When the Records Lie</h1>
+    <p class="plain">Catching warehouse theft even when the thief edits the records to hide it.</p>
+    <p class="authors"><b>MD Junaeid Alam</b> (Trine University) · <b>Al-Nahiyan Khushbu</b> (Southwest Jiaotong University)</p>
+    <div class="actions head-actions">
+      <a class="btn" href={requestHref}>Request full paper</a>
+      {codeHref
+        ? <a class="btn ghost" href={codeHref}>Code</a>
+        : <button class="btn ghost" type="button" disabled title="Code not yet released">Code</button>}
+      <a class="btn ghost" href="#dig-paper" data-open-tab="paper">Cite</a>
+    </div>
+    <ul class="badges">
+      <li class="badge"><span class="n">#1</span><span class="l">True thief at the top of the review list</span></li>
+      <li class="badge"><span class="n">8 / 9</span><span class="l">Simulated worlds, true actor recovered</span></li>
+      <li class="badge"><span class="n">0</span><span class="l">False alarms on 1.07M real transactions</span></li>
+    </ul>
+
+    <hr class="rule" />
+
+    {/* 2 · the idea */}
+    <section class="idea" aria-labelledby="idea-title">
+      <h2 class="sec" id="idea-title">The idea, in plain words</h2>
+      <p>A large share of warehouse loss is not burglary or error but the people inside the operation — and the hardest case is someone who both removes stock and edits the record to match the depleted shelf.</p>
+      <p>That is why auditing fails: when the same person takes the goods and writes the entry, the books stay internally consistent, so inspecting records reveals nothing.</p>
+      <p>The move is to stop auditing records and <b>attribute physical loss to people</b> — comparing each employee against their own baseline access, and producing a ranked shortlist for human review, never an automated accusation.</p>
+    </section>
+
+    {/* 3 · dig deeper */}
+    <DigDeeper tabs={tabs}>
+      <Fragment slot="run">
+        <p class="cap">How to read this: watch honest operations, inject the two kinds of theft, then hit “Reveal sealed file” to see who the method flagged.</p>
+        <figure class="figure">
+          <WarehouseSim />
+        </figure>
+        <p class="figcap">Interactive figure — the two culprits are chosen at random each load, so the method has to find them.</p>
+      </Fragment>
+
+      <Fragment slot="how">
+        <p class="cap">Two channels, one principle: judge each person against their own baseline, not the group.</p>
+        <div class="chan-card">
+          <span class="chan-tag">Channel A — physical theft</span>
+          <h3>Exposure-adjusted presence lift</h3>
+          <p class="copy">Physical removal lowers the shelf but not the book, so a later cycle count opens a loss window. The thief turns up in those windows more often than their ordinary access predicts. A lift above 1 marks that over-exposure.</p>
+        </div>
+        <div class="chan-card">
+          <span class="chan-tag">Channel B — record-editing theft</span>
+          <h3>Peer-relative write-off anomaly</h3>
+          <p class="copy">Editing the book to match the shelf leaves no window — but it leaves a trace: write-offs. An approver who writes off far more value than peers who hold the same authority stands out, scored robustly against the peer median.</p>
+        </div>
+        <button class="mathtoggle" type="button" aria-expanded="false" aria-controls="math">＋ Show the math</button>
+        <div class="math" id="math" hidden>
+          <div class="eq"><span class="lbl">Discrepancy at a count, and window loss</span>δᵢ = bᵢ − cᵢ &nbsp;&nbsp;·&nbsp;&nbsp; ℓ(w) = max(0, δᵢ − δᵢ₋₁)</div>
+          <div class="eq"><span class="lbl">Positive (loss) window label — otherwise unlabelled</span>y(w) = positive &nbsp;if&nbsp; ℓ(w) ≥ τ &nbsp;or&nbsp; u(w) &gt; 0</div>
+          <div class="eq"><span class="lbl">Channel A — Beta-smoothed posterior presence, then lift over the global rate r₀</span>θ̂ₑ = (α₀ + kₑ) / (α₀ + β₀ + nₑ) &nbsp;&nbsp;·&nbsp;&nbsp; Lₑ = θ̂ₑ / r₀</div>
+          <div class="eq"><span class="lbl">Channel B — robust z-score of write-off value against the approver peer group</span>Zₑ = (Vₑ − median) / max(MAD, ε)</div>
+          <p class="copy pipeline">The pipeline: calibrated honest operations pass a 15-check validation, a theft injector writes every true event to a <b>sealed ground-truth channel</b> used only for scoring, and the two channels read the visible record alone.</p>
+        </div>
+      </Fragment>
+
+      <Fragment slot="res">
+        <p class="cap">Nine simulated worlds spanning three adversary profiles × three theft rates. Delivered rate is the true theft rate in each.</p>
+        <div class="table-wrap">
+          <table class="worlds">
+            <thead><tr><th>World</th><th>Profile</th><th class="num">Delivered rate</th><th class="num">Theft events</th><th class="num">Units taken</th></tr></thead>
+            <tbody>
+              {worlds.map(([id, profileName, rate, events, units]) => (
+                <tr><td class="prof">{id}</td><td>{profileName}</td><td class="num">{rate}</td><td class="num">{events}</td><td class="num">{units}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p class="copy findings">Across these worlds the two channels place every true actor at the top of the review list in <b>8 of 9</b> cases at no false-accusation cost. On a real transaction dataset of ~1.07M records the method raises <b>no false alarms</b> on legitimate activity. The colluding picker–approver pair is the hardest case.</p>
+      </Fragment>
+
+      <Fragment slot="paper">
+        <p class="cap">Pre-print, currently under review. Full PDF available on request.</p>
+        <div class="actions paper-actions">
+          <a class="btn" href={requestHref}>Request full paper</a>
+          {codeHref
+            ? <a class="btn ghost" href={codeHref}>View code</a>
+            : <button class="btn ghost" type="button" disabled title="Code not yet released">View code</button>}
+        </div>
+        <div class="cite-head">
+          <h3>Cite</h3>
+          <CopyButton text={p.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />
+        </div>
+        <pre class="cite">{p.bibtex}</pre>
+      </Fragment>
+    </DigDeeper>
+  </article>
+</BaseLayout>
+
+<script>
+  const btn = document.querySelector<HTMLButtonElement>('.mathtoggle');
+  const box = document.getElementById('math');
+  btn?.addEventListener('click', () => {
+    if (!box) return;
+    box.hidden = !box.hidden;
+    btn.setAttribute('aria-expanded', String(!box.hidden));
+    btn.textContent = box.hidden ? '＋ Show the math' : '－ Hide the math';
+  });
+</script>
+
+<style>
+  /* A little wider than the reading column, for the figure. */
+  .research {
+    max-width: 860px;
+  }
+  .crumb {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    letter-spacing: .02em;
+    color: var(--ink-3);
+    margin-bottom: 18px;
+  }
+  .crumb a {
+    color: var(--ink-3);
+  }
+  .crumb a:hover {
+    color: var(--accent-ink);
+  }
+  .crumb span[aria-hidden] {
+    margin: 0 .4em;
+  }
+
+  /* 1 · at a glance */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 0;
+    list-style: none;
+  }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+  }
+  .chip.status {
+    background: var(--accent-wash);
+    border-color: transparent;
+    color: var(--accent-ink);
+    font-weight: 500;
+  }
+  .title {
+    font-weight: 600;
+    font-size: clamp(28px, 5vw, 34px);
+    line-height: 1.18;
+    letter-spacing: -.01em;
+    margin: 0 0 10px;
+  }
+  .plain {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 17px;
+    color: var(--ink-2);
+    margin: 0 0 16px;
+  }
+  .authors {
+    font-size: 14px;
+    color: var(--ink-2);
+    margin: 0 0 18px;
+  }
+  .authors b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .head-actions {
+    margin: 0 0 22px;
+  }
+  .btn[disabled] {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 0 0 6px;
+    padding: 0;
+    list-style: none;
+  }
+  .badge {
+    flex: 1 1 180px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 13px 15px;
+    background: var(--surface);
+  }
+  .badge .n {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 22px;
+    line-height: 1.1;
+    color: var(--accent-ink);
+  }
+  .badge .l {
+    display: block;
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-top: 3px;
+  }
+
+  .rule {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 34px 0;
+  }
+
+  /* 2 · the idea */
+  .sec {
+    font-weight: 600;
+    font-size: 23px;
+    margin: 0 0 12px;
+  }
+  .idea p {
+    margin: 0 0 13px;
+  }
+
+  /* 3 · dig deeper panels */
+  .cap {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--ink-3);
+    margin: 0 0 14px;
+  }
+  /* The sim keeps its own light look, framed as an interactive figure. */
+  .figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .figcap {
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--ink-3);
+    padding: 10px 14px 0;
+    margin: 0;
+  }
+
+  .chan-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px 16px;
+    margin-bottom: 14px;
+    background: var(--surface-2);
+  }
+  .chan-card h3 {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 5px;
+  }
+  .chan-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+  }
+  .chan-card p {
+    font-size: 14.5px;
+    color: var(--ink-2);
+    margin: 6px 0 0;
+  }
+  .mathtoggle {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--accent-ink);
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 4px 0 16px;
+    cursor: pointer;
+  }
+  .mathtoggle:hover {
+    text-decoration: underline;
+  }
+  .eq {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 14px;
+    margin: 9px 0;
+    overflow-x: auto;
+  }
+  .eq .lbl {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-3);
+    margin-bottom: 3px;
+  }
+  .pipeline {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 12px 0 0;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .worlds {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin-top: 6px;
+  }
+  .worlds th,
+  .worlds td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .worlds th {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .worlds .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .worlds .prof {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .findings {
+    font-size: 14px;
+    color: var(--ink-2);
+    margin: 14px 0 0;
+  }
+
+  .paper-actions {
+    margin: 0 0 18px;
+  }
+  .cite-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .cite-head h3 {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .cite {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 13px;
+    margin: 0;
+    overflow-x: auto;
+  }
+</style>
