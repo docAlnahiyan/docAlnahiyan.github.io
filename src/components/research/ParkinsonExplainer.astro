@@ -1,0 +1,908 @@
+---
+// Six-stage scroll explainer for the 2D Parkinson's paper, ported from
+// design-reference/parkinson-explainer.html (spec: parkinson-page-spec.md).
+// The brain shown throughout is the open MNI152 template, not patient data.
+//
+// ACCURACY PLACEHOLDERS (spec §6) — keep as-is until the real details are
+// confirmed: the Stage 3 pipeline note, the Stage 4 and 5 "confirm" notes,
+// the placeholder attention map with its note, and the illustrative Stage 6
+// probabilities. Do not fill them in with invented specifics.
+
+const MRI = '/research/parkinson/mri';
+const slice = (i: number) => `${MRI}/slice_${String(i).padStart(2, '0')}.png`;
+const MIDDLE = 6;
+
+// Fixed-seed random numbers, so every build draws the same decoration.
+let seed = 7;
+const rand = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+
+const stages = [
+  { id: 's1', rail: 'Data' },
+  { id: 's2', rail: 'One scan' },
+  { id: 's3', rail: 'Preprocess' },
+  { id: 's4', rail: 'CNN' },
+  { id: 's5', rail: 'Transformer' },
+  { id: 's6', rail: 'Prediction' },
+];
+
+const cohorts = [
+  { c: 'ctl', name: 'Control', desc: "No Parkinson's. The healthy baseline." },
+  { c: 'prod', name: 'Prodromal', desc: 'Early, at-risk stage — before clinical diagnosis.' },
+  { c: 'pd', name: "Parkinson's (PD)", desc: "Clinically diagnosed Parkinson's disease." },
+];
+
+// Stage 2: seven slices from the middle of the stack, fanned out.
+const volume = [3, 4, 5, 6, 7, 8, 9].map((n, i) => ({
+  src: slice(n),
+  style: `top:${i * 5}px;left:${i * 4}px;opacity:${(0.55 + i * 0.064).toFixed(2)};background-image:url('${slice(n)}')`,
+}));
+
+const preprocess = [
+  { cls: '', cap: 'Raw slice' },
+  { cls: 'm-reg', cap: 'Register to template' },
+  { cls: 'm-skull', cap: 'Brain extraction' },
+  { cls: 'm-norm', cap: 'Intensity normalize' },
+  { cls: 'm-resize', cap: 'Resize to CNN input' },
+];
+
+// Stage 4: schematic feature maps (sizes to be confirmed, see the note).
+const maps = [
+  { s: 88, d: '224² · 3ch', l: 'input' },
+  { s: 72, d: '56² · 64', l: 'conv1' },
+  { s: 54, d: '28² · 128', l: 'block2' },
+  { s: 38, d: '14² · 256', l: 'block3' },
+  { s: 26, d: '7² · 512', l: 'block4' },
+];
+
+// Stage 5: tokens and a schematic of self-attention between them.
+const tokens = Array.from({ length: 28 }, () => (0.55 + rand() * 0.45).toFixed(2));
+const nodes = 9, y0 = 16, y1 = 104;
+const xs = Array.from({ length: nodes }, (_, i) => 28 + i * (374 / (nodes - 1)));
+const lines: { x1: number; x2: number; o: string }[] = [];
+for (let i = 0; i < nodes; i++)
+  for (let j = 0; j < nodes; j++)
+    if (rand() < 0.28) lines.push({ x1: xs[i], x2: xs[j], o: (0.12 + rand() * 0.3).toFixed(2) });
+
+const scores = [
+  { v: '80.5%', k: 'Accuracy' },
+  { v: '80.5%', k: 'Precision' },
+  { v: '79.9%', k: 'Recall' },
+  { v: '0.80', k: 'F1' },
+  { v: '0.84', k: 'AUC-ROC' },
+];
+---
+
+<div class="explainer" data-mri={MRI} data-middle={MIDDLE}>
+  <nav class="rail" aria-label="Stages">
+    {stages.map((s) => (
+      <a href={`#${s.id}`} data-rail={s.id}>
+        <span class="pip" aria-hidden="true"></span>
+        <span class="lbl">{s.rail}</span>
+      </a>
+    ))}
+  </nav>
+
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The data</div>
+    <h2 id="s1-title">PPMI — three cohorts</h2>
+    <p>Scans come from the <b>Parkinson's Progression Markers Initiative (PPMI)</b>: T1-weighted structural MRI from three groups the model learns to separate. Access needs a data-use agreement, so no raw scans are hosted here — the brain shown throughout is the open MNI152 template, for illustration.</p>
+    <div class="viz">
+      <div class="cohorts">
+        {cohorts.map((c) => (
+          <div class="cohort">
+            <div class={`nm ${c.c}`}>{c.name}</div>
+            <div class="ds">{c.desc}</div>
+            <div class="stackmini" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · One scan</div>
+    <h2 id="s2-title">A 3D volume → the middle axial slice</h2>
+    <p>Each scan is a 3D stack of slices. Rather than process the whole volume, the model takes the <b>middle axial slice</b> — one representative 2D image. Scrub the stack: the highlighted frame is the slice that goes forward.</p>
+    <div class="viz">
+      <div class="slice-row">
+        <div class="volume" aria-hidden="true">
+          {volume.map((v) => <span style={v.style}></span>)}
+        </div>
+        <div class="bigslice">
+          <img data-ref="slice" src={slice(MIDDLE)} width="299" height="299" alt="Axial brain MRI slice (MNI152 template)" />
+          <div class="scrub">
+            <input
+              type="range"
+              data-ref="scrub"
+              min="0"
+              max="12"
+              value={MIDDLE}
+              aria-label="Slice through the volume"
+              aria-valuetext={`slice ${MIDDLE + 1} of 13, middle slice (used)`}
+            />
+          </div>
+          <div class="slicelbl">slice <span data-ref="sliceNum">{MIDDLE + 1}</span> / 13 &nbsp;<span class="midtag" data-ref="midtag">← middle slice (used)</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · Preprocess</div>
+    <h2 id="s3-title">Preparing the slice</h2>
+    <p>Before the network sees it, the slice is standardised so every scan is comparable.</p>
+    <div class="viz">
+      <div class="pipe">
+        {preprocess.map((p, i) => (
+          <>
+            {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+            <div class={`pstep ${p.cls}`}>
+              <div class="thumb">
+                <img src={slice(MIDDLE)} width="92" height="92" alt="" loading="lazy" />
+                {p.cls === 'm-reg' && <div class="cross"></div>}
+              </div>
+              <div class="cap">{p.cap}</div>
+            </div>
+          </>
+        ))}
+      </div>
+      <p class="note center">Steps shown illustratively — confirm the exact pipeline (registration target, skull-strip method, normalization, input size) and I'll label each precisely.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · CNN</div>
+    <h2 id="s4-title">ResNet18 reads local structure</h2>
+    <p>The 2D slice passes through <b>ResNet18</b>. Each block shrinks the image spatially and deepens it into more feature channels — capturing local structure: edges, tissue boundaries, shapes.</p>
+    <div class="viz">
+      <div class="cnn">
+        {maps.map((m, i) => (
+          <>
+            {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+            <div class="blk">
+              <div class="fmap" style={`width:${m.s}px;height:${m.s}px`} aria-hidden="true"></div>
+              <div class="lab"><b>{m.l}</b>{m.d}</div>
+            </div>
+          </>
+        ))}
+      </div>
+      <p class="note center spaced">Feature-map sizes shown schematically — confirm the ResNet18 output dimensions and I'll set exact numbers.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · Transformer</div>
+    <h2 id="s5-title">The Transformer relates distant regions</h2>
+    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
+    <div class="viz">
+      <div class="tokens" aria-hidden="true">
+        {tokens.map((o) => <div class="tok" style={`opacity:${o}`}></div>)}
+      </div>
+      <svg class="attnsvg" width="430" height="120" viewBox="0 0 430 120" aria-hidden="true">
+        {lines.map((l) => <line x1={l.x1} y1={y0} x2={l.x2} y2={y1} opacity={l.o} />)}
+        {xs.map((x) => (
+          <>
+            <circle cx={x} cy={y0} r="6" />
+            <circle cx={x} cy={y1} r="6" />
+          </>
+        ))}
+        <text x="4" y="12">tokens</text>
+      </svg>
+      <p class="note center">Confirm the number of Transformer layers, heads, and whether a CLS token is used.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s6" aria-labelledby="s6-title">
+    <div class="kick">Stage 6 · Prediction &amp; attention</div>
+    <h2 id="s6-title">The verdict — and where it looked</h2>
+    <p>A classification head turns the Transformer's output into three probabilities. Pick an example cohort to see a typical prediction, and toggle the <b>attention map</b> to see which regions of the slice drove it.</p>
+    <div class="viz">
+      <div class="out-row">
+        <div class="slicebox">
+          <img src={`${MRI}/slice_mid.png`} width="240" height="240" alt="Axial brain MRI slice (MNI152 template)" loading="lazy" />
+          <canvas class="heat" data-ref="heat" width="240" height="240" aria-hidden="true"></canvas>
+        </div>
+        <div class="outpanel">
+          <div class="switch" role="group" aria-label="Example cohort">
+            <button type="button" class="ctl on" data-c="ctl" aria-pressed="true">Control</button>
+            <button type="button" class="prod" data-c="prod" aria-pressed="false">Prodromal</button>
+            <button type="button" class="pd" data-c="pd" aria-pressed="false">PD</button>
+          </div>
+          <div class="probs">
+            {[['ctl', 'Control', 82], ['prod', 'Prodromal', 12], ['pd', 'PD', 6]].map(([c, nm, p]) => (
+              <div class={`prob ${c}`}>
+                <span class="nm">{nm}</span>
+                <span class="track"><span class="fill" data-fill={c} style={`width:${p}%`}></span></span>
+                <span class="pct" data-pct={c}>{p}%</span>
+              </div>
+            ))}
+          </div>
+          <p class="verdict" aria-live="polite">Predicted: <b data-ref="verdict">Control</b></p>
+          <button type="button" class="toggle-attn" data-ref="attn" aria-pressed="false">Show attention map</button>
+        </div>
+      </div>
+      <div class="scores">
+        {scores.map((s) => (
+          <div class="score"><div class="v">{s.v}</div><div class="k">{s.k}</div></div>
+        ))}
+      </div>
+      <div class="flag">The attention overlay is a placeholder shape. Since your paper has real attention maps, share that figure (or where attention concentrates per cohort) and I'll swap in the genuine map so this stage is exact.</div>
+    </div>
+  </section>
+</div>
+
+<script>
+  const root = document.querySelector<HTMLElement>('.explainer');
+  if (root) {
+    const $ = <T extends Element = HTMLElement>(ref: string) => root.querySelector<T>(`[data-ref="${ref}"]`);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const stages = [...root.querySelectorAll<HTMLElement>('.stage')];
+    const railLinks = [...root.querySelectorAll<HTMLAnchorElement>('[data-rail]')];
+    const navH = document.getElementById('site-nav')?.offsetHeight ?? 0;
+    const mri = root.dataset.mri!;
+    const middle = Number(root.dataset.middle);
+    const slice = (i: number) => `${mri}/slice_${String(i).padStart(2, '0')}.png`;
+
+    // Reveal each stage as it scrolls in (once). With reduced motion every
+    // stage is simply shown; the CSS only hides them for motion-OK visitors
+    // once this script has run.
+    root.classList.add('js');
+    const reveal = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.classList.add('in');
+          reveal.unobserve(e.target);
+          // Load the rest of the stack once the scrubber is near.
+          if (e.target.id === 's2') for (let i = 0; i <= 12; i++) new Image().src = slice(i);
+        }
+      },
+      // Same idea as the hero: the sticky nav hides the top of the window.
+      { rootMargin: `-${navH}px 0px -8% 0px`, threshold: 0.12 },
+    );
+    stages.forEach((s) => reveal.observe(s));
+
+    // Progress rail: the stage crossing the middle of the window is current.
+    const setCurrent = (id: string) => {
+      for (const a of railLinks) {
+        const on = a.dataset.rail === id;
+        a.classList.toggle('on', on);
+        if (on) a.setAttribute('aria-current', 'step');
+        else a.removeAttribute('aria-current');
+      }
+    };
+    const current = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setCurrent(e.target.id);
+      },
+      { rootMargin: '-50% 0px -50% 0px' },
+    );
+    stages.forEach((s) => current.observe(s));
+    for (const a of railLinks) {
+      a.addEventListener('click', (e) => {
+        const target = document.getElementById(a.dataset.rail!);
+        if (!target) return;
+        e.preventDefault();
+        target.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+        history.replaceState(null, '', `#${target.id}`);
+      });
+    }
+
+    // Stage 2: slice scrubber.
+    const scrub = $<HTMLInputElement>('scrub'), img = $<HTMLImageElement>('slice');
+    const num = $('sliceNum'), midtag = $('midtag');
+    scrub?.addEventListener('input', () => {
+      const v = Number(scrub.value);
+      if (img) img.src = slice(v);
+      if (num) num.textContent = String(v + 1);
+      if (midtag) midtag.hidden = v !== middle;
+      scrub.setAttribute('aria-valuetext', `slice ${v + 1} of 13${v === middle ? ', middle slice (used)' : ''}`);
+    });
+
+    // Stage 6: example predictions per cohort. Illustrative outputs, not
+    // from specific scans (spec §6).
+    const EX: Record<string, { p: [number, number, number]; v: string }> = {
+      ctl: { p: [82, 12, 6], v: 'Control' },
+      prod: { p: [20, 60, 20], v: 'Prodromal' },
+      pd: { p: [8, 22, 70], v: 'PD' },
+    };
+    const heat = $<HTMLCanvasElement>('heat');
+    const hx = heat?.getContext('2d');
+    // PLACEHOLDER attention heatmap — to be replaced with the paper's real map.
+    function drawHeat(c: string) {
+      if (!hx) return;
+      hx.clearRect(0, 0, 240, 240);
+      // Emphasis near the central deep-brain region; stronger for PD.
+      const spots =
+        c === 'pd' ? [[120, 128, 52, 1]] : c === 'prod' ? [[120, 126, 46, 0.7], [120, 126, 20, 0.5]] : [[120, 120, 70, 0.35]];
+      for (const [x, y, r, a] of spots) {
+        const g = hx.createRadialGradient(x, y, 4, x, y, r);
+        g.addColorStop(0, `rgba(230,70,50,${a})`);
+        g.addColorStop(0.5, `rgba(235,150,40,${a * 0.55})`);
+        g.addColorStop(1, 'rgba(235,150,40,0)');
+        hx.fillStyle = g;
+        hx.beginPath();
+        hx.arc(x, y, r, 0, 7);
+        hx.fill();
+      }
+    }
+    const cohortBtns = [...root.querySelectorAll<HTMLButtonElement>('.switch button')];
+    function setCohort(c: string) {
+      const e = EX[c];
+      (['ctl', 'prod', 'pd'] as const).forEach((k, i) => {
+        const fill = root!.querySelector<HTMLElement>(`[data-fill="${k}"]`);
+        const pct = root!.querySelector<HTMLElement>(`[data-pct="${k}"]`);
+        if (fill) fill.style.width = `${e.p[i]}%`;
+        if (pct) pct.textContent = `${e.p[i]}%`;
+      });
+      const verdict = $('verdict');
+      if (verdict) verdict.textContent = e.v;
+      for (const b of cohortBtns) {
+        b.classList.toggle('on', b.dataset.c === c);
+        b.setAttribute('aria-pressed', String(b.dataset.c === c));
+      }
+      drawHeat(c);
+    }
+    cohortBtns.forEach((b) => b.addEventListener('click', () => setCohort(b.dataset.c!)));
+
+    const attn = $<HTMLButtonElement>('attn');
+    attn?.addEventListener('click', () => {
+      const on = !heat?.classList.contains('on');
+      heat?.classList.toggle('on', on);
+      attn.setAttribute('aria-pressed', String(on));
+      attn.textContent = on ? 'Hide attention map' : 'Show attention map';
+    });
+    setCohort('ctl');
+  }
+</script>
+
+<style>
+  /* Data colours for the cohorts and the model diagrams. These belong to
+     this figure only; every other colour comes from the site tokens. */
+  .explainer {
+    --ctrl: #3b6fb0;
+    --ctrl-soft: #e8f0f9;
+    --pd: #c0564b;
+    --prod: #c99a3f;
+    --ctl: #3f8f6b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .explainer {
+      --ctrl: #6ea3df;
+      --ctrl-soft: #26303a;
+    }
+  }
+  :global(:root[data-theme='dark']) .explainer {
+    --ctrl: #6ea3df;
+    --ctrl-soft: #26303a;
+  }
+
+  /* Progress rail, fixed in the left margin on wide screens. */
+  .rail {
+    position: fixed;
+    left: max(16px, calc(50% - 560px));
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+  .rail a {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .rail a:hover {
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .pip {
+    flex: 0 0 auto;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    transition: .2s;
+  }
+  .rail a.on .pip {
+    background: var(--accent);
+    transform: scale(1.3);
+  }
+  .rail a.on {
+    color: var(--ink);
+  }
+  .lbl {
+    opacity: 0;
+    white-space: nowrap;
+    transition: .2s;
+  }
+  .rail:hover .lbl,
+  .rail:focus-within .lbl,
+  .rail a.on .lbl {
+    opacity: 1;
+  }
+  @media (max-width: 1180px) {
+    .rail {
+      display: none;
+    }
+  }
+
+  .stage {
+    border-top: 1px solid var(--border);
+    padding: 38px 0;
+    scroll-margin-top: 70px;
+  }
+  /* Hidden until revealed, only for visitors who allow motion and only once
+     the script is running. */
+  @media (prefers-reduced-motion: no-preference) {
+    .explainer.js .stage {
+      transition: opacity .6s ease, transform .6s ease;
+    }
+    .explainer.js .stage:not(.in) {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+  }
+  .kick {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    margin-bottom: 6px;
+  }
+  .stage h2 {
+    font-weight: 600;
+    font-size: 24px;
+    margin: 0 0 10px;
+  }
+  .stage p {
+    font-size: 15.5px;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0 0 12px;
+  }
+  .stage p b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .stage .note {
+    font-size: 12.5px;
+    font-style: italic;
+    color: var(--ink-3);
+    max-width: none;
+  }
+  .note.center {
+    text-align: center;
+    margin: 14px 0 0;
+  }
+  .note.spaced {
+    margin-top: 22px;
+  }
+  .viz {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+
+  /* Stage 1 */
+  .cohorts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .cohort {
+    flex: 1 1 180px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface-2);
+  }
+  .cohort .nm {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .nm.ctl { color: var(--ctl); }
+  .nm.prod { color: var(--prod); }
+  .nm.pd { color: var(--pd); }
+  .cohort .ds {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-top: 4px;
+  }
+  .stackmini {
+    display: flex;
+    margin-top: 10px;
+  }
+  .stackmini span {
+    width: 22px;
+    height: 28px;
+    margin-right: -8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: #111;
+    box-shadow: 1px 0 0 var(--surface-2);
+  }
+
+  /* Stage 2 */
+  .slice-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+  }
+  .volume {
+    position: relative;
+    flex: 0 0 auto;
+    width: 150px;
+    height: 150px;
+  }
+  .volume span {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border: 1px solid #556;
+    border-radius: 6px;
+    background: #0d0d10 center / cover no-repeat;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, .25);
+  }
+  .bigslice {
+    flex: 1 1 240px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+  .bigslice img {
+    width: 230px;
+    height: 230px;
+    object-fit: contain;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .scrub {
+    width: 100%;
+    max-width: 280px;
+  }
+  .scrub input {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .slicelbl {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .midtag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent-ink);
+  }
+  .midtag[hidden] {
+    display: none;
+  }
+
+  /* Stage 3 */
+  .pipe,
+  .cnn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+  .pipe {
+    gap: 8px;
+  }
+  .pstep {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .thumb {
+    position: relative;
+    width: 92px;
+    height: 92px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .pstep .cap {
+    max-width: 96px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    line-height: 1.35;
+    color: var(--ink-2);
+  }
+  .parrow {
+    font-size: 18px;
+    color: var(--ink-3);
+  }
+  .m-reg .cross {
+    position: absolute;
+    inset: 0;
+  }
+  .m-reg .cross::before,
+  .m-reg .cross::after {
+    content: '';
+    position: absolute;
+    background: rgba(90, 160, 240, .7);
+  }
+  .m-reg .cross::before {
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+  }
+  .m-reg .cross::after {
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+  }
+  .m-skull img {
+    clip-path: ellipse(42% 46% at 50% 50%);
+  }
+  .m-norm img {
+    filter: contrast(1.35) brightness(1.08);
+  }
+  .m-resize img {
+    clip-path: ellipse(42% 46% at 50% 50%);
+    filter: contrast(1.35) brightness(1.08);
+    image-rendering: pixelated;
+    transform: scale(.82);
+  }
+
+  /* Stage 4 */
+  .cnn {
+    gap: 6px;
+  }
+  .fmap {
+    background: linear-gradient(135deg, var(--ctrl-soft), var(--surface-2));
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .blk {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    min-width: 72px;
+  }
+  .lab {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    line-height: 1.4;
+    text-align: center;
+    color: var(--ink-3);
+  }
+  .lab b {
+    display: block;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+
+  /* Stage 5 */
+  .tokens {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    max-width: 430px;
+    margin: 0 auto;
+  }
+  .tok {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    background: var(--ctrl);
+  }
+  .attnsvg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 14px auto 0;
+  }
+  .attnsvg line {
+    stroke: var(--ctrl);
+    stroke-width: .8;
+  }
+  .attnsvg circle {
+    fill: var(--ctrl);
+  }
+  .attnsvg text {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: var(--ink-3);
+  }
+
+  /* Stage 6 */
+  .out-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 22px;
+  }
+  .slicebox {
+    position: relative;
+    flex: 0 0 auto;
+    width: 240px;
+    height: 240px;
+    overflow: hidden;
+    background: #000;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .slicebox img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .heat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity .4s;
+  }
+  .heat:global(.on) {
+    opacity: .9;
+  }
+  .outpanel {
+    flex: 1 1 280px;
+    min-width: 260px;
+  }
+  .switch {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .switch button {
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .switch button:global(.on) {
+    color: #fff;
+  }
+  .switch .ctl:global(.on) { background: var(--ctl); border-color: var(--ctl); }
+  .switch .prod:global(.on) { background: var(--prod); border-color: var(--prod); }
+  .switch .pd:global(.on) { background: var(--pd); border-color: var(--pd); }
+  .probs {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-bottom: 8px;
+  }
+  .prob {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+  }
+  .prob .nm {
+    width: 78px;
+    font-weight: 500;
+  }
+  .track {
+    flex: 1 1 auto;
+    height: 12px;
+    overflow: hidden;
+    background: var(--surface-2);
+    border-radius: 6px;
+  }
+  .fill {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    transition: width .5s;
+  }
+  .prob.ctl .fill { background: var(--ctl); }
+  .prob.prod .fill { background: var(--prod); }
+  .prob.pd .fill { background: var(--pd); }
+  .pct {
+    width: 42px;
+    text-align: right;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+  .stage .verdict {
+    font-size: 13.5px;
+    margin: 8px 0 0;
+  }
+  .verdict b {
+    font-family: var(--font-display);
+    font-size: 16px;
+  }
+  .toggle-attn {
+    margin-top: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-ink);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 11px;
+    cursor: pointer;
+  }
+  .toggle-attn:hover {
+    border-color: var(--accent);
+  }
+  .scores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .score {
+    min-width: 92px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 13px;
+    background: var(--surface-2);
+  }
+  .score .v {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+  }
+  .score .k {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .flag {
+    margin-top: 14px;
+    padding: 11px 14px;
+    border-radius: 10px;
+    background: var(--accent-wash);
+    font-size: 12.5px;
+    color: var(--accent-ink);
+  }
+
+  @media (max-width: 479.98px) {
+    .viz {
+      padding: 14px;
+    }
+    .slicebox {
+      width: 100%;
+      max-width: 240px;
+      height: auto;
+      aspect-ratio: 1;
+      margin-inline: auto;
+    }
+    .outpanel {
+      min-width: 0;
+    }
+  }
+</style>
