@@ -1,0 +1,237 @@
+---
+// Five-stage explainer for GlobalFaceNet, ported from
+// design-reference/globalfacenet-explainer.html. Faces are stylised drawings,
+// not RAF-DB images; the Stage 5 outputs are illustrative.
+import Face from './Face.astro';
+import { CLASSES, EMO } from './globalfacenet-data';
+import { svgBuilder } from './svg';
+
+const START = 'happy';
+
+// Stage 3: the four convolution blocks.
+const maps = [
+  { s: 74, cells: 6, depth: 1, d: '100² · 3', l: 'input' },
+  { s: 62, cells: 5, depth: 2, d: '50² · 32', l: 'conv1' },
+  { s: 52, cells: 4, depth: 3, d: '25² · 64', l: 'conv2' },
+  { s: 42, cells: 3, depth: 4, d: '13² · 128', l: 'conv3' },
+  { s: 32, cells: 2, depth: 5, d: '6² · 512', l: 'conv4' },
+];
+
+// Stage 4: the two-pathway architecture (760 × 360).
+function archSvg() {
+  const b = svgBuilder();
+  const mono = 'var(--font-mono)';
+  b.raw('<defs>');
+  b.marker('gfn-ah', 'var(--ink-3)');
+  b.raw('</defs>');
+  const line = (x1: number, y1: number, x2: number, y2: number, c = 'var(--ink-3)') => b.arrow(x1, y1, x2, y2, c, 'gfn-ah');
+  // Face in.
+  b.box(14, 150, 60, 60, { fill: 'var(--surface)' });
+  b.tx(44, 176, 'face', { fs: 11 });
+  b.tx(44, 192, '100²·3', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  line(74, 180, 96, 180);
+  // CNN backbone.
+  b.box(96, 150, 96, 60, { fill: 'var(--ctrl-soft)', stroke: 'var(--ctrl)' });
+  b.tx(144, 174, 'CNN', { fs: 12, fw: 600, fill: 'var(--ctrl)' });
+  b.tx(144, 190, '32·64·128·512', { fs: 8, fill: 'var(--ink-3)', ff: mono });
+  // Split.
+  line(192, 168, 250, 96, 'var(--vit)');
+  line(192, 192, 250, 278, 'var(--ctrl)');
+  // Vision Transformer path (top).
+  b.box(250, 70, 120, 52, { fill: 'var(--vit-soft)', stroke: 'var(--vit)' });
+  b.tx(310, 90, '2×2 patches', { fs: 10.5, fw: 600, fill: 'var(--vit)' });
+  b.tx(310, 106, '36 · + positional', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  line(370, 96, 400, 96);
+  b.box(400, 70, 130, 52, { fill: 'var(--vit-soft)', stroke: 'var(--vit)' });
+  b.tx(465, 90, 'Transformer × 2', { fs: 10.5, fw: 600, fill: 'var(--vit)' });
+  b.tx(465, 106, '8 heads · dim 256', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  line(530, 96, 560, 96);
+  b.box(560, 70, 96, 52);
+  b.tx(608, 90, 'pool', { fs: 10.5 });
+  b.tx(608, 106, 'Dense 256', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  // CNN path (bottom).
+  b.box(250, 252, 120, 52, { fill: 'var(--ctrl-soft)', stroke: 'var(--ctrl)' });
+  b.tx(310, 272, '512-map pool', { fs: 10.5, fw: 600, fill: 'var(--ctrl)' });
+  b.tx(310, 288, 'GAP', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  line(370, 278, 560, 278);
+  b.box(560, 252, 96, 52);
+  b.tx(608, 272, 'Dense 256', { fs: 10.5 });
+  // Concatenate.
+  line(656, 96, 690, 170, 'var(--vit)');
+  line(656, 278, 690, 196, 'var(--ctrl)');
+  b.box(690, 150, 56, 60, { fill: 'var(--accent-wash)', stroke: 'var(--accent)' });
+  b.tx(718, 176, 'concat', { fs: 10.5, fw: 600, fill: 'var(--accent-ink)' });
+  b.tx(718, 192, '512', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  // Pathway labels and the head.
+  b.tx(310, 58, 'GLOBAL · Vision Transformer path', { fs: 9, fill: 'var(--vit)', ff: mono, fw: 600 });
+  b.tx(310, 320, 'LOCAL · CNN path', { fs: 9, fill: 'var(--ctrl)', ff: mono, fw: 600 });
+  // Right-aligned inside the frame (centred under concat, they ran off the edge).
+  b.tx(752, 230, '→ Dense 512 · dropout 0.5', { fs: 8.5, fill: 'var(--ink-3)', ff: mono, a: 'end' });
+  b.tx(752, 243, '→ softmax · 7 emotions', { fs: 8.5, fill: 'var(--ink-3)', ff: mono, a: 'end' });
+  return b.html();
+}
+const arch = archSvg();
+---
+
+<div class="gfn" data-start={START}>
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The task</div>
+    <h2 id="s1-title">Seven emotions from one face</h2>
+    <p>Given a single face image, the model picks one of seven expressions from the RAF-DB dataset. No audio, no video — just the still image.</p>
+    <div class="viz">
+      <ul class="emo-row">
+        {CLASSES.map((c) => <li class="emo">{c}</li>)}
+      </ul>
+      <p class="note emo-note">RAF-DB is available to researchers on request and isn't hosted here — the faces below are simple drawings, for illustration.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · Input</div>
+    <h2 id="s2-title">A 100×100 face</h2>
+    <p>Each face is resized to 100×100 with three colour channels and normalised. Light augmentation (rotation, shifts, horizontal flip) is used during training.</p>
+    <div class="viz centered">
+      <Face expr={EMO.neutral} width={150} height={160} label="A stylised neutral face" />
+      <p class="note">100 × 100 × 3 · normalised to [0, 1]</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · CNN backbone</div>
+    <h2 id="s3-title">Convolutions read local structure</h2>
+    <p>Four convolution blocks grow the channels and shrink the map — <b>32 → 64 → 128 → 512</b> — turning pixels into local features (edges, brows, mouth shapes).</p>
+    <div class="viz">
+      <div class="cnn">
+        {maps.map((m, i) => (
+          <>
+            {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+            <div class="blk">
+              <canvas class="fmapc" data-s={m.s} data-cells={m.cells} data-depth={m.depth} aria-hidden="true"></canvas>
+              <div class="lab"><b>{m.l}</b>{m.d}</div>
+            </div>
+          </>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · Two pathways</div>
+    <h2 id="s4-title">Local detail <span class="plus">+</span> global context, then fused</h2>
+    <p>The feature maps feed <b>two branches</b>. The <b class="c-ctrl">CNN path</b> pools the deep 512-channel map for fine local detail. The <b class="c-vit">Transformer path</b> cuts the 128-channel map into 2×2 patches, adds positional encodings, and runs <b>two Transformer blocks (8 heads)</b> to capture global spatial relationships. The two are <b>concatenated</b>, then a dense head predicts the emotion.</p>
+    <div class="viz">
+      <svg
+        class="diagram"
+        viewBox="0 0 760 360"
+        role="img"
+        aria-label="GlobalFaceNet architecture: CNN backbone splitting into a CNN pooling path and a Vision Transformer path, concatenated into a dense classification head over seven emotions"
+        set:html={arch}
+      />
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · Predict</div>
+    <h2 id="s5-title">Pick an emotion — watch it classify</h2>
+    <p>Choose an expression; the face shows it and the model's seven-way output updates. (Illustrative example outputs — the shape of a confident prediction.)</p>
+    <div class="viz">
+      <div class="pred">
+        <div class="facebox">
+          <Face expr={EMO[START]} width={200} height={214} label="A stylised face showing the chosen emotion" ref="live" />
+          <div class="pick" role="group" aria-label="Emotion">
+            {CLASSES.map((c) => (
+              <button type="button" data-e={c} aria-pressed={c === START ? 'true' : 'false'}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <div class="bars">
+          {CLASSES.map((c, i) => (
+            <div class:list={['bar', { win: c === START }]} data-bar={c}>
+              <span class="nm">{c}</span>
+              <span class="track"><span class="fill" style={`width:${EMO[START].probs[i]}%`}></span></span>
+              <span class="pct">{EMO[START].probs[i]}%</span>
+            </div>
+          ))}
+          <p class="verdict" aria-live="polite">Predicted: <b data-ref="verdict">{START}</b></p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { CLASSES, EMO, type Emotion } from './globalfacenet-data';
+  import { drawStack, revealStages, seeded, setFace } from './explainer';
+
+  const root = document.querySelector<HTMLElement>('.gfn');
+  if (root) {
+    revealStages(root.closest('.xp') ?? root);
+
+    // Stage 3: feature-map stacks.
+    const rand = seeded(5);
+    root.querySelectorAll<HTMLCanvasElement>('.fmapc').forEach((cv) => drawStack(cv, rand));
+
+    // Stage 5: pick an emotion; the face and the seven-way output follow.
+    const live = root.querySelector('[data-ref="live"]');
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('.pick button')];
+    function select(emo: Emotion) {
+      for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.e === emo));
+      setFace(live, EMO[emo]);
+      const p = EMO[emo].probs;
+      CLASSES.forEach((c, i) => {
+        const bar = root!.querySelector<HTMLElement>(`[data-bar="${c}"]`);
+        if (!bar) return;
+        bar.classList.toggle('win', c === emo);
+        const fill = bar.querySelector<HTMLElement>('.fill');
+        const pct = bar.querySelector<HTMLElement>('.pct');
+        if (fill) fill.style.width = `${p[i]}%`;
+        if (pct) pct.textContent = `${p[i]}%`;
+      });
+      const verdict = root!.querySelector('[data-ref="verdict"]');
+      if (verdict) verdict.textContent = emo;
+    }
+    for (const b of buttons) b.addEventListener('click', () => select(b.dataset.e as Emotion));
+  }
+</script>
+
+<style>
+  .emo-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .emo {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--ink-2);
+  }
+  .stage .emo-note {
+    margin: 12px 0 0;
+  }
+  .plus,
+  .c-ctrl {
+    color: var(--ctrl);
+  }
+  /* Beats the shared ".xp .stage p b" ink colour. */
+  .gfn .stage p b.c-ctrl {
+    color: var(--ctrl);
+  }
+  .gfn .stage p b.c-vit {
+    color: var(--vit);
+  }
+  .facebox {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-inline: auto;
+  }
+</style>

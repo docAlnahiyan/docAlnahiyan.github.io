@@ -1,0 +1,291 @@
+/* Shared styles for the project explainers (GlobalFaceNet,
+   MultimodalTransformerNet), ported from the design-reference prototypes.
+   Everything is under .xp and uses the site's tokens (global.css). */
+
+.xp {
+  max-width: 900px;
+}
+
+/* ---------- header ---------- */
+.xp .crumb {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  margin-bottom: 16px;
+}
+.xp .crumb a {
+  color: var(--ink-3);
+}
+.xp .crumb a:hover {
+  color: var(--accent-ink);
+}
+.xp .crumb span[aria-hidden] {
+  margin: 0 .4em;
+}
+.xp .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+.xp .chip {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-2);
+}
+.xp .title {
+  font-weight: 600;
+  font-size: clamp(28px, 5vw, 33px);
+  line-height: 1.18;
+  margin: 0 0 10px;
+}
+.xp .plain {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+}
+.xp .meta {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: 0 0 6px;
+  max-width: 70ch;
+}
+.xp .head-actions {
+  margin: 14px 0 4px;
+}
+.xp .badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.xp .badge {
+  flex: 1 1 150px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 15px;
+  background: var(--surface);
+}
+.xp .badge .n {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--accent-ink);
+}
+.xp .badge .l {
+  display: block;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  margin-top: 2px;
+}
+
+/* ---------- stages ---------- */
+.xp .stage {
+  border-top: 1px solid var(--border);
+  padding: 36px 0;
+  margin-top: 28px;
+}
+.xp .stage + .stage {
+  margin-top: 0;
+}
+/* Hidden until revealed, only for visitors who allow motion and only once
+   the script is running. */
+@media (prefers-reduced-motion: no-preference) {
+  .xp.js .stage {
+    transition: opacity .6s, transform .6s;
+  }
+  .xp.js .stage:not(.in) {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+.xp .kick {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent-ink);
+  margin-bottom: 6px;
+}
+.xp .stage h2 {
+  font-weight: 600;
+  font-size: 24px;
+  margin: 0 0 10px;
+}
+.xp .stage p {
+  font-size: 15.5px;
+  color: var(--ink-2);
+  max-width: 62ch;
+  margin: 0 0 12px;
+}
+.xp .stage p b {
+  color: var(--ink);
+  font-weight: 600;
+}
+.xp .stage .note {
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--ink-3);
+  max-width: none;
+}
+.xp .note.center {
+  text-align: center;
+}
+.xp .viz {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 16px;
+}
+.xp .viz.centered {
+  text-align: center;
+}
+.xp svg {
+  max-width: 100%;
+  height: auto;
+}
+.xp .diagram {
+  display: block;
+  width: 100%;
+}
+
+/* ---------- feature-map stacks ---------- */
+.xp .cnn {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.xp .blk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 66px;
+}
+.xp .blk canvas {
+  display: block;
+}
+.xp .lab {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1.4;
+  text-align: center;
+  color: var(--ink-3);
+}
+.xp .lab b {
+  display: block;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.xp .parrow {
+  font-size: 18px;
+  color: var(--ink-3);
+}
+
+/* ---------- prediction bars ---------- */
+.xp .pred {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 24px;
+}
+.xp .bars {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+.xp .bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+.xp .bar .nm {
+  width: 72px;
+  color: var(--ink-2);
+  text-transform: capitalize;
+}
+.xp .bar .track {
+  flex: 1 1 auto;
+  height: 12px;
+  overflow: hidden;
+  background: var(--surface-2);
+  border-radius: 6px;
+}
+.xp .bar .fill {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--ctrl);
+  transition: width .5s;
+}
+.xp .bar.win .fill {
+  background: var(--accent);
+}
+.xp .bar .pct {
+  width: 46px;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+.xp .stage .verdict {
+  font-size: 14px;
+  margin: 6px 0 0;
+}
+.xp .verdict b {
+  font-family: var(--font-display);
+  font-size: 17px;
+  text-transform: capitalize;
+}
+
+/* Pill buttons for choosing an emotion or input. */
+.xp .pick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 240px;
+}
+.xp .pick button {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-transform: capitalize;
+}
+.xp .pick button:hover {
+  border-color: var(--accent);
+}
+.xp .pick button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+@media (max-width: 479.98px) {
+  .xp .viz {
+    padding: 14px;
+  }
+  .xp .bar .nm {
+    width: 64px;
+  }
+}

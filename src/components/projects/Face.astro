@@ -1,0 +1,49 @@
+---
+// The stylised face from the project explainers: a drawing, not dataset
+// media. Rendered in its starting expression; setFace() in explainer.ts
+// changes it. Colours are in style="" so they follow day/night.
+import type { Expression } from './explainer';
+
+interface Props {
+  expr: Expression;
+  label?: string;
+  width?: number;
+  height?: number;
+  /** For a face nested inside another SVG. */
+  x?: number;
+  y?: number;
+  class?: string;
+  /** data-ref for scripts. */
+  ref?: string;
+}
+
+const { expr, label, width = 140, height = 150, x, y, class: cls, ref } = Astro.props;
+const line = 'fill:none;stroke-linecap:round';
+---
+
+<svg
+  class={cls}
+  data-ref={ref}
+  viewBox="-70 -78 140 150"
+  width={width}
+  height={height}
+  x={x}
+  y={y}
+  role={label ? 'img' : undefined}
+  aria-label={label}
+  aria-hidden={label ? undefined : 'true'}
+>
+  <circle cx="0" cy="-4" r="60" style="fill:var(--surface-2);stroke:var(--ink-2);stroke-width:2.5" />
+  <ellipse data-part="eL" cx="-22" cy="-6" rx="7" ry={expr.eyeRy} style="fill:var(--surface);stroke:var(--ink-2);stroke-width:2" />
+  <ellipse data-part="eR" cx="22" cy="-6" rx="7" ry={expr.eyeRy} style="fill:var(--surface);stroke:var(--ink-2);stroke-width:2" />
+  <circle cx="-22" cy="-6" r="3" style="fill:var(--ink)" />
+  <circle cx="22" cy="-6" r="3" style="fill:var(--ink)" />
+  <path data-part="bL" d={expr.bL} style={`${line};stroke:var(--ink);stroke-width:3`} />
+  <path data-part="bR" d={expr.bR} style={`${line};stroke:var(--ink);stroke-width:3`} />
+  <path d="M 0 -2 Q 5 10 0 12" style={`${line};stroke:var(--ink-2);stroke-width:2`} />
+  <path
+    data-part="mouth"
+    d={expr.open ?? expr.mouth}
+    style={`stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;fill:${expr.open ? 'var(--ink)' : 'none'}`}
+  />
+</svg>

@@ -1,0 +1,450 @@
+---
+// Six-stage explainer for MultimodalTransformerNet, ported from
+// design-reference/multimodal-explainer.html. Faces and waveforms are
+// stylised drawings, not RAF-DB / RAVDESS media; the Stage 6 outputs are
+// illustrative, following the paper's reported pattern.
+import Face from './Face.astro';
+import { CLASSES, FACE, dist, jumpText } from './multimodal-data';
+import { svgBuilder } from './svg';
+
+const START = 'sad';
+const START_MODE = 'both';
+const startDist = dist(START, START_MODE);
+
+// Stage 3: the visual stream, condensed.
+const maps = [
+  { s: 66, cells: 6, depth: 1, d: '100²·3', l: 'face' },
+  { s: 56, cells: 5, depth: 2, d: 'conv', l: 'CNN' },
+  { s: 46, cells: 4, depth: 3, d: 'patches', l: 'split' },
+  { s: 40, cells: 3, depth: 4, d: '8 heads', l: 'Transf.' },
+  { s: 30, cells: 1, depth: 2, d: 'vector', l: 'visual' },
+];
+
+// Stage 4: the 39-D features (13 MFCC, 13 spectral, 13 chroma) and dense layers.
+const features = Array.from({ length: 39 }, (_, i) => (i < 13 ? 'var(--aud)' : i < 26 ? 'var(--vit)' : 'var(--accent)'));
+const dense = [
+  { n: 7, l: '256' },
+  { n: 5, l: '128' },
+  { n: 3, l: 'vector' },
+];
+
+// Stage 5: cross-modal attention (760 × 320).
+function fuseSvg() {
+  const b = svgBuilder();
+  const mono = 'var(--font-mono)';
+  const box = (x: number, y: number, w: number, h: number, o: { fill?: string; stroke?: string; sw?: number } = {}) =>
+    b.box(x, y, w, h, { r: 8, sw: 1.3, ...o });
+  b.raw('<defs>');
+  b.marker('mmn-v', 'var(--ctrl)');
+  b.marker('mmn-a', 'var(--aud)');
+  b.marker('mmn-k', 'var(--ink-3)');
+  b.raw('</defs>');
+  const arr = (x1: number, y1: number, x2: number, y2: number, c: string, m: string) => b.arrow(x1, y1, x2, y2, c, m, 1.5);
+  // The two streams.
+  box(20, 40, 140, 52, { fill: 'var(--ctrl-soft)', stroke: 'var(--ctrl)' });
+  b.tx(90, 62, 'Visual stream', { fs: 11, fw: 600, fill: 'var(--ctrl)' });
+  b.tx(90, 78, 'CNN–Transformer', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  box(20, 228, 140, 52, { fill: 'var(--aud-soft)', stroke: 'var(--aud)' });
+  b.tx(90, 250, 'Acoustic stream', { fs: 11, fw: 600, fill: 'var(--aud)' });
+  b.tx(90, 266, '39-D → deep MLP', { fs: 8.5, fill: 'var(--ink-3)', ff: mono });
+  // Cross-modal attention, both directions.
+  box(250, 96, 260, 128, { fill: 'var(--accent-wash)', stroke: 'var(--accent)', sw: 1.6 });
+  b.tx(380, 120, 'Cross-modal attention', { fs: 12.5, fw: 600, fill: 'var(--accent-ink)', ff: 'var(--font-display)' });
+  box(270, 134, 110, 36, { fill: 'var(--surface)', stroke: 'var(--ctrl)' });
+  b.tx(325, 151, 'face → voice', { fs: 9.5, fill: 'var(--ctrl)' });
+  b.tx(325, 163, 'Q:face  K,V:voice', { fs: 7.5, fill: 'var(--ink-3)', ff: mono });
+  box(392, 134, 100, 36, { fill: 'var(--surface)', stroke: 'var(--aud)' });
+  b.tx(442, 151, 'voice → face', { fs: 9.5, fill: 'var(--aud)' });
+  b.tx(442, 163, 'Q:voice  K,V:face', { fs: 7.5, fill: 'var(--ink-3)', ff: mono });
+  b.tx(380, 196, 'attended features combined', { fs: 9, fill: 'var(--ink-2)', ff: mono });
+  arr(160, 66, 250, 140, 'var(--ctrl)', 'mmn-v');
+  arr(160, 254, 250, 164, 'var(--aud)', 'mmn-a');
+  arr(160, 66, 392, 150, 'var(--ctrl)', 'mmn-v');
+  arr(160, 254, 392, 150, 'var(--aud)', 'mmn-a');
+  // Out to the classifier.
+  box(560, 134, 80, 52);
+  b.tx(600, 156, 'Dense', { fs: 10.5 });
+  b.tx(600, 172, '+ dropout', { fs: 8, fill: 'var(--ink-3)', ff: mono });
+  arr(510, 160, 560, 160, 'var(--ink-3)', 'mmn-k');
+  box(660, 134, 80, 52, { fill: 'var(--vit-soft)', stroke: 'var(--vit)' });
+  b.tx(700, 156, 'softmax', { fs: 10.5, fw: 600, fill: 'var(--vit)' });
+  b.tx(700, 172, 'emotions', { fs: 8, fill: 'var(--ink-3)', ff: mono });
+  arr(640, 160, 660, 160, 'var(--ink-3)', 'mmn-k');
+  b.tx(380, 300, 'Each stream can lean on the other — the weak modality is rescued by the strong one.', { fs: 9.5, fill: 'var(--ink-3)', ff: 'var(--font-display)' });
+  return b.html();
+}
+const fuse = fuseSvg();
+const mono = 'font-family:var(--font-mono)';
+---
+
+<div class="mmn" data-start={START} data-mode={START_MODE}>
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The problem</div>
+    <h2 id="s1-title">One modality isn't always enough</h2>
+    <p>A single frame can be ambiguous. A downturned mouth might be sadness — or concentration, or fatigue. Vision-only models feel this most on subtle emotions: in this setting a visual-only method reaches only <b>71%</b> on sadness. The voice carries what the face hides, and the reverse. This model uses both.</p>
+    <div class="viz centered">
+      <svg class="prob" viewBox="0 0 520 130" width="520" height="130" role="img" aria-label="A visually ambiguous sad face next to a sad-sounding voice; together they resolve the emotion">
+        <Face expr={FACE.sad} x={22.6} y={15.64} width={86.8} height={93} />
+        <text x="66" y="122" text-anchor="middle" font-size="10.5" style={`fill:var(--ctrl);${mono}`}>face: 71% sad?</text>
+        <text x="180" y="70" text-anchor="middle" font-size="22" style="fill:var(--ink-3)">+</text>
+        <foreignObject x="214" y="30" width="120" height="60">
+          <canvas data-wave="sad" data-w="120" data-h="60" style="width:120px;height:60px" aria-hidden="true"></canvas>
+        </foreignObject>
+        <text x="274" y="122" text-anchor="middle" font-size="10.5" style={`fill:var(--aud);${mono}`}>voice: low, flat</text>
+        <text x="380" y="70" text-anchor="middle" font-size="20" style="fill:var(--accent)">→</text>
+        <rect x="420" y="38" width="92" height="56" rx="10" style="fill:var(--accent-wash);stroke:var(--accent)" />
+        <text x="466" y="64" text-anchor="middle" font-size="15" font-weight="600" style="fill:var(--accent-ink);font-family:var(--font-display)">Sad</text>
+        <text x="466" y="82" text-anchor="middle" font-size="11" style={`fill:var(--accent-ink);${mono}`}>99%</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · Two inputs</div>
+    <h2 id="s2-title">A face and a voice, paired</h2>
+    <p>Each example is a face image drawn from <b>RAF-DB</b> and a short speech clip from <b>RAVDESS</b>, labelled with the same emotion. The datasets are balanced so no emotion dominates training.</p>
+    <div class="viz">
+      <div class="inputs">
+        <div class="incard vis">
+          <div class="in-tag">Visual · RAF-DB</div>
+          <Face expr={FACE.happy} width={140} height={150} label="A stylised face" />
+          <p class="note">100 × 100 × 3 image</p>
+        </div>
+        <div class="incard aud">
+          <div class="in-tag">Acoustic · RAVDESS</div>
+          <div class="wavebox">
+            <canvas data-wave="sad" data-w="280" data-h="90" class="wave-in" role="img" aria-label="An illustrative speech waveform"></canvas>
+          </div>
+          <p class="note">~3 s speech clip</p>
+        </div>
+      </div>
+      <p class="note center inputs-note">Both datasets are released to researchers on request and aren't hosted here — the face and waveform are illustrations.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · Visual stream</div>
+    <h2 id="s3-title">The face → a CNN–Transformer hybrid</h2>
+    <p>The image passes through convolution blocks that read local detail, then the feature map is cut into patches and run through Transformer blocks that relate parts of the face to each other — the same hybrid design as GlobalFaceNet. The stream ends as one compact <b class="c-vis">visual feature vector</b>.</p>
+    <div class="viz">
+      <div class="cnn">
+        {maps.map((m, i) => (
+          <>
+            {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+            <div class="blk">
+              <canvas class="fmapc" data-s={m.s} data-cells={m.cells} data-depth={m.depth} data-seed={i * 17 + 5} aria-hidden="true"></canvas>
+              <div class="lab"><b>{m.l}</b>{m.d}</div>
+            </div>
+          </>
+        ))}
+      </div>
+      <p class="note center spaced">CNN (local detail) → patches + Transformer (global context) → visual vector</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · Acoustic stream</div>
+    <h2 id="s4-title">The voice → 39 numbers → a deep network</h2>
+    <p>The waveform is summarised as a <b>39-dimensional</b> feature vector: <b>13 MFCCs</b> (the timbre of the voice), plus <b>spectral</b> and <b>chroma</b> descriptors (brightness and pitch content). A deep fully-connected network turns those into an <b class="c-aud">acoustic feature vector</b> that matches the visual one in size.</p>
+    <div class="viz">
+      <div class="mlp">
+        <div class="dense">
+          <canvas data-wave="angry" data-w="120" data-h="54" style="width:120px;height:54px" aria-hidden="true"></canvas>
+          <div class="dlab">waveform</div>
+        </div>
+        <span class="parrow" aria-hidden="true">→</span>
+        <div class="dense">
+          <div class="feat" aria-hidden="true">
+            {features.map((c) => <span class="dot" style={`background:${c}`}></span>)}
+          </div>
+          <div class="dlab">39-D · MFCC·spectral·chroma</div>
+        </div>
+        <span class="parrow" aria-hidden="true">→</span>
+        {dense.map((d, k) => (
+          <>
+            {k > 0 && <span class="parrow" aria-hidden="true">·</span>}
+            <div class="dense">
+              <div class="col" aria-hidden="true">
+                {Array.from({ length: d.n }, () => <span class="dot"></span>)}
+              </div>
+              <div class="dlab">{d.l}</div>
+            </div>
+          </>
+        ))}
+      </div>
+      <p class="note center spaced">13 MFCC · spectral · chroma = 39-D → dense layers → acoustic vector</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · Fusion</div>
+    <h2 id="s5-title">Cross-modal attention — each stream weighs the other</h2>
+    <p>Rather than simply gluing the two vectors together, a <b class="c-acc">cross-modal attention</b> layer lets each modality query the other: the visual features ask "which parts of the voice matter here?", and the voice asks the same of the face. When one modality is uncertain, it leans on the other. The attended features are combined and passed to the classifier.</p>
+    <div class="viz">
+      <svg
+        class="diagram"
+        viewBox="0 0 760 320"
+        role="img"
+        aria-label="Visual and acoustic streams meeting in a bidirectional cross-modal attention block, then combined into a classifier over the emotions"
+        set:html={fuse}
+      />
+    </div>
+  </section>
+
+  <section class="stage" id="s6" aria-labelledby="s6-title">
+    <div class="kick">Stage 6 · See it decide</div>
+    <h2 id="s6-title">Image only · audio only · both</h2>
+    <p>Pick an emotion, then switch the inputs on and off. Watch what happens to the model's confidence when the second modality joins — the jump is largest exactly where a single modality struggles, like sadness. (Illustrative outputs that follow the paper's reported pattern, not live inference.)</p>
+    <div class="viz">
+      <div class="pred">
+        <div class="leftcol">
+          <div class="sensebox">
+            <Face expr={FACE[START]} width={120} height={128} label="The chosen emotion as a face" class="sense" ref="face" />
+            <canvas data-wave={START} data-live data-w="150" data-h="110" class="sense wave-live" aria-hidden="true"></canvas>
+          </div>
+          <div class="modsel" role="group" aria-label="Inputs">
+            {[['img', 'Image'], ['aud', 'Audio'], ['both', 'Both']].map(([m, label]) => (
+              <button type="button" data-m={m} aria-pressed={m === START_MODE ? 'true' : 'false'}>{label}</button>
+            ))}
+          </div>
+          <div class="pick emosel" role="group" aria-label="Emotion">
+            {CLASSES.map((c) => (
+              <button type="button" data-e={c} aria-pressed={c === START ? 'true' : 'false'}>{c}</button>
+            ))}
+          </div>
+        </div>
+        <div class="bars">
+          {CLASSES.map((c, i) => (
+            <div class:list={['bar', { win: c === START }]} data-bar={c}>
+              <span class="nm">{c}</span>
+              <span class="track"><span class="fill" style={`width:${startDist[i]}%`}></span></span>
+              <span class="pct">{startDist[i]}%</span>
+            </div>
+          ))}
+          <p class="verdict" aria-live="polite">Predicted: <b data-ref="verdict">{START}</b> <span class="conf" data-ref="conf">· {startDist[CLASSES.indexOf(START)]}% confident</span></p>
+          <p class="jump" data-ref="jump">{jumpText(START, START_MODE)}</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { CLASSES, FACE, dist, drawWave, jumpText, type Emotion, type Mode } from './multimodal-data';
+  import { drawStack, onThemeChange, revealStages, seeded, setFace } from './explainer';
+
+  const root = document.querySelector<HTMLElement>('.mmn');
+  if (root) {
+    revealStages(root.closest('.xp') ?? root);
+    let emo = root.dataset.start as Emotion;
+    let mode = root.dataset.mode as Mode;
+
+    // Stage 3: feature-map stacks, each with its own fixed seed.
+    root.querySelectorAll<HTMLCanvasElement>('.fmapc').forEach((cv) => drawStack(cv, seeded(Number(cv.dataset.seed))));
+
+    // Waveforms (stages 1, 2, 4 and the live one in 6), in the audio colour;
+    // redrawn when the theme changes.
+    const aud = () => getComputedStyle(document.documentElement).getPropertyValue('--aud').trim();
+    const ink3 = () => getComputedStyle(document.documentElement).getPropertyValue('--ink-3').trim();
+    const waves = [...root.querySelectorAll<HTMLCanvasElement>('canvas[data-wave]')];
+    const liveWave = root.querySelector<HTMLCanvasElement>('canvas[data-live]');
+    function drawWaves() {
+      for (const cv of waves) {
+        if (cv === liveWave) continue;
+        drawWave(cv, cv.dataset.wave as Emotion, true, aud());
+      }
+      if (liveWave) drawWave(liveWave, emo, mode !== 'img', mode !== 'img' ? aud() : ink3());
+    }
+    onThemeChange(drawWaves);
+
+    // Stage 6: emotion and inputs.
+    const face = root.querySelector('[data-ref="face"]');
+    const emoBtns = [...root.querySelectorAll<HTMLButtonElement>('.emosel button')];
+    const modeBtns = [...root.querySelectorAll<HTMLButtonElement>('.modsel button')];
+    function render() {
+      for (const b of emoBtns) b.setAttribute('aria-pressed', String(b.dataset.e === emo));
+      for (const b of modeBtns) b.setAttribute('aria-pressed', String(b.dataset.m === mode));
+      setFace(face, FACE[emo]);
+      face?.classList.toggle('off', mode === 'aud');
+      liveWave?.classList.toggle('off', mode === 'img');
+      const p = dist(emo, mode);
+      const ti = CLASSES.indexOf(emo);
+      CLASSES.forEach((c, i) => {
+        const bar = root!.querySelector<HTMLElement>(`[data-bar="${c}"]`);
+        if (!bar) return;
+        bar.classList.toggle('win', i === ti);
+        const fill = bar.querySelector<HTMLElement>('.fill');
+        const pct = bar.querySelector<HTMLElement>('.pct');
+        if (fill) fill.style.width = `${p[i]}%`;
+        if (pct) pct.textContent = `${p[i]}%`;
+      });
+      const set = (ref: string, text: string) => {
+        const n = root!.querySelector(`[data-ref="${ref}"]`);
+        if (n) n.textContent = text;
+      };
+      set('verdict', emo);
+      set('conf', `· ${p[ti]}% confident`);
+      set('jump', jumpText(emo, mode));
+      drawWaves();
+    }
+    for (const b of emoBtns) b.addEventListener('click', () => { emo = b.dataset.e as Emotion; render(); });
+    for (const b of modeBtns) b.addEventListener('click', () => { mode = b.dataset.m as Mode; render(); });
+    render();
+  }
+</script>
+
+<style>
+  /* Coloured labels in the copy; beat the shared ".xp .stage p b" ink colour. */
+  .mmn .stage p b.c-vis { color: var(--ctrl); }
+  .mmn .stage p b.c-aud { color: var(--aud); }
+  .mmn .stage p b.c-acc { color: var(--accent-ink); }
+  .mmn .stage .note.spaced { margin: 10px 0 0; }
+
+  .prob {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Stage 2 */
+  .inputs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 22px;
+  }
+  .incard {
+    flex: 1 1 240px;
+    max-width: 320px;
+    text-align: center;
+  }
+  .in-tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .incard.vis .in-tag { color: var(--ctrl); }
+  .incard.aud .in-tag { color: var(--aud); }
+  .wavebox {
+    border-radius: 10px;
+    background: var(--surface-2);
+    padding: 10px;
+  }
+  .wave-in {
+    display: block;
+    width: 100%;
+    max-width: 280px;
+    height: 90px;
+    margin: 0 auto;
+  }
+  .mmn .stage .inputs-note { margin: 12px 0 0; }
+
+  /* Stage 4 */
+  .mlp {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .dense {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .feat {
+    display: grid;
+    grid-template-columns: repeat(13, 8px);
+    gap: 3px;
+  }
+  .dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--aud);
+    opacity: .85;
+  }
+  .feat .dot {
+    width: 8px;
+    height: 8px;
+    opacity: .8;
+  }
+  .dlab {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink-3);
+    margin-top: 4px;
+  }
+
+  /* Stage 6 */
+  .leftcol {
+    flex: 0 0 230px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin-inline: auto;
+  }
+  .sensebox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  /* The face is Face.astro's own <svg>, outside this component's scope. */
+  .mmn :global(.sense) {
+    opacity: 1;
+    transition: opacity .4s;
+  }
+  .mmn :global(.sense.off) {
+    opacity: .16;
+  }
+  .wave-live {
+    width: 120px;
+    height: 88px;
+  }
+  .modsel {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .modsel button {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .modsel button[aria-pressed='true'] {
+    background: var(--accent);
+    color: #fff;
+  }
+  .mmn .emosel button[aria-pressed='true'] {
+    background: var(--vit);
+    border-color: var(--vit);
+  }
+  .conf {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink-3);
+  }
+  .mmn .stage .jump {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    margin: 4px 0 0;
+  }
+</style>

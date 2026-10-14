@@ -4,10 +4,15 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import Metrics from '../../components/Metrics.astro';
 import { getProjects, type Project } from '../../lib/content';
 import { isoDate, monthYear } from '../../lib/format';
+import { EXPLAINED_PROJECTS } from '../../components/projects/explainers';
 
+// Projects with an illustrated explainer have their own page at the same
+// address (src/pages/projects/<id>.astro), so they are skipped here.
 export async function getStaticPaths() {
   const items = await getProjects();
-  return items.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  return items
+    .filter((entry) => !EXPLAINED_PROJECTS.has(entry.id))
+    .map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
 }
 
 const { entry } = Astro.props as { entry: Project };

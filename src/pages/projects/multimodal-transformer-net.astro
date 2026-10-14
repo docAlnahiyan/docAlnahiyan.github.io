@@ -1,0 +1,48 @@
+---
+// Illustrated project page for MultimodalTransformerNet, ported from
+// design-reference/multimodal-explainer.html. Replaces the page generated
+// from src/content/projects/multimodal-transformer-net.md (see
+// explainers.ts); the code link comes from that entry.
+import { getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MultimodalExplainer from '../../components/projects/MultimodalExplainer.astro';
+import '../../components/projects/explainer.css';
+
+const entry = await getEntry('projects', 'multimodal-transformer-net');
+if (!entry) throw new Error('Missing src/content/projects/multimodal-transformer-net.md');
+const repo = entry.data.repo_url;
+// TODO: the prototype's "Kaggle notebook" and "Read more" buttons need their URLs.
+---
+
+<BaseLayout
+  title="MultimodalTransformerNet"
+  description="MultimodalTransformerNet reads emotion from a face and a voice together, with cross-modal attention letting each stream weigh the other — explained stage by stage. 99.7% on balanced RAF-DB + RAVDESS."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">MultimodalTransformerNet</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Emotion recognition</li>
+      <li class="chip">Image + audio</li>
+      <li class="chip">Cross-modal attention</li>
+      <li class="chip">RAF-DB + RAVDESS</li>
+    </ul>
+    <h1 class="title">MultimodalTransformerNet</h1>
+    <p class="plain">A face can be read two ways — what it looks like, and what it sounds like. Using both settles the hard cases.</p>
+    <p class="meta">Two streams — a CNN–Transformer that reads the face, a deep network that reads the voice — meet in a cross-modal attention layer that lets each modality weigh the other before deciding.</p>
+    {repo && (
+      <div class="actions head-actions">
+        <a class="btn" href={repo}>View code</a>
+      </div>
+    )}
+    <ul class="badges">
+      <li class="badge"><span class="n">99.7%</span><span class="l">Accuracy on balanced RAF-DB + RAVDESS</span></li>
+      <li class="badge"><span class="n">0.9996</span><span class="l">AUC — near-perfect separation</span></li>
+      <li class="badge"><span class="n">+14.7 pts</span><span class="l">Over the best single-modality model</span></li>
+    </ul>
+
+    <MultimodalExplainer />
+  </article>
+</BaseLayout>

@@ -21,6 +21,14 @@
   --warn-ink: #8e6219;
   --warn-wash: #f6edda;
   --on-accent: #ffffff;
+  /* Diagram colours for the illustrated explainers: CNN / visual stream,
+     Transformer, audio stream. */
+  --ctrl: #3b6fb0;
+  --ctrl-soft: #e8f0f9;
+  --vit: #7a52c4;
+  --vit-soft: #efe9f8;
+  --aud: #2f9e8f;
+  --aud-soft: #e3f2ef;
   --radius: 10px;
   --maxw: 780px; /* reading column */
   --maxw-wide: 1120px; /* nav, footer, home */
@@ -47,6 +55,12 @@
     --warn-ink: #e0a94a;
     --warn-wash: #2f2514;
     --on-accent: #241f1b;
+    --ctrl: #6ea3df;
+    --ctrl-soft: #26303a;
+    --vit: #b49ae6;
+    --vit-soft: #2d2740;
+    --aud: #5cc3b3;
+    --aud-soft: #1f3330;
     color-scheme: dark;
   }
 }
@@ -67,6 +81,12 @@
   --warn-ink: #e0a94a;
   --warn-wash: #2f2514;
   --on-accent: #241f1b;
+  --ctrl: #6ea3df;
+  --ctrl-soft: #26303a;
+  --vit: #b49ae6;
+  --vit-soft: #2d2740;
+  --aud: #5cc3b3;
+  --aud-soft: #1f3330;
   color-scheme: dark;
 }
 

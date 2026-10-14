@@ -1,0 +1,48 @@
+---
+// Illustrated project page for GlobalFaceNet, ported from
+// design-reference/globalfacenet-explainer.html. Replaces the page generated
+// from src/content/projects/globalfacenet.md (see explainers.ts); the code
+// link comes from that entry.
+import { getEntry } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import GlobalFaceNetExplainer from '../../components/projects/GlobalFaceNetExplainer.astro';
+import '../../components/projects/explainer.css';
+
+const entry = await getEntry('projects', 'globalfacenet');
+if (!entry) throw new Error('Missing src/content/projects/globalfacenet.md');
+const repo = entry.data.repo_url;
+// TODO: add the Kaggle notebook link (a second button in the prototype) once its URL is known.
+---
+
+<BaseLayout
+  title="GlobalFaceNet"
+  description="GlobalFaceNet, a CNN–Transformer hybrid that reads emotion from a single face by combining fine local detail with global context — explained stage by stage. 85.0% on RAF-DB."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">GlobalFaceNet</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Emotion recognition</li>
+      <li class="chip">CNN + Vision Transformer</li>
+      <li class="chip">RAF-DB</li>
+      <li class="chip">TensorFlow / Keras</li>
+    </ul>
+    <h1 class="title">GlobalFaceNet</h1>
+    <p class="plain">Reading emotion from a single face — by looking at the fine detail and the whole face at once.</p>
+    <p class="meta">A CNN–Transformer hybrid that classifies a face into one of seven emotions. Two pathways: one reads local detail, the other the global layout, then they combine.</p>
+    {repo && (
+      <div class="actions head-actions">
+        <a class="btn" href={repo}>View code</a>
+      </div>
+    )}
+    <ul class="badges">
+      <li class="badge"><span class="n">85.0%</span><span class="l">Accuracy on RAF-DB</span></li>
+      <li class="badge"><span class="n">3.2 ms</span><span class="l">Inference per image</span></li>
+      <li class="badge"><span class="n">7</span><span class="l">Emotion classes</span></li>
+    </ul>
+
+    <GlobalFaceNetExplainer />
+  </article>
+</BaseLayout>
