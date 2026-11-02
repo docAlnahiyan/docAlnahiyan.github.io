@@ -121,7 +121,7 @@ const jsonLd = {
       let shown = 0;
       for (const g of groups) {
         const list = g.querySelector<HTMLElement>('.group-items')!;
-        const items = [...list.querySelectorAll<HTMLElement>('.pub')];
+        const items = [...list.querySelectorAll<HTMLElement>(':scope > article.pub')];
         items.sort((a, b) => dir * (a.dataset.sort ?? '').localeCompare(b.dataset.sort ?? ''));
         let inGroup = 0;
         for (const it of items) {
@@ -139,7 +139,7 @@ const jsonLd = {
         shown += inGroup;
       }
       noMatch.hidden = shown > 0;
-      const total = document.querySelectorAll('.pub').length;
+      const total = document.querySelectorAll('.group-items > article.pub').length;
       status.textContent = shown === total ? `Showing all ${total} publications.` : `Showing ${shown} of ${total} publications.`;
     };
     form.addEventListener('change', apply);
@@ -196,7 +196,7 @@ const jsonLd = {
     color: var(--ink-2);
   }
   .group[hidden],
-  .group :global(.pub[hidden]) {
+  .group :global(article.pub[hidden]) {
     display: none;
   }
   .group + .group {

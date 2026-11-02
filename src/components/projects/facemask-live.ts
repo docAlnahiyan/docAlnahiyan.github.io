@@ -35,7 +35,20 @@ export async function loadDetector(): Promise<string> {
 /** Faces in an image, video frame or canvas, in its own pixel coordinates. */
 export async function detect(input: HTMLImageElement | HTMLVideoElement | HTMLCanvasElement): Promise<Detection[]> {
   if (!model) throw new Error('Detector not loaded');
-  const faces = await model.estimateFaces(input, false);
+  // TensorFlow.js reads an <img> at its displayed size, not its file size;
+  // copy it to a canvas at full size so boxes are in the image's own pixels.
+  let source: HTMLVideoElement | HTMLCanvasElement;
+  const w = input instanceof HTMLImageElement ? input.naturalWidth : input instanceof HTMLVideoElement ? input.videoWidth : input.width;
+  if (!w) return []; // not loaded yet: nothing to look at
+  if (input instanceof HTMLImageElement) {
+    source = document.createElement('canvas');
+    source.width = input.naturalWidth;
+    source.height = input.naturalHeight;
+    source.getContext('2d')!.drawImage(input, 0, 0);
+  } else {
+    source = input;
+  }
+  const faces = await model.estimateFaces(source, false);
   return faces.map((f) => {
     const [x1, y1] = f.topLeft as [number, number];
     const [x2, y2] = f.bottomRight as [number, number];

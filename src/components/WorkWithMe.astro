@@ -148,7 +148,12 @@ const milestones = [
 </script>
 
 <style>
+  /* Same wide column as the rest of the home page (.wide in index.astro,
+     whose styles are scoped there). */
   .work {
+    max-width: var(--maxw-wide);
+    margin-inline: auto;
+    padding-inline: 24px;
     padding-block: 8px 72px;
   }
   .work-title {

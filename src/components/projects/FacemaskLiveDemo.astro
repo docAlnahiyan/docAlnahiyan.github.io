@@ -100,7 +100,9 @@ const samples = [
       if (stream) stopCamera();
       const l = await ensureModel().catch(() => undefined);
       if (!l) return;
-      if (!current.complete) await new Promise((r) => current.addEventListener('load', r, { once: true }));
+      // A sample shown for the first time may still be loading.
+      if (!current.naturalWidth) await new Promise((r) => current.addEventListener('load', r, { once: true }));
+      await current.decode().catch(() => undefined);
       const t0 = performance.now();
       const faces = await l.detect(current);
       draw(current, faces);
@@ -162,7 +164,7 @@ const samples = [
       status.textContent = 'Camera on — detecting faces on your device. Nothing is uploaded.';
       const loop = async () => {
         if (!stream) return;
-        if (video.readyState >= 2) draw(video, await l.detect(video));
+        if (video.readyState >= 2 && video.videoWidth) draw(video, await l.detect(video));
         raf = requestAnimationFrame(loop);
       };
       loop();
