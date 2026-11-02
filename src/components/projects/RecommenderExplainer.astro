@@ -1,0 +1,628 @@
+---
+// Six-stage explainer for the E-Commerce Recommendation Engine internship
+// project, ported from design-reference/recommender-explainer.html. The
+// project's files were lost, so this walks through the method (hybrid
+// collaborative + content-based, two-stage retrieve → rank, session-aware)
+// with no accuracy, dataset, CTR or business figures. Products are generic
+// icons with invented names; the demo scores are illustrative.
+//
+// The drawings use the reference's icon()/icon2() helpers, so they are drawn
+// in the browser (and redrawn on a theme change), as in the reference.
+import { ITEMS, PERSONAS } from './recommender-data';
+
+const START_PERSONA = 'photographer';
+---
+
+<div class="rec-xp" data-persona={START_PERSONA}>
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The problem</div>
+    <h2 id="s1-title">Too many products, too little attention</h2>
+    <p>A large e-commerce catalogue holds hundreds of thousands of items; a shopper will look at a dozen. Showing everyone the same best-sellers wastes that attention. The job of a recommender is to put the <b>few most relevant items</b> in front of each person — and to update that choice as they move through the site, click by click.</p>
+    <div class="viz centered">
+      <svg class="scene" data-ref="hero" viewBox="0 0 520 150" width="520" height="150" role="img" aria-label="A large grid of products narrowing down to a few personalised picks"></svg>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · Two signals</div>
+    <h2 id="s2-title">Who you are, and what you're doing now</h2>
+    <p>Good recommendations draw on two very different signals. One is <b class="c-cf">long-term history</b> — everything you've bought and rated before, which says who you are as a shopper. The other is <b class="c-acc">the live session</b> — the items you've clicked, searched and viewed in the last few minutes, which says what you want <em>today</em>. This engine uses both, and weighs the fresh signal heavily.</p>
+    <div class="viz">
+      <div class="signals">
+        <div class="sig a">
+          <div class="h">◴ LONG-TERM HISTORY</div>
+          <div class="row"><span class="dot" style="background:var(--photo)"></span>bought a camera last year</div>
+          <div class="row"><span class="dot" style="background:var(--photo)"></span>rated two lenses highly</div>
+          <div class="row"><span class="dot" style="background:var(--trav)"></span>a travel backpack</div>
+          <div class="note">stable — who you are</div>
+        </div>
+        <div class="sig b">
+          <div class="h">⚡ THIS SESSION</div>
+          <div class="row"><span class="dot" style="background:var(--accent)"></span>just viewed a tripod</div>
+          <div class="row"><span class="dot" style="background:var(--accent)"></span>searched "low-light"</div>
+          <div class="row"><span class="dot" style="background:var(--accent)"></span>added a lens to cart</div>
+          <div class="note">fresh — what you want now</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · Collaborative filtering</div>
+    <h2 id="s3-title">"People like you also bought…"</h2>
+    <p>Collaborative filtering never looks at <em>what</em> a product is. It learns from behaviour: every shopper and every item is turned into a vector (a learned <b>embedding</b>, from matrix factorisation over the purchase matrix), placed so that people who buy alike, and items bought together, sit close. To recommend, it simply reads off the nearest items. Click a product to see its neighbours in that learned space.</p>
+    <div class="viz">
+      <svg class="scene" data-ref="embed" viewBox="0 0 520 300" width="520" height="300" role="img" aria-label="A 2D map of products; selecting one highlights its nearest neighbours"></svg>
+      <div class="embed-chips" role="group" aria-label="Product">
+        {ITEMS.map((it) => <button type="button" class="echip" data-id={it.id} aria-pressed="false">{it.name}</button>)}
+      </div>
+      <p class="note center spaced" aria-live="polite" data-ref="embedNote">Distance = learned similarity. The clusters emerge from behaviour alone — no one labelled them.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · Content-based filtering</div>
+    <h2 id="s4-title">…and "more like what you looked at"</h2>
+    <p>Collaborative filtering has a blind spot: a brand-new item nobody has bought yet has no behaviour to learn from (the <b>cold-start</b> problem). Content-based filtering fills it. Each item carries a feature vector — category, brand, price band, specs, text and image features — and the engine recommends items whose features match what you engaged with. It needs no purchase history, so it works from a shopper's very first click.</p>
+    <div class="viz">
+      <svg class="diagram" data-ref="content" viewBox="0 0 520 190" role="img" aria-label="An item's feature vector compared to others by content similarity"></svg>
+      <p class="note center spaced">Content-based covers new items and new shoppers; collaborative captures taste that features can't describe. Together they cover each other's gaps.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · The architecture</div>
+    <h2 id="s5-title">Two stages: retrieve a few hundred, then rank them</h2>
+    <p>Scoring a million items for every page view is impossible in the milliseconds a page has. So production recommenders split the work. <b class="c-cf">Candidate generation</b> cheaply retrieves a few hundred plausible items — from collaborative neighbours, content matches and what's trending. Then a heavier <b class="c-acc">ranking model</b> scores just those, folding in live session features, and returns the top handful. Served behind a <b>Flask</b> API over a <b>SQL</b> store.</p>
+    <div class="viz">
+      <div class="arch2">
+        <div class="acol c1"><div class="h">① CANDIDATE GENERATION</div><div class="d">Narrow a huge catalogue to a few hundred candidates — fast and approximate.</div><div class="sub"><span>collaborative neighbours</span><span>content matches</span><span>trending</span></div></div>
+        <div class="afunnel" aria-hidden="true">→</div>
+        <div class="acol c2"><div class="h">② RANKING</div><div class="d">Score each candidate precisely, with live session features, and sort.</div><div class="sub"><span>history ✕ session</span><span>price, recency</span><span>top-N</span></div></div>
+      </div>
+      <p class="note center spaced">Flask serves the request; SQL holds the catalogue, interactions and precomputed embeddings.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s6" aria-labelledby="s6-title">
+    <div class="kick">Stage 6 · See it recommend</div>
+    <h2 id="s6-title">Pick a shopper, then browse</h2>
+    <p>Choose a shopper profile to set the long-term history, then <b>click products to "view" them</b> and watch the recommendation rail re-rank in real time. Each pick shows <em>why</em> it's there — collaborative, content, your profile, or trending. This is the hybrid, two-stage idea in miniature.</p>
+    <div class="viz">
+      <div class="personas" role="group" aria-label="Shopper">
+        <span class="note">Shopper:</span>
+        {Object.entries(PERSONAS).map(([k, p]) => (
+          <button type="button" class="persona" data-persona={k} aria-pressed={k === START_PERSONA ? 'true' : 'false'}>{p.label}</button>
+        ))}
+      </div>
+      <div class="store-grid">
+        <div>
+          <div class="note cat-note">The catalogue — click to browse</div>
+          <div class="catalog" role="group" aria-label="Catalogue">
+            {ITEMS.map((it) => (
+              <button type="button" class="pcard" data-id={it.id} aria-pressed="false">
+                <svg viewBox="0 0 48 48" width="44" height="44" data-icon={it.id} data-cat={it.cat} aria-hidden="true"></svg>
+                <span class="pn">{it.name}</span>
+                <span class="pp">{it.price}</span>
+              </button>
+            ))}
+          </div>
+          <div class="sessbar" data-ref="sessbar" aria-live="polite"><span>This session:</span><span class="note">nothing viewed yet</span></div>
+        </div>
+        <div class="rail">
+          <div class="rh"><span class="t">Recommended for you</span><span class="s" data-ref="railMode">top-N</span></div>
+          <div class="recs" data-ref="recs" aria-live="polite"></div>
+        </div>
+      </div>
+      <p class="note spaced">Scores and the blend are illustrative — a faithful sketch of how a hybrid ranker behaves, not the production model.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { BYID, CATCOL, ITEMS, PERSONAS, E, collab, content, icon, icon2, nearest, placedIcon } from './recommender-data';
+  import { onThemeChange, revealStages } from './explainer';
+
+  const root = document.querySelector<HTMLElement>('.rec-xp');
+  if (root) {
+    revealStages(root.closest('.xp') ?? root);
+    const $ = <T extends Element = HTMLElement>(ref: string) => root.querySelector<T>(`[data-ref="${ref}"]`);
+    // Resolved colours (the icons draw with real colours, as in the reference).
+    const cssv = (n: string) => getComputedStyle(root).getPropertyValue(n).trim();
+    const catColor = (id: string) => cssv(CATCOL[BYID[id].cat]);
+    const mono = () => cssv('--font-mono');
+
+    // ---- Stage 1: a huge catalogue → a few picks ----
+    function heroScene() {
+      const svg = $('hero');
+      if (!svg) return;
+      svg.innerHTML = '';
+      const defs = E(svg, 'defs', {});
+      const mk = E(defs, 'marker', { id: 'rec-ha', markerWidth: 7, markerHeight: 7, refX: 5.5, refY: 3, orient: 'auto' });
+      E(mk, 'path', { d: 'M0,0 L6,3 L0,6 Z', fill: cssv('--ink-3') });
+      const cats = ['photo', 'fit', 'audio', 'game', 'trav'];
+      for (let r = 0; r < 3; r++)
+        for (let c = 0; c < 10; c++) {
+          const col = cssv('--' + cats[(r + c) % 5]);
+          E(svg, 'rect', { x: 14 + c * 20, y: 16 + r * 20, width: 14, height: 14, rx: 3, fill: `color-mix(in srgb,${col} 22%,transparent)`, stroke: col, 'stroke-width': 1, opacity: 0.6 });
+        }
+      const text = (x: number, y: number, t: string, fill: string, fs: number) => {
+        E(svg, 'text', { x, y, 'text-anchor': 'middle', 'font-size': fs, fill, 'font-family': mono() }).textContent = t;
+      };
+      text(112, 138, 'a huge catalogue', cssv('--ink-3'), 10);
+      E(svg, 'path', { d: 'M235 70 L285 70', stroke: cssv('--ink-3'), 'stroke-width': 1.4, 'marker-end': 'url(#rec-ha)' });
+      text(260, 60, 'rank for you', cssv('--accent-ink'), 9);
+      ['camera', 'lens', 'tripod'].forEach((id, i) => placedIcon(svg, id, catColor(id), 305 + i * 70, 40, 52));
+      text(400, 120, 'your few picks', cssv('--ink-3'), 10);
+    }
+
+    // ---- Stage 3: the taste map; selecting an item shows its nearest neighbours ----
+    let selItem: string | null = null;
+    const chips = [...root.querySelectorAll<HTMLButtonElement>('.echip')];
+    function select(id: string) {
+      selItem = selItem === id ? null : id;
+      embed();
+      for (const ch of chips) ch.setAttribute('aria-pressed', String(ch.dataset.id === selItem));
+    }
+    function embed() {
+      const svg = $('embed');
+      if (!svg) return;
+      svg.innerHTML = '';
+      E(svg, 'rect', { x: 1, y: 1, width: 518, height: 298, rx: 12, fill: cssv('--surface-2'), stroke: cssv('--border') });
+      const near = selItem ? nearest(selItem, 3) : [];
+      if (selItem) {
+        const a = BYID[selItem];
+        for (const n of near) { const b = BYID[n.id]; E(svg, 'line', { x1: a.x, y1: a.y, x2: b.x, y2: b.y, stroke: cssv('--accent'), 'stroke-width': 2, opacity: 0.55 }); }
+      }
+      for (const it of ITEMS) {
+        const col = catColor(it.id);
+        const isSel = selItem === it.id;
+        const isNear = near.some((n) => n.id === it.id);
+        const dim = selItem && !isSel && !isNear;
+        const g = E(svg, 'g', { transform: `translate(${it.x},${it.y})`, style: 'cursor:pointer', opacity: dim ? 0.3 : 1 });
+        E(g, 'circle', { r: isSel ? 20 : 15, fill: `color-mix(in srgb,${col} 20%,transparent)`, stroke: col, 'stroke-width': isSel ? 2.5 : 1.6 });
+        const s = E(g, 'g', { transform: 'translate(-11,-11) scale(0.46)' });
+        icon2(s, it.id, col);
+        g.addEventListener('click', () => select(it.id));
+      }
+      const caption = selItem
+        ? `nearest to ${BYID[selItem].name} → ${near.map((n) => BYID[n.id].name).join(', ')}`
+        : 'click a product to see its nearest neighbours';
+      E(svg, 'text', { x: 260, y: 22, 'text-anchor': 'middle', 'font-size': 11, fill: cssv(selItem ? '--accent-ink' : '--ink-3'), 'font-family': mono() }).textContent = caption;
+      svg.setAttribute('aria-label', `A 2D map of products; ${caption}`);
+    }
+    for (const ch of chips) ch.addEventListener('click', () => select(ch.dataset.id!));
+
+    // ---- Stage 4: content similarity ----
+    function contentDiag() {
+      const svg = $('content');
+      if (!svg) return;
+      svg.innerHTML = '';
+      const tx = (x: number, y: number, t: string, o: { a?: string; fs?: number; fill?: string; ff?: string; fw?: number } = {}) => {
+        E(svg, 'text', { x, y, 'text-anchor': o.a ?? 'middle', 'font-size': o.fs ?? 10, fill: o.fill ?? cssv('--ink'), 'font-family': o.ff ?? cssv('--font-body'), 'font-weight': o.fw ?? 400 }).textContent = t;
+      };
+      const cb = cssv('--cb');
+      const card = (x: number, id: string, feats: string[]) => {
+        E(svg, 'rect', { x, y: 40, width: 120, height: 120, rx: 10, fill: cssv('--surface-2'), stroke: cb, 'stroke-width': 1.8 });
+        placedIcon(svg, id, catColor(id), x + 44, 48, 34);
+        tx(x + 60, 96, BYID[id].name, { fs: 9.5, fw: 600 });
+        feats.forEach((f, i) => tx(x + 12, 112 + i * 13, f, { a: 'start', fs: 8.5, fill: cssv('--ink-3'), ff: mono() }));
+      };
+      card(30, 'lens', ['cat: photo', 'brand: A', 'price: $$', 'mount: X']);
+      tx(190, 96, 'compare', { fs: 9, fill: cssv('--ink-3'), ff: mono() });
+      E(svg, 'path', { d: 'M165 100 h50', stroke: cssv('--ink-3'), 'stroke-width': 1.3, 'stroke-dasharray': '3 3' });
+      card(230, 'camera', ['cat: photo ✓', 'brand: A ✓', 'price: $$$', 'mount: X ✓']);
+      tx(410, 78, 'high content', { fs: 10, fw: 600, fill: cb });
+      tx(410, 92, 'similarity', { fs: 10, fw: 600, fill: cb });
+      E(svg, 'rect', { x: 360, y: 104, width: 100, height: 40, rx: 8, fill: cssv('--cb-soft'), stroke: cb });
+      tx(410, 124, '→ recommend', { fs: 10, fill: cb });
+      tx(410, 138, '(no history needed)', { fs: 8, fill: cssv('--ink-3'), ff: mono() });
+    }
+
+    // ---- Stage 6: the storefront ----
+    let persona = root.dataset.persona ?? 'photographer';
+    let viewed: string[] = [];
+    const personaBtns = [...root.querySelectorAll<HTMLButtonElement>('.persona')];
+    const cards = [...root.querySelectorAll<HTMLButtonElement>('.pcard')];
+    for (const b of personaBtns) {
+      b.addEventListener('click', () => {
+        persona = b.dataset.persona!;
+        viewed = [];
+        for (const x of personaBtns) x.setAttribute('aria-pressed', String(x === b));
+        renderStore();
+        recompute();
+      });
+    }
+    for (const c of cards) {
+      c.addEventListener('click', () => {
+        const id = c.dataset.id!;
+        const i = viewed.indexOf(id);
+        if (i >= 0) viewed.splice(i, 1);
+        else {
+          viewed.push(id);
+          if (viewed.length > 4) viewed.shift(); // the last 4 viewed
+        }
+        renderStore();
+        recompute();
+      });
+    }
+    function catalogIcons() {
+      root!.querySelectorAll<SVGSVGElement>('[data-icon]').forEach((s) => icon(s, s.dataset.icon!, catColor(s.dataset.icon!)));
+    }
+    function renderStore() {
+      for (const c of cards) {
+        const on = viewed.indexOf(c.dataset.id!) >= 0;
+        c.classList.toggle('viewed', on);
+        c.setAttribute('aria-pressed', String(on));
+      }
+      const host = $('sessbar');
+      if (!host) return;
+      host.innerHTML = '<span>This session:</span>';
+      if (!viewed.length) {
+        host.appendChild(Object.assign(document.createElement('span'), { className: 'note', textContent: 'nothing viewed yet' }));
+        return;
+      }
+      for (const id of viewed) host.appendChild(Object.assign(document.createElement('span'), { className: 'sesspill', textContent: BYID[id].name }));
+    }
+
+    // The hybrid ranker, unchanged from the reference: history (persona
+    // affinity) + content and collaborative similarity to what was viewed +
+    // a nudge for this visit's category; trending fills in when nothing fits.
+    type Why = [string, number, string, string, string];
+    function recompute() {
+      const aff = PERSONAS[persona].aff, last = viewed[viewed.length - 1];
+      const scored = ITEMS.filter((it) => viewed.indexOf(it.id) < 0)
+        .map((it) => {
+          const hist = aff[it.cat] || 0;
+          let cont = 0, colb = 0;
+          viewed.forEach((v) => { cont = Math.max(cont, content(it.id, v)); colb = Math.max(colb, collab(it.id, v)); });
+          const sess = last && BYID[last].cat === it.cat ? 1 : 0;
+          const terms: Why[] = [
+            ['collab', 1.15 * colb, 'Frequently bought together', '--cf', '--cf-soft'],
+            ['content', 0.95 * cont, 'Similar to what you viewed', '--cb', '--cb-soft'],
+            ['hist', 0.95 * hist, 'Popular with ' + PERSONAS[persona].label.toLowerCase() + 's', '--accent-ink', '--accent-wash'],
+            ['sess', 0.55 * sess, 'Based on this visit', '--accent-ink', '--accent-wash'],
+          ];
+          let total = terms.reduce((a, t) => a + t[1], 0);
+          const trending = 0.5 * it.pop;
+          let isTrend = false;
+          if (total < 0.25) { total = trending; isTrend = true; }
+          const best = terms.slice().sort((a, b) => b[1] - a[1])[0];
+          const why: Why = isTrend ? ['trend', trending, 'Trending now', '--ink-3', '--surface-2'] : best;
+          return { it, score: total, why };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+      renderRecs(scored);
+      const mode = $('railMode');
+      if (mode) mode.textContent = viewed.length ? 'session-aware' : persona === 'new' ? 'cold-start' : 'from your profile';
+    }
+    function renderRecs(list: { it: (typeof ITEMS)[number]; score: number; why: Why }[]) {
+      const host = $('recs');
+      if (!host) return;
+      host.innerHTML = '';
+      const max = list.length ? list[0].score : 1;
+      for (const r of list) {
+        const row = document.createElement('div');
+        row.className = 'rec';
+        const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        s.setAttribute('viewBox', '0 0 48 48');
+        s.setAttribute('class', 'mini');
+        s.setAttribute('aria-hidden', 'true');
+        icon(s, r.it.id, catColor(r.it.id));
+        row.appendChild(s);
+        const inn = document.createElement('div');
+        inn.className = 'in';
+        inn.appendChild(Object.assign(document.createElement('div'), { className: 'rn', textContent: r.it.name }));
+        const why = Object.assign(document.createElement('span'), { className: 'why', textContent: r.why[2] });
+        why.style.color = `var(${r.why[3]})`;
+        why.style.background = `var(${r.why[4]})`;
+        inn.appendChild(why);
+        row.appendChild(inn);
+        row.appendChild(Object.assign(document.createElement('span'), { className: 'score', textContent: (r.score / (max || 1)).toFixed(2) }));
+        host.appendChild(row);
+      }
+    }
+
+    // Draw everything; the icons use resolved colours, so redraw on a theme change.
+    function drawAll() {
+      heroScene();
+      embed();
+      contentDiag();
+      catalogIcons();
+      recompute();
+    }
+    renderStore();
+    drawAll();
+    onThemeChange(drawAll);
+  }
+</script>
+
+<style>
+  /* This page's colours, named as in the reference. All but --trav have the
+     same values as site tokens, so they alias them and follow day/night. */
+  .rec-xp {
+    --photo: var(--ctrl);
+    --fit: var(--ok);
+    --audio: var(--vit);
+    --game: var(--accent);
+    --trav: #b07a3a;
+    --cf: var(--ctrl);
+    --cf-soft: var(--ctrl-soft);
+    --cb: var(--ok);
+    --cb-soft: var(--ok-soft);
+  }
+  @media (prefers-color-scheme: dark) {
+    :global(:root:not([data-theme='light'])) .rec-xp { --trav: #cfa368; }
+  }
+  :global(:root[data-theme='dark']) .rec-xp { --trav: #cfa368; }
+
+  .rec-xp .stage p b.c-cf { color: var(--cf); }
+  .rec-xp .stage p b.c-acc { color: var(--accent-ink); }
+  .rec-xp .stage .note.spaced { margin: 12px 0 0; }
+  .scene {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Stage 2 */
+  .signals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .sig {
+    flex: 1 1 240px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    background: var(--surface-2);
+  }
+  .sig .h {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: .03em;
+    margin-bottom: 8px;
+  }
+  .sig.a .h { color: var(--cf); }
+  .sig.b .h { color: var(--accent-ink); }
+  .sig .row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--ink-2);
+    margin-top: 5px;
+  }
+  .sig .note { margin-top: 8px; }
+  .dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  /* Stage 3 */
+  .embed-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 12px;
+  }
+  .echip {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 4px 9px;
+    cursor: pointer;
+  }
+  .echip:hover { border-color: var(--accent); }
+  .echip[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  /* Stage 5 */
+  .arch2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: center;
+    gap: 10px;
+  }
+  .acol {
+    flex: 1 1 220px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface-2);
+  }
+  .acol .h {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .acol.c1 .h { color: var(--cf); }
+  .acol.c2 .h { color: var(--accent-ink); }
+  .acol .d {
+    font-size: 12.5px;
+    color: var(--ink-2);
+    margin-top: 6px;
+  }
+  .acol .sub {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .acol .sub span {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 3px 7px;
+  }
+  .afunnel {
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    color: var(--ink-3);
+  }
+
+  /* Stage 6 */
+  .personas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .persona {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .persona:hover { border-color: var(--accent); }
+  .persona[aria-pressed='true'] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  /* Catalogue beside the rail; stacked on narrow screens. */
+  .store-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 680px) {
+    .store-grid { grid-template-columns: 1fr; }
+  }
+  .rec-xp .cat-note { margin-bottom: 8px; }
+  .catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 10px;
+  }
+  .pcard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font: inherit;
+    color: inherit;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 8px;
+    background: var(--surface-2);
+    text-align: center;
+    cursor: pointer;
+    transition: transform .15s;
+  }
+  .pcard:hover { transform: translateY(-2px); }
+  .pcard.viewed {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-wash);
+  }
+  .pcard .pn {
+    font-size: 11px;
+    color: var(--ink-2);
+    margin-top: 5px;
+    line-height: 1.2;
+  }
+  .pcard .pp {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+  }
+  .sessbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+  .sessbar :global(.sesspill) {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px 9px;
+  }
+  .rail {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    background: var(--surface);
+  }
+  .rh {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .rh .t {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+  }
+  .rh .s {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-3);
+  }
+  .recs {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  /* Rows are rebuilt by the script, so these are global within the rail. */
+  .recs :global(.rec) {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: var(--surface-2);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .recs :global(.rec) { animation: rec-in .4s ease; }
+  }
+  @keyframes rec-in {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .recs :global(.in) { flex: 1 1 auto; min-width: 0; }
+  .recs :global(.rn) { font-size: 13px; font-weight: 500; }
+  .recs :global(.why) {
+    display: inline-block;
+    margin-top: 3px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+  }
+  .recs :global(.score) {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .recs :global(.mini) { flex: 0 0 auto; width: 30px; height: 30px; }
+</style>

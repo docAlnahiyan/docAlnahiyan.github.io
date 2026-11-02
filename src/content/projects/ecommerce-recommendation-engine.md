@@ -5,7 +5,9 @@ one_liner: Internship project — product recommendations from purchase history 
 tags: [Internship, Recommender systems, Python, Flask, SQL]
 repo_url: ""
 thumbnail: ""
-metrics: []
+metrics:
+  - { label: approach, value: "Hybrid (CF + content)" }
+  - { label: serving, value: "Real-time" }
 date: 2021-01-01
 order: 5
 ---

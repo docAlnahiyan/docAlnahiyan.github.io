@@ -3,4 +3,4 @@
 // Markdown entry. The explainer lives at the same address, so the Projects
 // list and every existing link open it; [slug].astro skips these ids.
 
-export const EXPLAINED_PROJECTS = new Set(['globalfacenet', 'multimodal-transformer-net', 'bird-species-identification', 'covid-facemask-detection']);
+export const EXPLAINED_PROJECTS = new Set(['globalfacenet', 'multimodal-transformer-net', 'bird-species-identification', 'covid-facemask-detection', 'ecommerce-recommendation-engine']);

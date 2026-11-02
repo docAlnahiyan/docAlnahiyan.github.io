@@ -1,0 +1,46 @@
+---
+// Illustrated project page for the E-Commerce Recommendation Engine
+// internship project, ported from design-reference/recommender-explainer.html.
+// Replaces the page generated from
+// src/content/projects/ecommerce-recommendation-engine.md (see explainers.ts).
+// The project's files were lost and there is no public artifact, so there is
+// no code or paper link, and no accuracy, dataset, CTR or business figures.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import RecommenderExplainer from '../../components/projects/RecommenderExplainer.astro';
+import '../../components/projects/explainer.css';
+---
+
+<BaseLayout
+  title="E-Commerce Recommendation Engine"
+  description="A hybrid recommender that blends what a shopper bought before with what they're doing this session — collaborative and content-based filtering, two-stage retrieve → rank — explained stage by stage. Internship project, 2021."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">E-Commerce Recommendation Engine</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Internship · 2021</li>
+      <li class="chip">Recommender systems</li>
+      <li class="chip">Collaborative + content</li>
+      <li class="chip">Python · Flask · SQL</li>
+    </ul>
+    <h1 class="title">E-Commerce Recommendation Engine</h1>
+    <p class="plain">A store with a million products, and one shopper. Which handful do you put in front of them — right now, as they browse?</p>
+    <p class="meta">A hybrid recommender built during an internship: it blends what a shopper has bought before with what they're doing this very session, to personalise the storefront in real time.</p>
+    <ul class="badges word-badges">
+      <li class="badge"><span class="n">Hybrid</span><span class="l">Collaborative + content-based</span></li>
+      <li class="badge"><span class="n">Real-time</span><span class="l">Session-aware ranking</span></li>
+      <li class="badge"><span class="n">Two-stage</span><span class="l">Retrieve → rank</span></li>
+    </ul>
+
+    <RecommenderExplainer />
+  </article>
+</BaseLayout>
+
+<style>
+  /* Word badges, a touch smaller than the numeric ones on other pages. */
+  .word-badges :global(.n) {
+    font-size: 19px;
+  }
+</style>
