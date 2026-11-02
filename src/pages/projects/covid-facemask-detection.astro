@@ -1,0 +1,45 @@
+---
+// Illustrated project page for COVID-19 Facemask Detection, ported from
+// design-reference/facemask-explainer.html. Replaces the page generated from
+// src/content/projects/covid-facemask-detection.md (see explainers.ts). The
+// project's files were lost and there is no public artifact, so there is no
+// code or paper link, and no accuracy or dataset figures.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FacemaskExplainer from '../../components/projects/FacemaskExplainer.astro';
+import '../../components/projects/explainer.css';
+---
+
+<BaseLayout
+  title="COVID-19 Facemask Detection"
+  description="A real-time computer-vision system that finds every face in a video frame and classifies each one as wearing a mask or not — the detect-then-classify method, explained stage by stage."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">COVID-19 Facemask Detection</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Computer vision · 2021</li>
+      <li class="chip">CNN classifier</li>
+      <li class="chip">OpenCV</li>
+      <li class="chip">Real-time</li>
+    </ul>
+    <h1 class="title">COVID-19 Facemask Detection</h1>
+    <p class="plain">At a busy entrance, who's wearing a mask and who isn't? A camera that answers that, face by face, many times a second.</p>
+    <p class="meta">A real-time computer-vision system that finds every face in a video frame and classifies each one as wearing a mask or not — built for public-health compliance monitoring during the pandemic.</p>
+    <ul class="badges word-badges">
+      <li class="badge"><span class="n">2 classes</span><span class="l">Mask / No-mask</span></li>
+      <li class="badge"><span class="n">Real-time</span><span class="l">Per-frame video</span></li>
+      <li class="badge"><span class="n">CNN + OpenCV</span><span class="l">Detect → classify</span></li>
+    </ul>
+
+    <FacemaskExplainer />
+  </article>
+</BaseLayout>
+
+<style>
+  /* Word badges, a touch smaller than the numeric ones on other pages. */
+  .word-badges :global(.n) {
+    font-size: 20px;
+  }
+</style>

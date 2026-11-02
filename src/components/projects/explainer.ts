@@ -49,7 +49,13 @@ function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
  * with slices stacked behind it for channels. Size from data-s, data-cells
  * and data-depth on the canvas.
  */
-export function drawStack(cv: HTMLCanvasElement, rand: () => number) {
+export function drawStack(
+  cv: HTMLCanvasElement,
+  rand: () => number,
+  // Colours (r,g,b) of the slices and of the activation cells, and how much
+  // darker each slice further back gets. Blue by default.
+  { rgb = '59,111,176', cellRgb = '43,95,170', depthStep = 0.04 } = {},
+) {
   const ctx = cv.getContext('2d');
   if (!ctx) return;
   const s = Number(cv.dataset.s), cells = Number(cv.dataset.cells), depth = Number(cv.dataset.depth);
@@ -61,8 +67,8 @@ export function drawStack(cv: HTMLCanvasElement, rand: () => number) {
   cv.style.height = `${H}px`;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   for (let d = depth - 1; d >= 1; d--) {
-    ctx.fillStyle = `rgba(59,111,176,${0.1 + 0.04 * d})`;
-    ctx.strokeStyle = 'rgba(59,111,176,.35)';
+    ctx.fillStyle = `rgba(${rgb},${0.1 + depthStep * d})`;
+    ctx.strokeStyle = `rgba(${rgb},.35)`;
     ctx.lineWidth = 1;
     rr(ctx, d * STEP, (depth - d) * STEP, s, s, 4);
     ctx.fill();
@@ -71,10 +77,10 @@ export function drawStack(cv: HTMLCanvasElement, rand: () => number) {
   const cs = s / cells;
   for (let r = 0; r < cells; r++)
     for (let c = 0; c < cells; c++) {
-      ctx.fillStyle = `rgba(43,95,170,${0.15 + rand() * 0.7})`;
+      ctx.fillStyle = `rgba(${cellRgb},${0.15 + rand() * 0.7})`;
       ctx.fillRect(c * cs + 0.5, off + r * cs + 0.5, cs - 1, cs - 1);
     }
-  ctx.strokeStyle = 'rgba(59,111,176,.55)';
+  ctx.strokeStyle = `rgba(${rgb},.55)`;
   ctx.lineWidth = 1;
   rr(ctx, 0, off, s, s, 4);
   ctx.stroke();

@@ -5,7 +5,9 @@ one_liner: A CNN that detects whether people are wearing face masks in images an
 tags: [CNN, OpenCV, Real-time]
 repo_url: ""
 thumbnail: ""
-metrics: []
+metrics:
+  - { label: classes, value: "Mask / No-mask" }
+  - { label: mode, value: "Real-time" }
 date: 2021-06-01
 order: 4
 ---

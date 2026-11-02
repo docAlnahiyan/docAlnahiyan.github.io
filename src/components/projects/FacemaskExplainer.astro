@@ -1,0 +1,539 @@
+---
+// Six-stage explainer for the COVID-19 Facemask Detection project, ported
+// from design-reference/facemask-explainer.html. The project's files were
+// lost, so this walks through the method (detect faces, then classify each
+// crop) with no accuracy or dataset figures. The faces are stylised SVG
+// drawings, not photographs; the demo confidences are illustrative.
+import { CAM_FACES, DET_FACES, HAIR, HERO_FACES, SKIN, detBoxesSvg, faceSvg } from './facemask-data';
+import { seeded } from './explainer';
+
+// Fixed blink offsets, so every build draws the same page.
+const rand = seeded(11);
+const face = (x: number, y: number, sc: number, si: number, masked: boolean) =>
+  `<g transform="translate(${x},${y}) scale(${sc})">${faceSvg({ skin: SKIN[si], hair: HAIR[si], masked }, rand)}</g>`;
+
+const hero = HERO_FACES.map(([x, y, si, m]) => face(x, y, 0.92, si, m)).join('');
+const detFaces = DET_FACES.map(([x, y, si, m]) => face(x, y, 0.82, si, m)).join('');
+const cropFace = face(438, 104, 0.82, 1, true);
+const clsFace = (masked: boolean) => face(60, 62, 1.15, 1, masked);
+const camFaces = CAM_FACES.map((f, i) =>
+  `<g data-face="${i}" role="button" tabindex="0" aria-label="Face ${i + 1}: ${f.masked ? 'masked' : 'no mask'} — press to toggle" style="cursor:pointer">${face(f.x, f.y, f.sc, f.si, f.masked)}</g>`,
+).join('');
+const grid = [
+  ...Array.from({ length: 13 }, (_, i) => `<line x1="${i * 40}" y1="0" x2="${i * 40}" y2="300" stroke="#1d2230" stroke-width="1"/>`),
+  ...Array.from({ length: 8 }, (_, i) => `<line x1="0" y1="${i * 40}" x2="520" y2="${i * 40}" stroke="#1d2230" stroke-width="1"/>`),
+].join('');
+
+// Stage 4: the classifier's feature maps.
+const maps = [
+  { s: 60, cells: 5, depth: 1, d: 'face', l: 'input' },
+  { s: 50, cells: 4, depth: 2, d: 'conv', l: 'edges' },
+  { s: 40, cells: 3, depth: 3, d: 'conv', l: 'parts' },
+  { s: 30, cells: 2, depth: 4, d: 'deep', l: 'mask?' },
+];
+const mono = 'font-family:var(--font-mono)';
+---
+
+<div class="mask-xp">
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The problem</div>
+    <h2 id="s1-title">Checking masks by eye doesn't scale</h2>
+    <p>During COVID-19, entrances to shops, offices and transit had to verify that people wore masks. A guard can watch one doorway; they cannot watch a hundred, or a crowd, without missing people. The goal here is to <b>automate that check</b> — point a camera at the scene and have software flag, in real time, every uncovered face so staff can act.</p>
+    <div class="viz centered">
+      <svg class="scene" viewBox="0 0 520 170" width="520" height="170" role="img" aria-label="Several faces in a camera frame, some masked, some not">
+        <rect x="2" y="2" width="516" height="166" rx="10" style="fill:var(--surface-2);stroke:var(--border)" />
+        <Fragment set:html={hero} />
+        <text x="260" y="158" text-anchor="middle" font-size="10" style={`fill:var(--ink-3);${mono}`}>a camera sees a mix — some masked, some not</text>
+      </svg>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · The pipeline</div>
+    <h2 id="s2-title">Two stages: find the faces, then judge each one</h2>
+    <p>The system never asks "is there a mask in this picture?" all at once. It runs <b>two stages per frame</b>: first a <b class="c-det">face detector</b> locates every face and returns a box around it; then a <b class="c-cnn">CNN classifier</b> looks at each cropped face on its own and decides mask or no-mask. Finally the result is drawn back onto the frame as a coloured box.</p>
+    <div class="viz">
+      <div class="pipe">
+        <div class="pstep">
+          <div class="ic"><svg width="38" height="34" viewBox="0 0 38 34" aria-hidden="true"><rect x="2" y="2" width="34" height="30" rx="3" fill="none" stroke-width="1.6" style="stroke:var(--ink-3)" /><circle cx="19" cy="17" r="7" fill="none" stroke-width="1.6" style="stroke:var(--ink-3)" /></svg></div>
+          <div class="t">Video frame</div><div class="s">one image from the camera</div>
+        </div>
+        <span class="parrow" aria-hidden="true">→</span>
+        <div class="pstep det">
+          <div class="ic"><svg width="38" height="34" viewBox="0 0 38 34" aria-hidden="true"><rect x="8" y="6" width="22" height="24" rx="2" fill="none" stroke-width="2" style="stroke:var(--det)" /><path d="M8 12h-4M34 12h-4M8 24h-4M34 24h-4" stroke-width="2" style="stroke:var(--det)" /></svg></div>
+          <div class="t">Face detection</div><div class="s">OpenCV — boxes every face</div>
+        </div>
+        <span class="parrow" aria-hidden="true">→</span>
+        <div class="pstep cnnstep">
+          <div class="ic"><svg width="38" height="34" viewBox="0 0 38 34" aria-hidden="true"><rect x="4" y="8" width="8" height="18" rx="1.5" opacity=".5" style="fill:var(--cnn)" /><rect x="15" y="6" width="8" height="22" rx="1.5" opacity=".7" style="fill:var(--cnn)" /><rect x="26" y="10" width="8" height="14" rx="1.5" opacity=".9" style="fill:var(--cnn)" /></svg></div>
+          <div class="t">CNN classifier</div><div class="s">mask vs no-mask, per face</div>
+        </div>
+        <span class="parrow" aria-hidden="true">→</span>
+        <div class="pstep">
+          <div class="ic"><svg width="38" height="34" viewBox="0 0 38 34" aria-hidden="true"><rect x="6" y="5" width="12" height="12" rx="2" fill="none" stroke-width="2.2" style="stroke:var(--ok)" /><rect x="20" y="16" width="12" height="12" rx="2" fill="none" stroke-width="2.2" style="stroke:var(--bad)" /></svg></div>
+          <div class="t">Annotated frame</div><div class="s">green = mask, red = no-mask</div>
+        </div>
+      </div>
+      <p class="note center spaced">This loop repeats on every frame, so the labels track people as they move through the scene.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · Finding the faces</div>
+    <h2 id="s3-title">First, where are the faces?</h2>
+    <p>Before anything can be classified, the system has to locate faces in the frame. A classical <b>OpenCV face detector</b> scans the image at many positions and scales and returns a bounding box for each face it finds — regardless of whether that face is masked. Each box is then cropped out and passed on alone, so the classifier sees one clean face at a time instead of the whole busy scene.</p>
+    <div class="viz centered">
+      <svg class="scene" viewBox="0 0 520 190" width="520" height="190" role="img" aria-label="A camera frame with detector boxes around each face, one being cropped out">
+        <defs><marker id="mask-mk3" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" style="fill:var(--ink-3)" /></marker></defs>
+        <rect x="2" y="2" width="360" height="186" rx="10" fill="#171a20" style="stroke:var(--border)" />
+        <Fragment set:html={detFaces} />
+        <line x1="365" y1="95" x2="398" y2="95" stroke-width="1.4" marker-end="url(#mask-mk3)" style="stroke:var(--ink-3)" />
+        <rect x="402" y="60" width="72" height="84" rx="6" style="fill:var(--surface-2);stroke:var(--det)" />
+        <Fragment set:html={cropFace} />
+        <text x="438" y="156" text-anchor="middle" font-size="9" style={`fill:var(--ink-3);${mono}`}>one cropped face</text>
+        <g data-ref="boxes" set:html={detBoxesSvg(null)} />
+      </svg>
+      <div class="det-actions"><button type="button" class="btn ghost" data-ref="detect">▶ Run detector</button></div>
+      <p class="note">The detector only answers "is this a face, and where?" — it says nothing yet about masks.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · The classifier</div>
+    <h2 id="s4-title">A CNN decides: mask or no-mask</h2>
+    <p>Each cropped face is resized to a fixed size and normalised, then passed through a <b>convolutional neural network</b>. Early layers pick up edges and texture; deeper layers respond to the tell-tale pattern of a mask — the straight top edge across the bridge of the nose, the pleats, the covered mouth. A final layer collapses all of that into <b>two numbers</b>: the confidence that the face is masked, and that it is not.</p>
+    <div class="viz">
+      <div class="cls-row">
+        <div class="cls-face">
+          <svg data-ref="cls" viewBox="0 0 120 130" width="110" height="120" role="img" aria-label="A cropped face, masked, fed to the network">
+            <rect x="2" y="2" width="116" height="126" rx="8" style="fill:var(--surface-2);stroke:var(--border)" />
+            <g data-ref="clsFace" set:html={clsFace(true)} />
+          </svg>
+          <div><button type="button" class="btn ghost" data-ref="toggle" aria-pressed="true">Toggle mask</button></div>
+        </div>
+        <div class="cnn" data-ref="cnn">
+          {maps.map((m, i) => (
+            <>
+              {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+              <div class="blk">
+                <canvas class="fmapc" data-s={m.s} data-cells={m.cells} data-depth={m.depth} data-seed={i * 23 + 7} aria-hidden="true"></canvas>
+                <div class="lab"><b>{m.l}</b>{m.d}</div>
+              </div>
+            </>
+          ))}
+        </div>
+      </div>
+      <div class="classbars" aria-live="polite">
+        <div class="cbar m"><span class="nm">mask</span><span class="track"><span class="fill" data-ref="barMask" style="--p:97"></span></span><span class="pct" data-ref="pctMask">97%</span></div>
+        <div class="cbar n"><span class="nm">no-mask</span><span class="track"><span class="fill" data-ref="barNo" style="--p:3"></span></span><span class="pct" data-ref="pctNo">3%</span></div>
+      </div>
+      <p class="note center spaced">Two-class output (softmax) — toggle the mask and watch the decision flip. Faces are drawings, not photographs; confidences illustrative.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · See it run</div>
+    <h2 id="s5-title">Real-time, face by face</h2>
+    <p>Put it together and it runs live on video. Hit <b>Live feed</b> and watch it keep scanning as people change, or toggle masks yourself and <b>Scan once</b> — the detector sweeps the frame, boxes each face, and the classifier colours it <b class="c-ok">green</b> (mask) or <b class="c-bad">red</b> (no-mask) with a confidence. On real video this repeats every frame, so the overlay follows people as they move.</p>
+    <div class="viz">
+      <div class="cam">
+        <svg viewBox="0 0 520 300" role="img" aria-label="Interactive camera frame with faces to classify">
+          <rect x="0" y="0" width="520" height="300" fill="#141821" />
+          <Fragment set:html={grid} />
+          <text x="12" y="22" font-size="11" fill="#55607a" style={mono}>● CAM 01</text>
+          <g data-ref="faces" set:html={camFaces} />
+          <g data-ref="overlay" />
+        </svg>
+      </div>
+      <div class="cambar">
+        <button type="button" class="btn" data-ref="live" aria-pressed="false">▶ Live feed</button>
+        <button type="button" class="btn ghost" data-ref="scan">Scan once</button>
+        <button type="button" class="btn ghost" data-ref="shuffle">Shuffle</button>
+        <div class="counts" aria-live="polite"><span class="ok" data-ref="cOk">◧ 0 masked</span><span class="bad" data-ref="cBad">◨ 0 unmasked</span></div>
+      </div>
+      <p class="camhint">Click any face to toggle its mask — it re-scans instantly. Or hit <b>Live feed</b> to let it run, people changing as they pass. Confidence values are illustrative, in the shape of a real prediction.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s6" aria-labelledby="s6-title">
+    <div class="kick">Stage 6 · Where it goes next</div>
+    <h2 id="s6-title">From "is there a mask?" to "who is this?"</h2>
+    <p>A mask hides the mouth and nose — but not the eyes. The natural next step is to read the <b>eye and upper-face (periocular) region</b>, which stays visible even when someone is masked. That opens up two directions beyond compliance monitoring:</p>
+    <div class="viz">
+      <div class="future">
+        <div class="fcard">
+          <div class="ic"><svg width="40" height="26" viewBox="0 0 40 26" aria-hidden="true"><path d="M2 13 Q 20 1 38 13 Q 20 25 2 13 Z" fill="none" stroke-width="2" style="stroke:var(--det)" /><circle cx="20" cy="13" r="5" fill="none" stroke-width="2" style="stroke:var(--det)" /><circle cx="20" cy="13" r="2" style="fill:var(--det)" /></svg></div>
+          <div class="h">Eye &amp; periocular detection</div>
+          <div class="b">Locate and read the eyes and the area around them — the part of the face a mask never covers — as the basis for identity, not just mask/no-mask.</div>
+        </div>
+        <div class="fcard">
+          <div class="ic"><svg width="34" height="30" viewBox="0 0 34 30" aria-hidden="true"><rect x="6" y="13" width="22" height="15" rx="2" fill="none" stroke-width="2" style="stroke:var(--ok)" /><path d="M10 13 V8 a7 7 0 0 1 14 0 V13" fill="none" stroke-width="2" style="stroke:var(--ok)" /></svg></div>
+          <div class="h">Access control &amp; gates</div>
+          <div class="b">Open a door or gate only for a recognised, authorised person — hands-free, and still working when they're wearing a mask. Better security at entrances.</div>
+        </div>
+        <div class="fcard">
+          <div class="ic"><svg width="26" height="30" viewBox="0 0 26 30" aria-hidden="true"><rect x="2" y="2" width="22" height="26" rx="4" fill="none" stroke-width="2" style="stroke:var(--cnn)" /><circle cx="13" cy="13" r="4" fill="none" stroke-width="1.8" style="stroke:var(--cnn)" /><path d="M8 22 q5 -5 10 0" fill="none" stroke-width="1.8" style="stroke:var(--cnn)" /></svg></div>
+          <div class="h">Masked-face unlock</div>
+          <div class="b">Authenticate from the eyes alone — the way a phone can unlock for its owner even while they wear a mask. Identity from the visible half of the face.</div>
+        </div>
+      </div>
+      <p class="note spaced">These are directions this work points toward — recognising a person from the eyes when a mask covers the rest.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { CAM_FACES, HAIR, SKIN, camBoxSvg, detBoxesSvg, faceSvg, type SceneFace } from './facemask-data';
+  import { drawStack, revealStages, seeded } from './explainer';
+
+  const root = document.querySelector<HTMLElement>('.mask-xp');
+  if (root) {
+    revealStages(root.closest('.xp') ?? root);
+    const $ = <T extends Element = HTMLElement>(ref: string) => root.querySelector<T>(`[data-ref="${ref}"]`);
+    const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const face = (x: number, y: number, sc: number, si: number, masked: boolean) =>
+      `<g transform="translate(${x},${y}) scale(${sc})">${faceSvg({ skin: SKIN[si], hair: HAIR[si], masked })}</g>`;
+
+    // Stage 3: replayable detector sweep; boxes appear as the scan line passes.
+    const boxes = $('boxes');
+    let detRaf = 0;
+    $('detect')?.addEventListener('click', () => {
+      if (!boxes) return;
+      cancelAnimationFrame(detRaf);
+      if (reduced()) { boxes.innerHTML = detBoxesSvg(null); return; }
+      const start = performance.now(), dur = 1300;
+      const frame = (now: number) => {
+        const t = Math.min(1, (now - start) / dur);
+        boxes.innerHTML = detBoxesSvg(t < 1 ? t * 372 : null);
+        if (t < 1) detRaf = requestAnimationFrame(frame);
+      };
+      detRaf = requestAnimationFrame(frame);
+    });
+
+    // Stage 4: the classifier. Toggle the mask; the maps pulse and the bars move.
+    root.querySelectorAll<HTMLCanvasElement>('.fmapc').forEach((cv) =>
+      drawStack(cv, seeded(Number(cv.dataset.seed)), { rgb: '122,82,196', cellRgb: '110,70,180', depthStep: 0.05 }));
+    let clsMasked = true;
+    const toggle = $<HTMLButtonElement>('toggle');
+    toggle?.addEventListener('click', () => {
+      clsMasked = !clsMasked;
+      const g = $('clsFace');
+      if (g) g.innerHTML = face(60, 62, 1.15, 1, clsMasked);
+      $('cls')?.setAttribute('aria-label', `A cropped face, ${clsMasked ? 'masked' : 'unmasked'}, fed to the network`);
+      toggle.setAttribute('aria-pressed', String(clsMasked));
+      const cnn = $('cnn');
+      if (cnn) { cnn.classList.remove('flash'); void cnn.offsetWidth; cnn.classList.add('flash'); }
+      const m = clsMasked ? 97 : 4, no = 100 - m;
+      $('barMask')?.style.setProperty('--p', String(m));
+      $('barNo')?.style.setProperty('--p', String(no));
+      const pm = $('pctMask'), pn = $('pctNo');
+      if (pm) pm.textContent = `${m}%`;
+      if (pn) pn.textContent = `${no}%`;
+    });
+
+    // Stage 5: the live camera.
+    type CamFace = SceneFace & { scanned?: boolean; conf: number };
+    const faces: CamFace[] = CAM_FACES.map((f) => ({ ...f, conf: 0 }));
+    const facesG = $('faces'), overlay = $('overlay');
+    function drawFaces() {
+      if (!facesG) return;
+      facesG.innerHTML = faces
+        .map((f, i) => `<g data-face="${i}" role="button" tabindex="0" aria-label="Face ${i + 1}: ${f.masked ? 'masked' : 'no mask'} — press to toggle" style="cursor:pointer">${face(f.x, f.y, f.sc, f.si, f.masked)}</g>`)
+        .join('');
+    }
+    function drawOverlay(sweepX: number | null) {
+      if (!overlay) return;
+      let s = faces.filter((f) => f.scanned).map(camBoxSvg).join('');
+      if (sweepX !== null && sweepX < 520) s += `<line x1="${sweepX}" y1="0" x2="${sweepX}" y2="300" stroke-width="2" opacity=".85" class="sweep" style="stroke:var(--det)"/>`;
+      overlay.innerHTML = s;
+    }
+    function updateCounts() {
+      const ok = faces.filter((f) => f.scanned && f.masked).length;
+      const bad = faces.filter((f) => f.scanned && !f.masked).length;
+      const a = $('cOk'), b = $('cBad');
+      if (a) a.textContent = `◧ ${ok} masked`;
+      if (b) b.textContent = `◨ ${bad} unmasked`;
+    }
+    let scanRaf = 0;
+    function scan() {
+      cancelAnimationFrame(scanRaf);
+      for (const f of faces) {
+        f.scanned = false;
+        f.conf = f.masked ? 94 + Math.floor(Math.random() * 6) : 90 + Math.floor(Math.random() * 8);
+      }
+      if (reduced()) {
+        for (const f of faces) f.scanned = true;
+        drawOverlay(null);
+        updateCounts();
+        return;
+      }
+      const start = performance.now(), dur = 1050;
+      const frame = (now: number) => {
+        const t = Math.min(1, (now - start) / dur), sx = t * 520;
+        for (const f of faces) if (f.x <= sx) f.scanned = true;
+        drawOverlay(t < 1 ? sx : null);
+        updateCounts();
+        if (t < 1) scanRaf = requestAnimationFrame(frame);
+      };
+      scanRaf = requestAnimationFrame(frame);
+    }
+    function shuffle() {
+      for (const f of faces) { f.masked = Math.random() < 0.5; f.scanned = false; }
+      drawFaces();
+      drawOverlay(null);
+      updateCounts();
+    }
+    // Click (or Enter/Space) on a face toggles its mask and re-scans.
+    const toggleFace = (target: EventTarget | null) => {
+      const g = (target as Element | null)?.closest<SVGGElement>('[data-face]');
+      if (!g) return;
+      const i = Number(g.dataset.face);
+      faces[i].masked = !faces[i].masked;
+      drawFaces();
+      facesG?.querySelector<SVGGElement>(`[data-face="${i}"]`)?.focus();
+      scan();
+    };
+    facesG?.addEventListener('click', (e) => toggleFace(e.target));
+    facesG?.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      toggleFace(e.target);
+    });
+    // Live feed: a face changes every 1.7 s and the frame is re-scanned. It
+    // only starts when the button is pressed.
+    const liveBtn = $<HTMLButtonElement>('live');
+    let liveTimer: number | null = null;
+    function toggleLive() {
+      if (!liveBtn) return;
+      if (liveTimer !== null) {
+        clearInterval(liveTimer);
+        liveTimer = null;
+        liveBtn.textContent = '▶ Live feed';
+        liveBtn.setAttribute('aria-pressed', 'false');
+        liveBtn.classList.remove('ghost');
+        return;
+      }
+      liveBtn.textContent = '⏸ Pause';
+      liveBtn.setAttribute('aria-pressed', 'true');
+      liveBtn.classList.add('ghost');
+      scan();
+      liveTimer = window.setInterval(() => {
+        const f = faces[Math.floor(Math.random() * faces.length)];
+        f.masked = !f.masked;
+        drawFaces();
+        scan();
+      }, 1700);
+    }
+    liveBtn?.addEventListener('click', toggleLive);
+    $('scan')?.addEventListener('click', scan);
+    $('shuffle')?.addEventListener('click', () => {
+      if (liveTimer !== null) toggleLive();
+      shuffle();
+    });
+  }
+</script>
+
+<style>
+  /* This page's diagram colours, named as in the reference. --det and --cnn
+     have the same values as the site's --ctrl and --vit; --ok and --bad are
+     site tokens (global.css). */
+  .mask-xp {
+    --det: var(--ctrl);
+    --det-soft: var(--ctrl-soft);
+    --cnn: var(--vit);
+    --cnn-soft: var(--vit-soft);
+  }
+  .mask-xp .stage p b.c-det { color: var(--det); }
+  .mask-xp .stage p b.c-cnn { color: var(--cnn); }
+  .mask-xp .stage p b.c-ok { color: var(--ok); }
+  .mask-xp .stage p b.c-bad { color: var(--bad); }
+  .mask-xp .stage .note.spaced { margin: 12px 0 0; }
+  .scene {
+    display: block;
+    margin: 0 auto;
+  }
+
+  /* Stage 2 */
+  .pipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .pstep {
+    flex: 1 1 120px;
+    min-width: 118px;
+    max-width: 170px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+    background: var(--surface-2);
+  }
+  .pstep.det { border-color: var(--det); background: var(--det-soft); }
+  .pstep.cnnstep { border-color: var(--cnn); background: var(--cnn-soft); }
+  .pstep .ic {
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pstep .t {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-top: 6px;
+  }
+  .pstep.det .t { color: var(--det); }
+  .pstep.cnnstep .t { color: var(--cnn); }
+  .pstep .s {
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-top: 2px;
+  }
+
+  /* Stage 3 */
+  .det-actions { margin: 12px 0 8px; }
+
+  /* Stage 4 */
+  .cls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+  .cls-face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cnn:global(.flash) { animation: mask-cnnflash .55s ease; }
+  }
+  @keyframes mask-cnnflash {
+    0%, 100% { filter: none; }
+    45% { filter: brightness(1.18) saturate(1.1); }
+  }
+  .classbars {
+    max-width: 340px;
+    margin: 16px auto 0;
+  }
+  .cbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .cbar .nm { width: 72px; }
+  .cbar.m .nm { color: var(--ok); }
+  .cbar.n .nm { color: var(--bad); }
+  .cbar .track {
+    flex: 1;
+    height: 14px;
+    overflow: hidden;
+    border-radius: 7px;
+    background: var(--surface-2);
+  }
+  /* Full width, slid left to show --p % (compositor-only); the track clips it. */
+  .cbar .fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 7px;
+    transform: translateX(calc(var(--p, 0) * 1% - 100%));
+    transition: transform .5s;
+  }
+  .cbar.m .fill { background: var(--ok); }
+  .cbar.n .fill { background: var(--bad); }
+  .cbar .pct {
+    width: 42px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+
+  /* Stage 5 */
+  .cam {
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: #11141a;
+  }
+  .cam svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .cam :global([data-face]:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .cambar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .counts {
+    margin-left: auto;
+    display: flex;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .counts .ok { color: var(--ok); }
+  .counts .bad { color: var(--bad); }
+  .camhint {
+    font-size: 12px;
+    color: var(--ink-3);
+    margin: 8px 0 0;
+  }
+
+  /* Stage 6 */
+  .future {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .fcard {
+    flex: 1 1 220px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    background: var(--surface-2);
+  }
+  .fcard .ic { margin-bottom: 8px; }
+  .fcard .h {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .fcard .b {
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+
+  /* Every face blinks on its own schedule; off with reduced motion, when
+     the scan lines are hidden too. The faces are injected markup, so these
+     selectors are global within this explainer. */
+  @media (prefers-reduced-motion: no-preference) {
+    .mask-xp :global(.lid) { animation: mask-blink 4.6s steps(1, end) infinite; }
+  }
+  @keyframes mask-blink {
+    0%, 95%, 100% { transform: scaleY(0); }
+    96.3%, 98.3% { transform: scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .mask-xp :global(.sweep) { display: none; }
+  }
+
+  @media (max-width: 479.98px) {
+    .counts { margin-left: 0; width: 100%; }
+  }
+</style>

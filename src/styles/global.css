@@ -29,6 +29,11 @@
   --vit-soft: #efe9f8;
   --aud: #2f9e8f;
   --aud-soft: #e3f2ef;
+  /* Good / bad outcomes in the explainers (e.g. mask / no mask). */
+  --ok: #3f8f5b;
+  --ok-soft: #e4f0e7;
+  --bad: #c0472f;
+  --bad-soft: #f6e3dd;
   --radius: 10px;
   --maxw: 780px; /* reading column */
   --maxw-wide: 1120px; /* nav, footer, home */
@@ -61,6 +66,10 @@
     --vit-soft: #2d2740;
     --aud: #5cc3b3;
     --aud-soft: #1f3330;
+    --ok: #5fb87d;
+    --ok-soft: #1f3326;
+    --bad: #e07a60;
+    --bad-soft: #3a251f;
     color-scheme: dark;
   }
 }
@@ -87,6 +96,10 @@
   --vit-soft: #2d2740;
   --aud: #5cc3b3;
   --aud-soft: #1f3330;
+  --ok: #5fb87d;
+  --ok-soft: #1f3326;
+  --bad: #e07a60;
+  --bad-soft: #3a251f;
   color-scheme: dark;
 }
 

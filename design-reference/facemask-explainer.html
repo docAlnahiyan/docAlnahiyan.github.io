@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>COVID-19 Facemask Detection — Explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0;--surface:#fffdf9;--surface-2:#f2ece0;--ink:#201e1a;--ink-2:#5c584f;--ink-3:#6e6a60;
+    --border:#e8e1d4;--accent:#c96442;--accent-ink:#a8482b;--accent-soft:#f6e7df;
+    --ok:#3f8f5b;--ok-soft:#e4f0e7;--bad:#c0472f;--bad-soft:#f6e3dd;--det:#3b6fb0;--det-soft:#e8f0f9;--cnn:#7a52c4;--cnn-soft:#efe9f8;
+    --fd:"Newsreader",Georgia,serif;--fb:"IBM Plex Sans",system-ui,sans-serif;--fm:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ok:#5fb87d;--ok-soft:#1f3326;--bad:#e07a60;--bad-soft:#3a251f;--det:#6ea3df;--det-soft:#26303a;--cnn:#b49ae6;--cnn-soft:#2d2740;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ok:#5fb87d;--ok-soft:#1f3326;--bad:#e07a60;--bad-soft:#3a251f;--det:#6ea3df;--det-soft:#26303a;--cnn:#b49ae6;--cnn-soft:#2d2740;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:30}
+  .brand{font-family:var(--fd);font-weight:600;font-size:17px}
+  .nav{display:flex;gap:18px;font-size:13px;color:var(--ink-2)}
+  .theme{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:var(--fm);font-size:12px;cursor:pointer}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 24px 100px}
+  .crumb{font-size:12.5px;color:var(--ink-3);font-family:var(--fm);margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{font-family:var(--fm);font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2)}
+  h1{font-family:var(--fd);font-weight:600;font-size:33px;line-height:1.18;margin:0 0 10px}
+  .plain{font-size:17px;color:var(--ink-2);font-family:var(--fd);font-style:italic;margin:0 0 14px}
+  .meta{font-size:14px;color:var(--ink-2);margin-bottom:6px}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+  .badge{flex:1 1 150px;border:1px solid var(--border);border-radius:12px;padding:12px 15px;background:var(--surface)}
+  .badge .n{font-family:var(--fd);font-weight:600;font-size:20px;color:var(--accent-ink)}
+  .badge .l{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+
+  .stage{border-top:1px solid var(--border);padding:36px 0;opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+  .stage.in{opacity:1;transform:none}
+  .kick{font-family:var(--fm);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .stage h2{font-family:var(--fd);font-weight:600;font-size:24px;margin:0 0 10px}
+  .stage p{font-size:15.5px;color:var(--ink-2);margin:0 0 12px;max-width:64ch}
+  .stage p b{color:var(--ink)}
+  .note{font-size:12.5px;color:var(--ink-3);font-style:italic}
+  .viz{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:16px}
+  svg{max-width:100%}
+
+  /* pipeline */
+  .pipe{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .pstep{flex:1 1 120px;min-width:118px;max-width:170px;border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;background:var(--surface-2)}
+  .pstep .ic{height:40px;display:flex;align-items:center;justify-content:center}
+  .pstep .t{font-family:var(--fm);font-size:11.5px;font-weight:600;margin-top:6px}
+  .pstep .s{font-size:11px;color:var(--ink-3);margin-top:2px}
+  .parrow{color:var(--ink-3);font-size:18px}
+
+  /* camera */
+  .cam{position:relative;background:#11141a;border-radius:14px;overflow:hidden;border:1px solid var(--border)}
+  .cam svg{display:block;width:100%;height:auto}
+  .cambar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:9px 14px;border-radius:9px;cursor:pointer}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .counts{margin-left:auto;display:flex;gap:12px;font-family:var(--fm);font-size:12px}
+  .counts .ok{color:var(--ok)} .counts .bad{color:var(--bad)}
+  .camhint{font-size:12px;color:var(--ink-3);margin-top:8px}
+
+  /* cnn maps */
+  .cnn{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+  .cnn .blk{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:66px}
+  .cnn .blk .lab{font-family:var(--fm);font-size:9.5px;color:var(--ink-3);text-align:center;line-height:1.4}
+  .cnn .blk .lab b{color:var(--ink-2);font-weight:600;display:block}
+  .twoclass{display:flex;gap:10px;justify-content:center;margin-top:14px}
+  .cls{border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-family:var(--fm);font-size:12.5px}
+  .cls.m{background:var(--ok-soft);color:var(--ok);border-color:var(--ok)} .cls.n{background:var(--bad-soft);color:var(--bad);border-color:var(--bad)}
+
+  /* future */
+  .future{display:flex;gap:14px;flex-wrap:wrap}
+  .fcard{flex:1 1 220px;border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)}
+  .fcard .h{font-family:var(--fd);font-weight:600;font-size:16px;margin-bottom:6px}
+  .fcard .b{font-size:13px;color:var(--ink-2)}
+  .fcard .ic{margin-bottom:8px}
+  .classbars{max-width:340px;margin:16px auto 0}
+  .cbar{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:13px}
+  .cbar .nm{width:72px;text-transform:capitalize}
+  .cbar.m .nm{color:var(--ok)} .cbar.n .nm{color:var(--bad)}
+  .cbar .track{flex:1;height:14px;background:var(--surface-2);border-radius:7px;overflow:hidden}
+  .cbar .fill{height:100%;border-radius:7px;transition:width .5s}
+  .cbar.m .fill{background:var(--ok)} .cbar.n .fill{background:var(--bad)}
+  .cbar .pct{width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2)}
+  .cnn.flash{animation:cnnflash .55s ease}
+  @keyframes cnnflash{0%,100%{filter:none}45%{filter:brightness(1.18) saturate(1.1)}}
+  @media (prefers-reduced-motion:no-preference){ .lid{animation:blink 4.6s steps(1,end) infinite} }
+  @keyframes blink{0%,95%,100%{transform:scaleY(0)}96.3%,98.3%{transform:scaleY(1)}}
+  @media (prefers-reduced-motion:reduce){.stage{opacity:1;transform:none;transition:none}.sweep{display:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Al-Nahiyan Khushbu</span>
+  <nav class="nav"><a href="#">Home</a><a href="#">Research</a><a href="#">Projects</a></nav>
+  <button class="theme" id="theme">☀︎ / ☾</button>
+</div>
+
+<div class="wrap">
+  <div class="crumb">Projects &nbsp;›&nbsp; COVID-19 Facemask Detection</div>
+  <div class="chips"><span class="chip">Computer vision · 2021</span><span class="chip">CNN classifier</span><span class="chip">OpenCV</span><span class="chip">Real-time</span></div>
+  <h1>COVID-19 Facemask Detection</h1>
+  <p class="plain">At a busy entrance, who's wearing a mask and who isn't? A camera that answers that, face by face, many times a second.</p>
+  <p class="meta">A real-time computer-vision system that finds every face in a video frame and classifies each one as wearing a mask or not — built for public-health compliance monitoring during the pandemic.</p>
+  <div class="badges">
+    <div class="badge"><div class="n">2 classes</div><div class="l">Mask / No-mask</div></div>
+    <div class="badge"><div class="n">Real-time</div><div class="l">Per-frame video</div></div>
+    <div class="badge"><div class="n">CNN + OpenCV</div><div class="l">Detect → classify</div></div>
+  </div>
+
+  <!-- 1 -->
+  <section class="stage" id="s1">
+    <div class="kick">Stage 1 · The problem</div>
+    <h2>Checking masks by eye doesn't scale</h2>
+    <p>During COVID-19, entrances to shops, offices and transit had to verify that people wore masks. A guard can watch one doorway; they cannot watch a hundred, or a crowd, without missing people. The goal here is to <b>automate that check</b> — point a camera at the scene and have software flag, in real time, every uncovered face so staff can act.</p>
+    <div class="viz" style="text-align:center">
+      <svg id="heroScene" viewBox="0 0 520 170" width="520" height="170" aria-label="Several faces in a camera frame, some masked, some not"></svg>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage" id="s2">
+    <div class="kick">Stage 2 · The pipeline</div>
+    <h2>Two stages: find the faces, then judge each one</h2>
+    <p>The system never asks "is there a mask in this picture?" all at once. It runs <b>two stages per frame</b>: first a <b style="color:var(--det)">face detector</b> locates every face and returns a box around it; then a <b style="color:var(--cnn)">CNN classifier</b> looks at each cropped face on its own and decides mask or no-mask. Finally the result is drawn back onto the frame as a coloured box.</p>
+    <div class="viz">
+      <div class="pipe">
+        <div class="pstep"><div class="ic"><svg width="38" height="34" viewBox="0 0 38 34"><rect x="2" y="2" width="34" height="30" rx="3" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/><circle cx="19" cy="17" r="7" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/></svg></div><div class="t">Video frame</div><div class="s">one image from the camera</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep" style="border-color:var(--det);background:var(--det-soft)"><div class="ic"><svg width="38" height="34" viewBox="0 0 38 34"><rect x="8" y="6" width="22" height="24" rx="2" fill="none" stroke="var(--det)" stroke-width="2"/><path d="M8 12h-4M34 12h-4M8 24h-4M34 24h-4" stroke="var(--det)" stroke-width="2"/></svg></div><div class="t" style="color:var(--det)">Face detection</div><div class="s">OpenCV — boxes every face</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep" style="border-color:var(--cnn);background:var(--cnn-soft)"><div class="ic"><svg width="38" height="34" viewBox="0 0 38 34"><rect x="4" y="8" width="8" height="18" rx="1.5" fill="var(--cnn)" opacity=".5"/><rect x="15" y="6" width="8" height="22" rx="1.5" fill="var(--cnn)" opacity=".7"/><rect x="26" y="10" width="8" height="14" rx="1.5" fill="var(--cnn)" opacity=".9"/></svg></div><div class="t" style="color:var(--cnn)">CNN classifier</div><div class="s">mask vs no-mask, per face</div></div>
+        <span class="parrow">→</span>
+        <div class="pstep"><div class="ic"><svg width="38" height="34" viewBox="0 0 38 34"><rect x="6" y="5" width="12" height="12" rx="2" fill="none" stroke="var(--ok)" stroke-width="2.2"/><rect x="20" y="16" width="12" height="12" rx="2" fill="none" stroke="var(--bad)" stroke-width="2.2"/></svg></div><div class="t">Annotated frame</div><div class="s">green = mask, red = no-mask</div></div>
+      </div>
+      <p class="note" style="text-align:center;margin-top:12px">This loop repeats on every frame, so the labels track people as they move through the scene.</p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage" id="s3">
+    <div class="kick">Stage 3 · Finding the faces</div>
+    <h2>First, where are the faces?</h2>
+    <p>Before anything can be classified, the system has to locate faces in the frame. A classical <b>OpenCV face detector</b> scans the image at many positions and scales and returns a bounding box for each face it finds — regardless of whether that face is masked. Each box is then cropped out and passed on alone, so the classifier sees one clean face at a time instead of the whole busy scene.</p>
+    <div class="viz" style="text-align:center">
+      <svg id="detectScene" viewBox="0 0 520 190" width="520" height="190" aria-label="A camera frame with detector boxes around each face, one being cropped out"></svg>
+      <div style="margin-top:12px"><button class="btn" id="detBtn">▶ Run detector</button></div>
+      <p class="note" style="margin-top:8px">The detector only answers "is this a face, and where?" — it says nothing yet about masks.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage" id="s4">
+    <div class="kick">Stage 4 · The classifier</div>
+    <h2>A CNN decides: mask or no-mask</h2>
+    <p>Each cropped face is resized to a fixed size and normalised, then passed through a <b>convolutional neural network</b>. Early layers pick up edges and texture; deeper layers respond to the tell-tale pattern of a mask — the straight top edge across the bridge of the nose, the pleats, the covered mouth. A final layer collapses all of that into <b>two numbers</b>: the confidence that the face is masked, and that it is not.</p>
+    <div class="viz">
+      <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <svg id="clsFace" viewBox="0 0 120 130" width="110" height="120" aria-label="A cropped face fed to the network"></svg>
+          <div style="margin-top:4px"><button class="btn" id="clsToggle">Toggle mask</button></div>
+        </div>
+        <div class="cnn" id="cnn"></div>
+      </div>
+      <div class="classbars">
+        <div class="cbar m"><span class="nm">mask</span><span class="track"><span class="fill" id="barMask"></span></span><span class="pct" id="pctMask"></span></div>
+        <div class="cbar n"><span class="nm">no-mask</span><span class="track"><span class="fill" id="barNo"></span></span><span class="pct" id="pctNo"></span></div>
+      </div>
+      <p class="note" style="text-align:center;margin-top:10px">Two-class output (softmax) — toggle the mask and watch the decision flip. Faces are drawings, not photographs; confidences illustrative.</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage" id="s5">
+    <div class="kick">Stage 5 · See it run</div>
+    <h2>Real-time, face by face</h2>
+    <p>Put it together and it runs live on video. Hit <b>Live feed</b> and watch it keep scanning as people change, or toggle masks yourself and <b>Scan once</b> — the detector sweeps the frame, boxes each face, and the classifier colours it <b style="color:var(--ok)">green</b> (mask) or <b style="color:var(--bad)">red</b> (no-mask) with a confidence. On real video this repeats every frame, so the overlay follows people as they move.</p>
+    <div class="viz">
+      <div class="cam"><svg id="liveCam" viewBox="0 0 520 300" aria-label="Interactive camera frame with faces to classify"></svg></div>
+      <div class="cambar">
+        <button class="btn primary" id="liveBtn">▶ Live feed</button>
+        <button class="btn" id="scanBtn">Scan once</button>
+        <button class="btn" id="resetBtn">Shuffle</button>
+        <div class="counts"><span class="ok" id="cOk">◧ 0 masked</span><span class="bad" id="cBad">◨ 0 unmasked</span></div>
+      </div>
+      <p class="camhint">Click any face to toggle its mask — it re-scans instantly. Or hit <b>Live feed</b> to let it run, people changing as they pass. Confidence values are illustrative, in the shape of a real prediction.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage" id="s6">
+    <div class="kick">Stage 6 · Where it goes next</div>
+    <h2>From "is there a mask?" to "who is this?"</h2>
+    <p>A mask hides the mouth and nose — but not the eyes. The natural next step is to read the <b>eye and upper-face (periocular) region</b>, which stays visible even when someone is masked. That opens up two directions beyond compliance monitoring:</p>
+    <div class="viz">
+      <div class="future">
+        <div class="fcard">
+          <div class="ic"><svg width="40" height="26" viewBox="0 0 40 26"><path d="M2 13 Q 20 1 38 13 Q 20 25 2 13 Z" fill="none" stroke="var(--det)" stroke-width="2"/><circle cx="20" cy="13" r="5" fill="none" stroke="var(--det)" stroke-width="2"/><circle cx="20" cy="13" r="2" fill="var(--det)"/></svg></div>
+          <div class="h">Eye &amp; periocular detection</div>
+          <div class="b">Locate and read the eyes and the area around them — the part of the face a mask never covers — as the basis for identity, not just mask/no-mask.</div>
+        </div>
+        <div class="fcard">
+          <div class="ic"><svg width="34" height="30" viewBox="0 0 34 30"><rect x="6" y="13" width="22" height="15" rx="2" fill="none" stroke="var(--ok)" stroke-width="2"/><path d="M10 13 V8 a7 7 0 0 1 14 0 V13" fill="none" stroke="var(--ok)" stroke-width="2"/></svg></div>
+          <div class="h">Access control &amp; gates</div>
+          <div class="b">Open a door or gate only for a recognised, authorised person — hands-free, and still working when they're wearing a mask. Better security at entrances.</div>
+        </div>
+        <div class="fcard">
+          <div class="ic"><svg width="26" height="30" viewBox="0 0 26 30"><rect x="2" y="2" width="22" height="26" rx="4" fill="none" stroke="var(--cnn)" stroke-width="2"/><circle cx="13" cy="13" r="4" fill="none" stroke="var(--cnn)" stroke-width="1.8"/><path d="M8 22 q5 -5 10 0" fill="none" stroke="var(--cnn)" stroke-width="1.8"/></svg></div>
+          <div class="h">Masked-face unlock</div>
+          <div class="b">Authenticate from the eyes alone — the way a phone can unlock for its owner even while they wear a mask. Identity from the visible half of the face.</div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">These are directions this work points toward — recognising a person from the eyes when a mask covers the rest.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, NS='http://www.w3.org/2000/svg';
+  try{var s=localStorage.getItem('mask');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme'),night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches),n=night?'light':'dark';
+    root.setAttribute('data-theme',n);try{localStorage.setItem('mask',n);}catch(e){}
+    buildAll();
+  });
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.14});
+  document.querySelectorAll('.stage').forEach(function(s){io.observe(s);});
+  function cssv(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+  function E(p,n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e;}
+
+  var SKIN=['#e8b98f','#d49a6a','#c9895a','#b57a4e','#eac6a0'];
+  var HAIR=['#2e2620','#4a3526','#6b4a2e','#1c1a18','#5a4a3a'];
+  // draw a front-facing stylised face into group g centered at (0,0), radius ~ 34
+  function drawFace(g,o){
+    o=o||{}; var skin=o.skin||SKIN[0], hair=o.hair||HAIR[0], masked=o.masked;
+    // neck
+    E(g,'rect',{x:-10,y:28,width:20,height:20,rx:5,fill:skin});
+    // head
+    E(g,'ellipse',{cx:0,cy:0,rx:30,ry:36,fill:skin,stroke:'rgba(0,0,0,.18)','stroke-width':1});
+    // ears
+    E(g,'circle',{cx:-30,cy:2,r:6,fill:skin});E(g,'circle',{cx:30,cy:2,r:6,fill:skin});
+    // hair
+    if(o.hairStyle!=='bald') E(g,'path',{d:'M -31 -6 Q -34 -40 0 -40 Q 34 -40 31 -6 Q 24 -26 0 -26 Q -24 -26 -31 -6 Z',fill:hair});
+    // brows
+    E(g,'path',{d:'M -20 -12 q 7 -4 14 0',fill:'none',stroke:hair,'stroke-width':2.4,'stroke-linecap':'round'});
+    E(g,'path',{d:'M 6 -12 q 7 -4 14 0',fill:'none',stroke:hair,'stroke-width':2.4,'stroke-linecap':'round'});
+    // eyes
+    [-13,13].forEach(function(ex){E(g,'ellipse',{cx:ex,cy:-4,rx:5.5,ry:4,fill:'#fff',stroke:'rgba(0,0,0,.25)','stroke-width':1});E(g,'circle',{cx:ex,cy:-4,r:2.4,fill:'#241f1b'});E(g,'circle',{cx:ex+0.8,cy:-5,r:.8,fill:'#fff'});var lid=E(g,'rect',{x:ex-6,y:-9,width:12,height:9,rx:3,fill:skin,'class':'lid'});lid.style.transformBox='fill-box';lid.style.transformOrigin='center';lid.style.transform='scaleY(0)';lid.style.animationDelay=(Math.random()*-4.6).toFixed(2)+'s';});
+    if(masked){
+      // mask over nose+mouth+chin
+      var mcol=o.maskColor||'#cfe0ee', mdk=o.maskColor?'rgba(0,0,0,.14)':'#aec6dd';
+      // ear straps
+      E(g,'path',{d:'M -22 4 Q -34 6 -30 2',fill:'none',stroke:mdk,'stroke-width':2.4});
+      E(g,'path',{d:'M 22 4 Q 34 6 30 2',fill:'none',stroke:mdk,'stroke-width':2.4});
+      E(g,'path',{d:'M -24 3 Q 0 -2 24 3 Q 26 24 0 34 Q -26 24 -24 3 Z',fill:mcol,stroke:mdk,'stroke-width':1.4});
+      // pleats
+      E(g,'path',{d:'M -22 11 Q 0 7 22 11',fill:'none',stroke:mdk,'stroke-width':1,opacity:.7});
+      E(g,'path',{d:'M -22 18 Q 0 15 22 18',fill:'none',stroke:mdk,'stroke-width':1,opacity:.7});
+    } else {
+      // nose
+      E(g,'path',{d:'M 0 -2 q 4 10 0 12',fill:'none',stroke:'rgba(0,0,0,.28)','stroke-width':2,'stroke-linecap':'round'});
+      // mouth
+      E(g,'path',{d:'M -10 20 q 10 7 20 0',fill:'none',stroke:'#9c5a4a','stroke-width':2.4,'stroke-linecap':'round'});
+    }
+  }
+
+  // ---- stage 1 hero scene ----
+  function heroScene(){
+    var svg=document.getElementById('heroScene'); if(!svg) return; svg.innerHTML='';
+    E(svg,'rect',{x:2,y:2,width:516,height:166,rx:10,fill:'var(--surface-2)',stroke:'var(--border)'});
+    var cfg=[[80,92,0,0],[185,80,1,1],[300,96,2,0],[410,82,3,1]];
+    cfg.forEach(function(c){var g=E(svg,'g',{transform:'translate('+c[0]+','+c[1]+') scale(0.92)'});drawFace(g,{skin:SKIN[c[2]],hair:HAIR[c[2]],masked:c[3]});});
+    E(svg,'text',{x:260,y:158,'text-anchor':'middle','font-size':10,fill:'var(--ink-3)','font-family':cssv('--fm')}).textContent='a camera sees a mix — some masked, some not';
+  }
+
+  // ---- stage 3 detection scene (replayable sweep) ----
+  var detFaces=[[80,80,0,0],[185,70,1,1],[290,86,2,0]];
+  function detectScene(reveal){
+    var svg=document.getElementById('detectScene'); if(!svg) return; svg.innerHTML='';
+    var defs=E(svg,'defs',{});var mk=E(defs,'marker',{id:'mk3',markerWidth:7,markerHeight:7,refX:5.5,refY:3,orient:'auto'});E(mk,'path',{d:'M0,0 L6,3 L0,6 Z',fill:'var(--ink-3)'});
+    E(svg,'rect',{x:2,y:2,width:360,height:186,rx:10,fill:'#171a20',stroke:'var(--border)'});
+    detFaces.forEach(function(c){var g=E(svg,'g',{transform:'translate('+c[0]+','+c[1]+') scale(0.82)'});drawFace(g,{skin:SKIN[c[2]],hair:HAIR[c[2]],masked:c[3]});});
+    E(svg,'line',{x1:365,y1:95,x2:398,y2:95,stroke:'var(--ink-3)','stroke-width':1.4,'marker-end':'url(#mk3)'});
+    E(svg,'rect',{x:402,y:60,width:72,height:84,rx:6,fill:'var(--surface-2)',stroke:'var(--det)'});
+    var g2=E(svg,'g',{transform:'translate(438,104) scale(0.82)'});drawFace(g2,{skin:SKIN[1],hair:HAIR[1],masked:1});
+    E(svg,'text',{x:438,y:156,'text-anchor':'middle','font-size':9,fill:'var(--ink-3)','font-family':cssv('--fm')}).textContent='one cropped face';
+    var boxes=E(svg,'g',{});
+    detFaces.forEach(function(c){ if(reveal!=null && reveal<c[0]) return;
+      E(boxes,'rect',{x:c[0]-30,y:c[1]-34,width:60,height:70,rx:3,fill:'none',stroke:'var(--det)','stroke-width':2});
+      E(boxes,'text',{x:c[0]-30,y:c[1]-38,'font-size':9,fill:'var(--det)','font-family':cssv('--fm')}).textContent='face';
+    });
+    if(reveal!=null && reveal<360) E(svg,'line',{x1:reveal,y1:4,x2:reveal,y2:186,stroke:'var(--det)','stroke-width':2,opacity:.85,'class':'sweep'});
+  }
+  function runDetector(){
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){detectScene(null);return;}
+    var start=performance.now(),dur=1300;
+    (function frame(now){var t=Math.min(1,(now-start)/dur),x=t*372;detectScene(x);if(t<1)requestAnimationFrame(frame);else detectScene(null);})(performance.now());
+  }
+  var detBtn=document.getElementById('detBtn'); if(detBtn) detBtn.addEventListener('click',runDetector);
+
+  // ---- stage 4 interactive classifier ----
+  var clsMasked=true;
+  function clsFace(){var svg=document.getElementById('clsFace');if(!svg)return;svg.innerHTML='';E(svg,'rect',{x:2,y:2,width:116,height:126,rx:8,fill:'var(--surface-2)',stroke:'var(--border)'});var g=E(svg,'g',{transform:'translate(60,62) scale(1.15)'});drawFace(g,{skin:SKIN[1],hair:HAIR[1],masked:clsMasked});}
+  function clsBars(){var m=clsMasked?97:4,no=100-m;var bm=document.getElementById('barMask');if(!bm)return;bm.style.width=m+'%';document.getElementById('pctMask').textContent=m+'%';document.getElementById('barNo').style.width=no+'%';document.getElementById('pctNo').textContent=no+'%';}
+  var clsT=document.getElementById('clsToggle'); if(clsT) clsT.addEventListener('click',function(){clsMasked=!clsMasked;clsFace();var cnn=document.getElementById('cnn');if(cnn){cnn.classList.remove('flash');void cnn.offsetWidth;cnn.classList.add('flash');}clsBars();});
+  function cnnMaps(){
+    var cnn=document.getElementById('cnn'); if(!cnn) return; cnn.innerHTML='';
+    var maps=[{s:60,cells:5,depth:1,d:'face',l:'input'},{s:50,cells:4,depth:2,d:'conv',l:'edges'},{s:40,cells:3,depth:3,d:'conv',l:'parts'},{s:30,cells:2,depth:4,d:'deep',l:'mask?'}];
+    function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+    maps.forEach(function(m,i){
+      var blk=document.createElement('div');blk.className='blk';
+      var cv=document.createElement('canvas');var STEP=4,off=m.depth*STEP,W=m.s+off,H=m.s+off;cv.width=W;cv.height=H;var ctx=cv.getContext('2d');
+      for(var d=m.depth-1;d>=1;d--){var x=d*STEP,y=(m.depth-d)*STEP;ctx.fillStyle='rgba(122,82,196,'+(0.10+0.05*d)+')';ctx.strokeStyle='rgba(122,82,196,.35)';ctx.lineWidth=1;rr(ctx,x,y,m.s,m.s,4);ctx.fill();ctx.stroke();}
+      var fy=off,cs=m.s/m.cells,seed=i*23+7;
+      for(var r2=0;r2<m.cells;r2++)for(var c2=0;c2<m.cells;c2++){seed=(seed*1103515245+12345)&0x7fffffff;ctx.fillStyle='rgba(110,70,180,'+(0.15+(seed/0x7fffffff)*0.7)+')';ctx.fillRect(c2*cs+0.5,fy+r2*cs+0.5,cs-1,cs-1);}
+      ctx.strokeStyle='rgba(122,82,196,.55)';ctx.lineWidth=1;rr(ctx,0,fy,m.s,m.s,4);ctx.stroke();
+      var lab=document.createElement('div');lab.className='lab';lab.innerHTML='<b>'+m.l+'</b>'+m.d;
+      blk.appendChild(cv);blk.appendChild(lab);cnn.appendChild(blk);
+      if(i<maps.length-1){var a=document.createElement('span');a.className='parrow';a.textContent='→';cnn.appendChild(a);}
+    });
+  }
+
+  // ---- stage 5 interactive camera (live feed + sweep) ----
+  var faces=[], facesG=null, overlayG=null;
+  function initFaces(){
+    faces=[{x:100,y:150,sc:1.15,si:0,masked:true},{x:235,y:120,sc:1.0,si:1,masked:false},{x:360,y:160,sc:1.2,si:2,masked:true},{x:450,y:118,sc:0.92,si:3,masked:false}];
+  }
+  function buildCam(){
+    var svg=document.getElementById('liveCam'); if(!svg) return; svg.innerHTML='';
+    E(svg,'rect',{x:0,y:0,width:520,height:300,fill:'#141821'});
+    for(var gx=0;gx<520;gx+=40) E(svg,'line',{x1:gx,y1:0,x2:gx,y2:300,stroke:'#1d2230','stroke-width':1});
+    for(var gy=0;gy<300;gy+=40) E(svg,'line',{x1:0,y1:gy,x2:520,y2:gy,stroke:'#1d2230','stroke-width':1});
+    E(svg,'text',{x:12,y:22,'font-size':11,fill:'#55607a','font-family':cssv('--fm')}).textContent='● CAM 01';
+    facesG=E(svg,'g',{}); overlayG=E(svg,'g',{}); drawFacesLayer();
+  }
+  function drawFacesLayer(){
+    if(!facesG) return; facesG.innerHTML='';
+    faces.forEach(function(f){
+      var g=E(facesG,'g',{transform:'translate('+f.x+','+f.y+') scale('+f.sc+')',style:'cursor:pointer'});
+      drawFace(g,{skin:SKIN[f.si],hair:HAIR[f.si],masked:f.masked});
+      g.addEventListener('click',function(){f.masked=!f.masked;drawFacesLayer();scan();});
+    });
+  }
+  function drawOverlay(sweepX){
+    if(!overlayG) return; overlayG.innerHTML='';
+    faces.forEach(function(f){
+      if(!f.scanned) return;
+      var col=f.masked?cssv('--ok'):cssv('--bad'),bw=66*f.sc,bh=82*f.sc;
+      E(overlayG,'rect',{x:f.x-bw/2,y:f.y-bh/2-4,width:bw,height:bh,rx:4,fill:'none',stroke:col,'stroke-width':2.4});
+      var lab=(f.masked?'Mask ':'No Mask ')+f.conf+'%',lw=lab.length*6.2+12;
+      E(overlayG,'rect',{x:f.x-bw/2,y:f.y-bh/2-22,width:lw,height:16,rx:3,fill:col});
+      E(overlayG,'text',{x:f.x-bw/2+6,y:f.y-bh/2-10,'font-size':10,fill:'#fff','font-family':cssv('--fm'),'font-weight':600}).textContent=lab;
+    });
+    if(sweepX!=null && sweepX<520) E(overlayG,'line',{x1:sweepX,y1:0,x2:sweepX,y2:300,stroke:'var(--det)','stroke-width':2,opacity:.85,'class':'sweep'});
+  }
+  function updateCounts(){
+    var ok=faces.filter(function(f){return f.scanned&&f.masked;}).length, bad=faces.filter(function(f){return f.scanned&&!f.masked;}).length;
+    document.getElementById('cOk').textContent='◧ '+ok+' masked';
+    document.getElementById('cBad').textContent='◨ '+bad+' unmasked';
+  }
+  function shuffle(){faces.forEach(function(f){f.masked=Math.random()<0.5;f.scanned=false;});drawFacesLayer();drawOverlay(null);updateCounts();}
+  function scan(){
+    faces.forEach(function(f){f.scanned=false;f.conf=f.masked?(94+Math.floor(Math.random()*6)):(90+Math.floor(Math.random()*8));});
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){faces.forEach(function(f){f.scanned=true;});drawOverlay(null);updateCounts();return;}
+    var start=performance.now(),dur=1050;
+    (function frame(now){var t=Math.min(1,(now-start)/dur),sx=t*520;faces.forEach(function(f){if(f.x<=sx)f.scanned=true;});drawOverlay(sx);updateCounts();if(t<1)requestAnimationFrame(frame);else drawOverlay(null);})(performance.now());
+  }
+  var liveTimer=null;
+  function toggleLive(){
+    var lb=document.getElementById('liveBtn');
+    if(liveTimer){clearInterval(liveTimer);liveTimer=null;lb.textContent='▶ Live feed';lb.classList.add('primary');return;}
+    lb.textContent='⏸ Pause';lb.classList.remove('primary');scan();
+    liveTimer=setInterval(function(){var f=faces[Math.floor(Math.random()*faces.length)];f.masked=!f.masked;drawFacesLayer();scan();},1700);
+  }
+  var sb=document.getElementById('scanBtn'); if(sb) sb.addEventListener('click',scan);
+  var rb=document.getElementById('resetBtn'); if(rb) rb.addEventListener('click',function(){if(liveTimer)toggleLive();shuffle();});
+  var lbn=document.getElementById('liveBtn'); if(lbn) lbn.addEventListener('click',toggleLive);
+
+  function buildAll(){ heroScene();detectScene(null);clsFace();cnnMaps();clsBars();buildCam();drawOverlay(null); }
+  initFaces(); buildAll(); updateCounts();
+})();
+</script>
+</body>
+</html>
