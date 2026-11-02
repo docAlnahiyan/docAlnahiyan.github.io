@@ -89,7 +89,7 @@ const aboutLinks = [
 const facts = [
   { label: 'Area', value: profile.research_area },
   { label: 'Methods', value: profile.methods },
-  { label: 'Based in', value: profile.location && `${profile.location}\u00a0🇨🇳` },
+  { label: 'Location', value: profile.location && `${profile.location}\u00a0🇨🇳` },
 ].filter((f): f is { label: string; value: string } => Boolean(f.value));
 
 const plainBio = profile.bio.replace(/\*\*/g, '');
