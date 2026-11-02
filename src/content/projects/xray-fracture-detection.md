@@ -5,7 +5,9 @@ one_liner: An image-processing pipeline that highlights likely fractures in X-ra
 tags: [Medical imaging, Image processing, X-ray]
 repo_url: ""
 thumbnail: ""
-metrics: []
+metrics:
+  - { label: task, value: "Fracture / normal" }
+  - { label: localisation, value: Grad-CAM }
 date: 2020-07-01
 order: 6
 ---

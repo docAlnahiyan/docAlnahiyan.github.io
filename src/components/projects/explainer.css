@@ -1,5 +1,5 @@
 /* Shared styles for the project explainers (GlobalFaceNet,
-   MultimodalTransformerNet), ported from the design-reference prototypes.
+   MultimodalTransformerNet, …), ported from the design-reference prototypes.
    Everything is under .xp and uses the site's tokens (global.css). */
 
 .xp {
@@ -159,6 +159,64 @@
 .xp .diagram {
   display: block;
   width: 100%;
+}
+
+/* ---------- progress rail ----------
+   Fixed in the left margin on wide screens; one pip per stage. Ported from
+   the Parkinson research page (ParkinsonExplainer.astro). */
+.xp .rail {
+  position: fixed;
+  left: max(16px, calc(50% - 560px));
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  /* Its own compositor layer, so Chrome doesn't repaint it on every scroll. */
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+}
+.xp .rail a {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+.xp .rail a:hover {
+  text-decoration: none;
+  color: var(--ink);
+}
+.xp .rail .pip {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--border-strong);
+  transition: transform .2s;
+}
+.xp .rail a.on .pip {
+  background: var(--accent);
+  transform: scale(1.3);
+}
+.xp .rail a.on {
+  color: var(--ink);
+}
+.xp .rail .lbl {
+  opacity: 0;
+  white-space: nowrap;
+  transition: opacity .2s;
+}
+.xp .rail:hover .lbl,
+.xp .rail:focus-within .lbl,
+.xp .rail a.on .lbl {
+  opacity: 1;
+}
+@media (max-width: 1180px) {
+  .xp .rail {
+    display: none;
+  }
 }
 
 /* ---------- feature-map stacks ---------- */

@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bone Fracture Detection in X-rays — Explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0;--surface:#fffdf9;--surface-2:#f2ece0;--ink:#201e1a;--ink-2:#5c584f;--ink-3:#6e6a60;
+    --border:#e8e1d4;--accent:#c96442;--accent-ink:#a8482b;--accent-soft:#f6e7df;--ctrl:#3b6fb0;--ctrl-soft:#e8f0f9;--cam:#7a52c4;--cam-soft:#efe9f8;
+    --font-disp:"Newsreader",Georgia,serif;--font-body:"IBM Plex Sans",system-ui,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+    --fd:var(--font-disp);--fb:var(--font-body);--fm:var(--font-mono);
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ctrl:#6ea3df;--ctrl-soft:#26303a;--cam:#b49ae6;--cam-soft:#2d2740;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--ctrl:#6ea3df;--ctrl-soft:#26303a;--cam:#b49ae6;--cam-soft:#2d2740;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:30}
+  .brand{font-family:var(--fd);font-weight:600;font-size:17px}
+  .nav{display:flex;gap:18px;font-size:13px;color:var(--ink-2)}
+  .theme{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:var(--fm);font-size:12px;cursor:pointer}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 24px 100px}
+  .crumb{font-size:12.5px;color:var(--ink-3);font-family:var(--fm);margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{font-family:var(--fm);font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2)}
+  h1{font-family:var(--fd);font-weight:600;font-size:33px;line-height:1.18;margin:0 0 10px}
+  .plain{font-size:17px;color:var(--ink-2);font-family:var(--fd);font-style:italic;margin:0 0 14px}
+  .meta{font-size:14px;color:var(--ink-2);margin-bottom:6px}
+  .disclaimer{display:flex;gap:10px;align-items:flex-start;background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;margin-top:14px;font-size:12.5px;color:var(--accent-ink)}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+  .badge{flex:1 1 150px;border:1px solid var(--border);border-radius:12px;padding:12px 15px;background:var(--surface)}
+  .badge .n{font-family:var(--fd);font-weight:600;font-size:19px;color:var(--accent-ink)}
+  .badge .l{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+
+  .rail{position:fixed;left:max(16px,calc(50% - 560px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:20}
+  .rail button{display:flex;align-items:center;gap:9px;background:none;border:none;cursor:pointer;color:var(--ink-3);font-family:var(--fm);font-size:11px;padding:0;text-align:left}
+  .rail .pip{width:9px;height:9px;border-radius:50%;background:var(--border);flex:0 0 auto;transition:.2s}
+  .rail button.on .pip{background:var(--accent);transform:scale(1.3)}
+  .rail button.on{color:var(--ink)}
+  .rail .lbl{opacity:0;transition:.2s;white-space:nowrap}
+  .rail:hover .lbl,.rail button.on .lbl{opacity:1}
+  @media (max-width:1180px){.rail{display:none}}
+
+  .stage{border-top:1px solid var(--border);padding:36px 0;opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+  .stage.in{opacity:1;transform:none}
+  .kick{font-family:var(--fm);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .stage h2{font-family:var(--fd);font-weight:600;font-size:24px;margin:0 0 10px}
+  .stage p{font-size:15.5px;color:var(--ink-2);margin:0 0 12px;max-width:64ch}
+  .stage p b{color:var(--ink)}
+  .note{font-size:12.5px;color:var(--ink-3);font-style:italic}
+  .viz{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:16px}
+  .xframe{background:#05070a;border-radius:8px;display:inline-block;line-height:0;padding:3px}
+  canvas{display:block;border-radius:6px}
+
+  .gal{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;align-items:flex-end}
+  .gcell{text-align:center}
+  .gcell .cap{font-family:var(--fm);font-size:10.5px;margin-top:6px}
+  .cap.norm{color:var(--ctrl)} .cap.frac{color:var(--accent-ink)}
+
+  .seg{display:inline-flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:4px;margin-bottom:12px}
+  .seg button{font-family:var(--fm);font-size:12px;border:none;background:transparent;color:var(--ink-2);padding:7px 12px;border-radius:7px;cursor:pointer}
+  .seg button.on{background:var(--accent);color:#fff}
+  .toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);cursor:pointer;user-select:none}
+  .switch{width:38px;height:22px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);position:relative;transition:.2s}
+  .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink-3);transition:.2s}
+  .toggle.on .switch{background:var(--accent);border-color:var(--accent)} .toggle.on .switch::after{left:18px;background:#fff}
+
+  .cnn{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center}
+  .cnn .blk{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:66px}
+  .cnn .blk .lab{font-family:var(--fm);font-size:9.5px;color:var(--ink-3);text-align:center;line-height:1.4}
+  .cnn .blk .lab b{color:var(--ink-2);font-weight:600;display:block}
+  .parrow{color:var(--ink-3);font-size:18px}
+
+  .verdict-wrap{display:flex;gap:22px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .gauge{flex:1 1 260px;max-width:340px}
+  .opbar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+  .opbar .nm{width:92px;color:var(--ink-2)}
+  .opbar .track{flex:1;height:13px;background:var(--surface-2);border-radius:7px;overflow:hidden}
+  .opbar .fill{height:100%;border-radius:7px;transition:width .3s}
+  .opbar.sens .fill{background:var(--accent)} .opbar.spec .fill{background:var(--ctrl)}
+  .opbar .pct{width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink-2);font-size:12px}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  @media (prefers-reduced-motion:reduce){.stage{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Al-Nahiyan Khushbu</span>
+  <nav class="nav"><a href="#">Home</a><a href="#">Research</a><a href="#">Projects</a></nav>
+  <button class="theme" id="theme">☀︎ / ☾</button>
+</div>
+
+<div class="rail" id="rail"></div>
+
+<div class="wrap">
+  <div class="crumb">Projects &nbsp;›&nbsp; Bone Fracture Detection in X-rays</div>
+  <div class="chips"><span class="chip">Medical imaging</span><span class="chip">Deep learning</span><span class="chip">CNN · Grad-CAM</span><span class="chip">X-ray</span></div>
+  <h1>Bone Fracture Detection in X-rays</h1>
+  <p class="plain">A hairline crack on an X-ray is easy to miss on a busy shift. Can a model catch it — and point to exactly where?</p>
+  <p class="meta">A deep-learning pipeline that reads a radiograph, decides whether a bone is fractured, and highlights the region that drove its decision — built to support a clinician's read, not replace it.</p>
+  <div class="disclaimer">⚠ <span>This is an <b>assistive</b> concept: it highlights <b>potential</b> fractures for a clinician to review. It is not a diagnostic device, and every flag needs expert confirmation.</span></div>
+  <div class="badges">
+    <div class="badge"><div class="n">Classify</div><div class="l">Fracture / normal</div></div>
+    <div class="badge"><div class="n">Localise</div><div class="l">Grad-CAM heatmap</div></div>
+    <div class="badge"><div class="n">Assistive</div><div class="l">Flags for clinician review</div></div>
+  </div>
+
+  <!-- 1 -->
+  <section class="stage" id="s1">
+    <div class="kick">Stage 1 · The data</div>
+    <h2>Radiographs from across the body, labelled fracture or normal</h2>
+    <p>Training starts from X-ray images of many regions — wrist, ankle, knee, hand — each labelled by radiologists as <b style="color:var(--ctrl)">normal</b> or <b style="color:var(--accent-ink)">fractured</b>, often with the fracture's location marked. Real fracture datasets are imbalanced and subtle: most films are normal, and a break can be a single faint line.</p>
+    <div class="viz">
+      <div class="gal" id="gallery"></div>
+      <p class="note" style="text-align:center;margin-top:12px">Synthetic radiographs generated for this page — no patient images are used. Two of the four carry a fracture.</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage" id="s2">
+    <div class="kick">Stage 2 · One radiograph</div>
+    <h2>What a fracture looks like to a pixel</h2>
+    <p>An X-ray is a grayscale map of density: dense bone stops more radiation and shows bright, soft tissue shows dark. A fracture breaks that smooth bright cortex — a thin <b>dark lucent line</b>, a step in the bone's edge, or a change in texture. Here, a transverse break crosses the <b>distal radius</b> at the wrist, the most common fracture site of all.</p>
+    <div class="viz" style="text-align:center">
+      <span class="xframe"><canvas id="oneXray" width="440" height="600" style="width:206px;height:281px" aria-label="A wrist X-ray with a distal radius fracture marked"></canvas></span>
+      <p class="note" style="margin-top:8px">The arrow marks the break across the distal radius.</p>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage" id="s3">
+    <div class="kick">Stage 3 · Preprocess</div>
+    <h2>Make the bone edges speak</h2>
+    <p>Raw films are noisy and unevenly exposed, so each image is cleaned before the model sees it. Contrast enhancement (<b>CLAHE</b>) lifts faint structure out of flat regions; a smoothing <b>filter</b> suppresses grain; and <b>edge detection</b> sharpens the cortical outlines where fractures hide. The result is resized, normalised, and augmented (flips, small rotations) to enlarge the dataset.</p>
+    <div class="viz" style="text-align:center">
+      <div class="seg" id="preSeg"><button data-m="raw" class="on">Raw</button><button data-m="clahe">Contrast (CLAHE)</button><button data-m="edges">Edges</button></div><br>
+      <span class="xframe"><canvas id="preXray" width="440" height="600" style="width:206px;height:281px" aria-label="The wrist X-ray under different preprocessing steps"></canvas></span>
+      <p class="note" id="preNote" style="margin-top:8px"></p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage" id="s4">
+    <div class="kick">Stage 4 · CNN</div>
+    <h2>A CNN reads structure, coarse to fine</h2>
+    <p>The prepared image flows through a deep <b>convolutional network</b>. Early layers fire on edges and gradients; middle layers assemble them into bone outlines and joint spaces; deep layers respond to the abnormal patterns of a break — a discontinuity in the cortex, an unexpected lucency. Each block shrinks the map and grows the channels, distilling the film into features a classifier can judge.</p>
+    <div class="viz"><div class="cnn" id="cnn"></div>
+      <p class="note" style="text-align:center;margin-top:10px">conv → pool, repeated — local detail becomes abstract "fracture-ness."</p>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage" id="s5">
+    <div class="kick">Stage 5 · Localise</div>
+    <h2>Grad-CAM — not just "yes", but "here"</h2>
+    <p>A yes/no answer isn't enough for a clinician; they need to know <em>where</em>. <b>Grad-CAM</b> traces the "fracture" decision back through the final convolutional layer to produce a <b>heatmap</b> over the image — warm where the evidence is strongest. Overlaid on the film, it turns a label into a pointer, drawing the eye straight to the suspected break for confirmation.</p>
+    <div class="viz" style="text-align:center">
+      <label class="toggle" id="camToggle"><span class="switch"></span> Show Grad-CAM heatmap</label>
+      <div style="margin-top:12px"><span class="xframe"><canvas id="camXray" width="440" height="600" style="width:224px;height:305px" aria-label="The wrist X-ray with an optional Grad-CAM heatmap over the fracture"></canvas></span></div>
+      <p class="note" style="margin-top:8px">Illustrative heatmap. A true Grad-CAM map is computed from the model's own gradients, not drawn.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage" id="s6">
+    <div class="kick">Stage 6 · The verdict</div>
+    <h2>Reading the output — and choosing how cautious to be</h2>
+    <p>The classifier returns a <b>fracture probability</b>. Turning that into a flag means picking a <b>threshold</b>, and that choice is a trade-off: lower it and you catch more fractures (high <b style="color:var(--accent-ink)">sensitivity</b>) at the cost of more false alarms (lower <b style="color:var(--ctrl)">specificity</b>). For a triage tool meant to catch missed breaks, you lean toward sensitivity and let the clinician rule out the extras. Drag the threshold to feel the trade-off.</p>
+    <div class="viz">
+      <div class="verdict-wrap">
+        <div style="text-align:center">
+          <span class="xframe"><canvas id="verdictXray" width="440" height="600" style="width:158px;height:215px" aria-label="Wrist X-ray with heatmap and a fracture flag"></canvas></span>
+          <div class="note" id="flagNote" style="margin-top:6px"></div>
+        </div>
+        <div class="gauge">
+          <div style="font-family:var(--fm);font-size:12px;color:var(--ink-2);margin-bottom:4px">Flag a fracture when probability ≥ <b id="thVal">50</b>%</div>
+          <input type="range" min="5" max="95" value="50" id="thr">
+          <div class="opbar sens"><span class="nm">Sensitivity</span><span class="track"><span class="fill" id="sensFill"></span></span><span class="pct" id="sensPct"></span></div>
+          <div class="opbar spec"><span class="nm">Specificity</span><span class="track"><span class="fill" id="specFill"></span></span><span class="pct" id="specPct"></span></div>
+          <p class="note" style="margin-top:8px">Illustrative operating curve — the shape of the sensitivity/specificity trade-off, not measured values.</p>
+        </div>
+      </div>
+      <p class="note" style="text-align:center;margin-top:12px">However it's tuned, the output is a <b>flag for a radiologist</b>, never a final diagnosis.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, NS='http://www.w3.org/2000/svg';
+  try{var s=localStorage.getItem('xray');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme'),night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches),n=night?'light':'dark';
+    root.setAttribute('data-theme',n);try{localStorage.setItem('xray',n);}catch(e){}
+    buildAll();
+  });
+  function cssv(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+  function E(p,n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e;}
+
+  // reveal + progress rail
+  var STAGES=[['s1','Data'],['s2','Radiograph'],['s3','Preprocess'],['s4','CNN'],['s5','Localise'],['s6','Verdict']];
+  var rail=document.getElementById('rail');
+  STAGES.forEach(function(st){var b=document.createElement('button');b.innerHTML='<span class="pip"></span><span class="lbl">'+st[1]+'</span>';b.onclick=function(){document.getElementById(st[0]).scrollIntoView({behavior:'smooth',block:'start'});};rail.appendChild(b);});
+  var pips=[].slice.call(rail.querySelectorAll('button'));
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');var idx=STAGES.map(function(s){return s[0];}).indexOf(e.target.id);pips.forEach(function(p,i){p.classList.toggle('on',i===idx);});}});},{threshold:.35});
+  document.querySelectorAll('.stage').forEach(function(s){io.observe(s);});
+
+  /* ===== realistic radiograph renderer (canvas) ===== */
+  function rnd(seed){return function(){seed=(seed*1103515245+12345)&0x7fffffff;return seed/0x7fffffff;};}
+  function longBone(ctx,cx1,y1,w1,cx2,y2,w2,opt){opt=opt||{};
+    ctx.beginPath();ctx.moveTo(cx1-w1/2,y1);ctx.lineTo(cx2-w2/2,y2);ctx.quadraticCurveTo(cx2,y2+(opt.capBot||6),cx2+w2/2,y2);ctx.lineTo(cx1+w1/2,y1);ctx.quadraticCurveTo(cx1,y1-(opt.capTop||6),cx1-w1/2,y1);ctx.closePath();
+    var g=ctx.createLinearGradient(cx1-w1/2,0,cx1+w1/2,0);g.addColorStop(0,'#e9edf2');g.addColorStop(.18,'#c3cad2');g.addColorStop(.5,'#9aa2ac');g.addColorStop(.82,'#c3cad2');g.addColorStop(1,'#e9edf2');ctx.fillStyle=g;ctx.fill();
+    if(!opt.noMarrow){ctx.save();ctx.clip();ctx.beginPath();ctx.moveTo(cx1-w1*0.22,y1+8);ctx.lineTo(cx2-w2*0.22,y2-8);ctx.lineTo(cx2+w2*0.22,y2-8);ctx.lineTo(cx1+w1*0.22,y1+8);ctx.closePath();ctx.fillStyle='rgba(70,78,88,0.55)';ctx.fill();ctx.restore();}
+  }
+  function roundBone(ctx,x,y,rx,ry,bright){ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,7);var g=ctx.createRadialGradient(x-rx*0.3,y-ry*0.3,1,x,y,Math.max(rx,ry));g.addColorStop(0,bright||'#dfe4ea');g.addColorStop(1,'#8f98a2');ctx.fillStyle=g;ctx.fill();ctx.lineWidth=1.4;ctx.strokeStyle='rgba(240,244,248,0.55)';ctx.stroke();}
+  var PARTS={
+    wrist:function(ctx,R,frac){
+      longBone(ctx,92,0,30,86,150,46,{capBot:10});
+      longBone(ctx,132,0,20,126,132,26,{capBot:8});
+      roundBone(ctx,126,150,9,11);
+      [[74,168,13,11],[96,166,13,11],[116,170,11,10],[82,188,12,10],[104,188,12,10],[122,190,10,9]].forEach(function(c){roundBone(ctx,c[0],c[1],c[2],c[3]);});
+      [66,88,108,128,146].forEach(function(x,i){longBone(ctx,x,206,13,x+(i-2)*4,250,12);});
+      if(frac){ctx.strokeStyle='rgba(8,10,14,0.9)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(66,132);ctx.lineTo(108,127);ctx.stroke();ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(66,129);ctx.lineTo(108,124);ctx.stroke();}
+    },
+    ankle:function(ctx,R,frac){
+      longBone(ctx,92,0,40,96,150,46,{capBot:8});roundBone(ctx,80,168,12,16);
+      longBone(ctx,140,0,16,138,150,18,{capBot:6});roundBone(ctx,140,170,9,16);
+      ctx.beginPath();ctx.moveTo(78,184);ctx.quadraticCurveTo(110,176,146,186);ctx.quadraticCurveTo(150,208,120,214);ctx.quadraticCurveTo(84,216,76,200);ctx.closePath();var g=ctx.createLinearGradient(0,184,0,214);g.addColorStop(0,'#dfe4ea');g.addColorStop(1,'#9aa2ac');ctx.fillStyle=g;ctx.fill();
+      ctx.beginPath();ctx.moveTo(84,218);ctx.quadraticCurveTo(140,214,168,234);ctx.quadraticCurveTo(150,262,96,258);ctx.quadraticCurveTo(76,240,84,218);ctx.closePath();ctx.fillStyle='#b9c0c9';ctx.fill();
+      if(frac){ctx.strokeStyle='rgba(8,10,14,0.9)';ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(132,150);ctx.lineTo(146,172);ctx.stroke();}
+    },
+    knee:function(ctx,R,frac){
+      longBone(ctx,104,0,34,104,112,40,{capBot:4});roundBone(ctx,84,128,22,18);roundBone(ctx,126,128,22,18);
+      ctx.beginPath();ctx.moveTo(74,150);ctx.quadraticCurveTo(104,142,138,150);ctx.lineTo(132,166);ctx.lineTo(80,166);ctx.closePath();ctx.fillStyle='#cfd5dc';ctx.fill();
+      longBone(ctx,104,164,40,106,270,30,{capTop:2});roundBone(ctx,146,168,11,14);longBone(ctx,150,176,14,150,270,12);
+      ctx.beginPath();ctx.ellipse(104,120,18,22,0,0,7);ctx.fillStyle='rgba(210,216,223,0.42)';ctx.fill();
+      if(frac){ctx.strokeStyle='rgba(8,10,14,0.9)';ctx.lineWidth=2.6;ctx.beginPath();ctx.moveTo(86,152);ctx.lineTo(120,158);ctx.stroke();}
+    },
+    hand:function(ctx,R,frac){
+      [[92,250,14,11],[112,250,12,10],[74,250,11,10]].forEach(function(c){roundBone(ctx,c[0],c[1],c[2],c[3]);});
+      [[64,-10],[90,-3],[114,4],[136,10]].forEach(function(c){var x=c[0],l=c[1];longBone(ctx,x,186,15,x+l*0.3,236,14);longBone(ctx,x+l,140,13,x+l*0.4,182,15);longBone(ctx,x+l*1.8,102,11,x+l,136,13);longBone(ctx,x+l*2.5,70,9,x+l*1.8,98,11);});
+      ctx.save();ctx.translate(58,210);ctx.rotate(-0.5);longBone(ctx,0,0,15,-6,52,14);longBone(ctx,-8,-40,12,-4,-6,14);longBone(ctx,-14,-72,10,-10,-42,12);ctx.restore();
+      if(frac){ctx.strokeStyle='rgba(8,10,14,0.9)';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(84,158);ctx.lineTo(99,154);ctx.stroke();}
+    }
+  };
+  function softTissue(ctx,part){ctx.save();ctx.filter='blur(10px)';ctx.fillStyle='rgba(120,128,138,0.30)';
+    if(part==='wrist'){ctx.beginPath();ctx.moveTo(56,0);ctx.lineTo(150,0);ctx.lineTo(156,160);ctx.quadraticCurveTo(110,260,60,210);ctx.closePath();ctx.fill();}
+    else if(part==='ankle'){ctx.beginPath();ctx.moveTo(60,0);ctx.lineTo(160,0);ctx.quadraticCurveTo(185,220,150,270);ctx.lineTo(70,266);ctx.quadraticCurveTo(52,120,60,0);ctx.closePath();ctx.fill();}
+    else if(part==='knee'){ctx.beginPath();ctx.moveTo(64,0);ctx.lineTo(150,0);ctx.quadraticCurveTo(170,140,160,270);ctx.lineTo(60,270);ctx.quadraticCurveTo(48,140,64,0);ctx.closePath();ctx.fill();}
+    else{ctx.beginPath();ctx.moveTo(40,70);ctx.lineTo(160,60);ctx.quadraticCurveTo(180,200,150,270);ctx.lineTo(55,270);ctx.quadraticCurveTo(30,180,40,70);ctx.closePath();ctx.fill();}
+    ctx.restore();}
+  function sobel(ctx,W,H){var src=ctx.getImageData(0,0,W,H),s=src.data,out=ctx.createImageData(W,H),d=out.data;function L(x,y){x=Math.max(0,Math.min(W-1,x));y=Math.max(0,Math.min(H-1,y));return s[(y*W+x)*4];}
+    for(var y=0;y<H;y++)for(var x=0;x<W;x++){var gx=-L(x-1,y-1)-2*L(x-1,y)-L(x-1,y+1)+L(x+1,y-1)+2*L(x+1,y)+L(x+1,y+1);var gy=-L(x-1,y-1)-2*L(x,y-1)-L(x+1,y-1)+L(x-1,y+1)+2*L(x,y+1)+L(x+1,y+1);var m=Math.min(255,Math.hypot(gx,gy)),i=(y*W+x)*4;d[i]=m*0.5;d[i+1]=m*0.85;d[i+2]=Math.min(255,m*1.1);d[i+3]=255;}
+    ctx.putImageData(out,0,0);}
+  function radiograph(canvas,part,state){state=state||{};var W=canvas.width,H=canvas.height,ctx=canvas.getContext('2d');var R=rnd(part.length*131+7);
+    var off=document.createElement('canvas');off.width=W;off.height=H;var o=off.getContext('2d');
+    var bg=o.createRadialGradient(W/2,H/2,20,W/2,H/2,H*0.75);bg.addColorStop(0,'#141821');bg.addColorStop(1,'#05070a');o.fillStyle=bg;o.fillRect(0,0,W,H);
+    var sc=W/220;o.save();o.scale(sc,sc);softTissue(o,part);o.save();PARTS[part](o,R,state.fracture);o.restore();o.restore();
+    ctx.clearRect(0,0,W,H);ctx.filter=state.edges?'none':'blur('+(1.1*sc)+'px)';ctx.drawImage(off,0,0);ctx.filter='none';
+    var img=ctx.getImageData(0,0,W,H),d=img.data,amp=state.edges?0:16,lo=state.enhance?36:0,hi=state.enhance?210:255,gain=255/(hi-lo||255);
+    for(var i=0;i<d.length;i+=4){var v=(d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11);if(state.enhance)v=Math.max(0,Math.min(255,(v-lo)*gain));var n=amp?(R()-0.5)*amp:0;v=Math.max(0,Math.min(255,v+n));d[i]=d[i+1]=d[i+2]=v;}
+    ctx.putImageData(img,0,0);
+    if(state.edges)sobel(ctx,W,H);
+    if(state.heat){var hx=state.heat[0]*sc,hy=state.heat[1]*sc,hr=state.heat[2]*sc;var hg=ctx.createRadialGradient(hx,hy,2,hx,hy,hr);hg.addColorStop(0,'rgba(255,40,30,0.72)');hg.addColorStop(0.45,'rgba(255,150,30,0.5)');hg.addColorStop(0.8,'rgba(255,225,70,0.22)');hg.addColorStop(1,'rgba(255,225,70,0)');ctx.globalCompositeOperation='screen';ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(hx,hy,hr*0.85,hr,0,0,7);ctx.fill();ctx.globalCompositeOperation='source-over';}
+    var vg=ctx.createRadialGradient(W/2,H/2,H*0.4,W/2,H/2,H*0.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,0.6)');ctx.fillStyle=vg;ctx.fillRect(0,0,W,H);
+    if(state.arrow){var a=state.arrow,ac=cssv('--accent');ctx.strokeStyle=ac;ctx.fillStyle=ac;ctx.lineWidth=2.2*sc;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(a.fx*sc,a.fy*sc);ctx.lineTo(a.tx*sc,a.ty*sc);ctx.stroke();
+      var ang=Math.atan2(a.ty-a.fy,a.tx-a.fx),hl=8*sc;ctx.beginPath();ctx.moveTo(a.tx*sc,a.ty*sc);ctx.lineTo(a.tx*sc-hl*Math.cos(ang-0.4),a.ty*sc-hl*Math.sin(ang-0.4));ctx.lineTo(a.tx*sc-hl*Math.cos(ang+0.4),a.ty*sc-hl*Math.sin(ang+0.4));ctx.closePath();ctx.fill();
+      ctx.font=(11*sc)+'px '+(cssv('--fm')||'monospace');ctx.fillText('fracture',a.fx*sc+4*sc,a.fy*sc-3*sc);}
+  }
+
+  // stage 1 gallery — different body parts
+  function gallery(){var host=document.getElementById('gallery');if(!host)return;host.innerHTML='';
+    [['wrist','Wrist','Normal',{}],['ankle','Ankle','Fracture',{fracture:true}],['knee','Knee','Normal',{}],['hand','Hand','Fracture',{fracture:true}]].forEach(function(c){
+      var cell=document.createElement('div');cell.className='gcell';var fr=document.createElement('span');fr.className='xframe';
+      var cv=document.createElement('canvas');cv.width=320;cv.height=436;cv.style.width='124px';cv.style.height='169px';fr.appendChild(cv);radiograph(cv,c[0],c[3]);
+      var cap=document.createElement('div');cap.className='cap '+(c[3].fracture?'frac':'norm');cap.textContent=c[1]+' · '+c[2];
+      cell.appendChild(fr);cell.appendChild(cap);host.appendChild(cell);});
+  }
+  function oneXray(){var cv=document.getElementById('oneXray');if(cv)radiograph(cv,'wrist',{fracture:true,arrow:{fx:150,fy:100,tx:110,ty:128}});}
+
+  var preMode='raw';
+  var PRENOTE={raw:'The original film — faint, grainy, unevenly lit.',clahe:'CLAHE boosts local contrast — the bone edges and the break stand out.',edges:'Edge detection reduces the film to outlines, isolating the cortical breaks.'};
+  function preXray(){var cv=document.getElementById('preXray');if(!cv)return;radiograph(cv,'wrist',{fracture:true,enhance:preMode==='clahe',edges:preMode==='edges'});document.getElementById('preNote').textContent=PRENOTE[preMode];}
+  document.querySelectorAll('#preSeg button').forEach(function(b){b.onclick=function(){preMode=b.dataset.m;document.querySelectorAll('#preSeg button').forEach(function(x){x.classList.toggle('on',x===b);});preXray();};});
+
+  function cnnMaps(){var cnn=document.getElementById('cnn');if(!cnn)return;cnn.innerHTML='';
+    var maps=[{s:66,cells:6,depth:1,d:'X-ray',l:'input'},{s:56,cells:5,depth:2,d:'edges',l:'conv1'},{s:46,cells:4,depth:3,d:'outlines',l:'conv2'},{s:38,cells:3,depth:4,d:'joints',l:'conv3'},{s:30,cells:2,depth:5,d:'fracture?',l:'deep'}];
+    function rr(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+    maps.forEach(function(m,i){var blk=document.createElement('div');blk.className='blk';var cv=document.createElement('canvas');var STEP=4,off=m.depth*STEP,W=m.s+off,H=m.s+off;cv.width=W;cv.height=H;var ctx=cv.getContext('2d');
+      for(var dd=m.depth-1;dd>=1;dd--){var x=dd*STEP,y=(m.depth-dd)*STEP;ctx.fillStyle='rgba(59,111,176,'+(0.10+0.04*dd)+')';ctx.strokeStyle='rgba(59,111,176,.35)';ctx.lineWidth=1;rr(ctx,x,y,m.s,m.s,4);ctx.fill();ctx.stroke();}
+      var fy=off,cs=m.s/m.cells,seed=i*19+5;for(var r2=0;r2<m.cells;r2++)for(var c2=0;c2<m.cells;c2++){seed=(seed*1103515245+12345)&0x7fffffff;ctx.fillStyle='rgba(43,95,170,'+(0.15+(seed/0x7fffffff)*0.7)+')';ctx.fillRect(c2*cs+0.5,fy+r2*cs+0.5,cs-1,cs-1);}
+      ctx.strokeStyle='rgba(59,111,176,.55)';ctx.lineWidth=1;rr(ctx,0,fy,m.s,m.s,4);ctx.stroke();var lab=document.createElement('div');lab.className='lab';lab.innerHTML='<b>'+m.l+'</b>'+m.d;blk.appendChild(cv);blk.appendChild(lab);cnn.appendChild(blk);
+      if(i<maps.length-1){var a=document.createElement('span');a.className='parrow';a.textContent='→';cnn.appendChild(a);}});
+  }
+
+  var camOn=false;
+  function camXray(){var cv=document.getElementById('camXray');if(cv)radiograph(cv,'wrist',{fracture:true,heat:camOn?[88,128,58]:null});}
+  var ct=document.getElementById('camToggle');if(ct)ct.addEventListener('click',function(){camOn=!camOn;ct.classList.toggle('on',camOn);camXray();});
+
+  function verdictXray(){var cv=document.getElementById('verdictXray');if(cv)radiograph(cv,'wrist',{fracture:true,heat:[88,128,58]});}
+  function opCurve(){var th=+document.getElementById('thr').value;document.getElementById('thVal').textContent=th;
+    var sens=Math.round(Math.max(40,Math.min(99,99-(th-5)*0.42))),spec=Math.round(Math.max(35,Math.min(98,40+(th-5)*0.62)));
+    document.getElementById('sensFill').style.width=sens+'%';document.getElementById('sensPct').textContent=sens+'%';document.getElementById('specFill').style.width=spec+'%';document.getElementById('specPct').textContent=spec+'%';
+    var prob=72,flagged=prob>=th,fn=document.getElementById('flagNote');fn.innerHTML=flagged?'<span style="color:var(--accent-ink)">⚑ Flagged for review</span> · p(fracture)=0.72':'<span style="color:var(--ctrl)">○ Not flagged</span> · p(fracture)=0.72';}
+  var thr=document.getElementById('thr');if(thr)thr.addEventListener('input',opCurve);
+
+  function buildAll(){gallery();oneXray();preXray();cnnMaps();camXray();verdictXray();opCurve();}
+  buildAll();
+})();
+</script>
+</body>
+</html>

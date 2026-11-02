@@ -19,6 +19,50 @@ export function revealStages(root: HTMLElement) {
   root.querySelectorAll('.stage').forEach((s) => io.observe(s));
 }
 
+/**
+ * Progress rail (as on the Parkinson research page): marks the link of the
+ * stage crossing the middle of the window, and scrolls to a stage on click.
+ * Links are <a href="#id" data-rail="id"> inside `root`.
+ */
+export function railNav(root: HTMLElement) {
+  const links = [...root.querySelectorAll<HTMLAnchorElement>('[data-rail]')];
+  const setCurrent = (id: string) => {
+    for (const a of links) {
+      const on = a.dataset.rail === id;
+      a.classList.toggle('on', on);
+      if (on) a.setAttribute('aria-current', 'step');
+      else a.removeAttribute('aria-current');
+    }
+  };
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) if (e.isIntersecting) setCurrent(e.target.id);
+    },
+    { rootMargin: '-50% 0px -50% 0px' },
+  );
+  root.querySelectorAll('.stage').forEach((s) => io.observe(s));
+  for (const a of links) {
+    a.addEventListener('click', (e) => {
+      const target = document.getElementById(a.dataset.rail!);
+      if (!target) return;
+      e.preventDefault();
+      const behavior: ScrollBehavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+      target.scrollIntoView({ behavior, block: 'start' });
+      history.replaceState(null, '', `#${target.id}`);
+      // Stages not yet rendered are sized by an estimate (content-visibility),
+      // so a long jump can end a little off. Once it stops, glide the rest.
+      const settle = () => {
+        const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+        const off = target.getBoundingClientRect().top - pad;
+        const atEnd = Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight;
+        if (Math.abs(off) > 2 && !(off > 0 && atEnd)) target.scrollIntoView({ behavior, block: 'start' });
+      };
+      if ('onscrollend' in window) window.addEventListener('scrollend', settle, { once: true });
+      else setTimeout(settle, 900);
+    });
+  }
+}
+
 /** Runs `cb` when the site's day/night theme changes (toggle or system). */
 export function onThemeChange(cb: () => void) {
   new MutationObserver(cb).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });

@@ -1,0 +1,64 @@
+---
+// Illustrated project page for Bone Fracture Detection in X-rays, ported from
+// design-reference/xray-explainer.html. Replaces the page generated from
+// src/content/projects/xray-fracture-detection.md (see explainers.ts). The
+// project's files were damaged and there is no public artifact, so there is
+// no code or paper link, and no accuracy or dataset figures.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import XrayExplainer from '../../components/projects/XrayExplainer.astro';
+import '../../components/projects/explainer.css';
+---
+
+<BaseLayout
+  title="Bone Fracture Detection in X-rays"
+  description="An assistive deep-learning pipeline that reads a radiograph, flags a possible fracture and highlights where it is with Grad-CAM — for a clinician to review. The method, explained stage by stage."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">Bone Fracture Detection in X-rays</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Medical imaging</li>
+      <li class="chip">Deep learning</li>
+      <li class="chip">CNN · Grad-CAM</li>
+      <li class="chip">X-ray</li>
+    </ul>
+    <h1 class="title">Bone Fracture Detection in X-rays</h1>
+    <p class="plain">A hairline crack on an X-ray is easy to miss on a busy shift. Can a model catch it — and point to exactly where?</p>
+    <p class="meta">A deep-learning pipeline that reads a radiograph, decides whether a bone is fractured, and highlights the region that drove its decision — built to support a clinician's read, not replace it.</p>
+    <p class="disclaimer" role="note">
+      <span aria-hidden="true">⚠</span>
+      <span>This is an <b>assistive</b> concept: it highlights <b>potential</b> fractures for a clinician to review. It is not a diagnostic device, and every flag needs expert confirmation.</span>
+    </p>
+    <ul class="badges word-badges">
+      <li class="badge"><span class="n">Classify</span><span class="l">Fracture / normal</span></li>
+      <li class="badge"><span class="n">Localise</span><span class="l">Grad-CAM heatmap</span></li>
+      <li class="badge"><span class="n">Assistive</span><span class="l">Flags for clinician review</span></li>
+    </ul>
+
+    <XrayExplainer />
+  </article>
+</BaseLayout>
+
+<style>
+  .disclaimer {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 14px 0 0;
+    padding: 10px 14px;
+    font-size: 12.5px;
+    color: var(--accent-ink);
+    background: var(--accent-wash);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+  }
+  .disclaimer b {
+    font-weight: 600;
+  }
+  /* Word badges, a touch smaller than the numeric ones on other pages. */
+  .word-badges :global(.n) {
+    font-size: 20px;
+  }
+</style>

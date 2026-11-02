@@ -1,0 +1,397 @@
+---
+// Six-stage explainer for Bone Fracture Detection in X-rays, ported from
+// design-reference/xray-explainer.html, with the Parkinson page's progress
+// rail. The project's files were damaged, so this walks through the method
+// with no accuracy or dataset figures. The radiographs are synthetic, drawn
+// on canvas (xray-data.ts) — no patient images. The Stage 6 operating curve
+// and p(fracture) are illustrative.
+import { CNN_MAPS, EXAMPLE_PROB, GALLERY, opCurve } from './xray-data';
+
+const stages = [
+  { id: 's1', rail: 'Data' },
+  { id: 's2', rail: 'Radiograph' },
+  { id: 's3', rail: 'Preprocess' },
+  { id: 's4', rail: 'CNN' },
+  { id: 's5', rail: 'Localise' },
+  { id: 's6', rail: 'Verdict' },
+];
+
+// Stage 6 starts at a 50% threshold; the script keeps these in step.
+const TH = 50;
+const op = opCurve(TH);
+const prob = EXAMPLE_PROB.toFixed(2);
+---
+
+<div class="xray-xp">
+  <nav class="rail" aria-label="Stages">
+    {stages.map((s) => (
+      <a href={`#${s.id}`} data-rail={s.id}>
+        <span class="pip" aria-hidden="true"></span>
+        <span class="lbl">{s.rail}</span>
+      </a>
+    ))}
+  </nav>
+
+  <section class="stage" id="s1" aria-labelledby="s1-title">
+    <div class="kick">Stage 1 · The data</div>
+    <h2 id="s1-title">Radiographs from across the body, labelled fracture or normal</h2>
+    <p>Training starts from X-ray images of many regions — wrist, ankle, knee, hand — each labelled by radiologists as <b class="c-norm">normal</b> or <b class="c-frac">fractured</b>, often with the fracture's location marked. Real fracture datasets are imbalanced and subtle: most films are normal, and a break can be a single faint line.</p>
+    <div class="viz">
+      <div class="gal">
+        {GALLERY.map(([part, name, label, st]) => (
+          <figure class="gcell">
+            <span class="xframe">
+              <canvas class="xr xr-sm" width="320" height="436" data-part={part} data-fracture={st.fracture ? '1' : undefined} role="img" aria-label={`Synthetic ${name.toLowerCase()} X-ray, ${label.toLowerCase()}`}></canvas>
+            </span>
+            <figcaption class:list={['cap', st.fracture ? 'frac' : 'norm']}>{name} · {label}</figcaption>
+          </figure>
+        ))}
+      </div>
+      <p class="note center spaced">Synthetic radiographs generated for this page — no patient images are used. Two of the four carry a fracture.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s2" aria-labelledby="s2-title">
+    <div class="kick">Stage 2 · One radiograph</div>
+    <h2 id="s2-title">What a fracture looks like to a pixel</h2>
+    <p>An X-ray is a grayscale map of density: dense bone stops more radiation and shows bright, soft tissue shows dark. A fracture breaks that smooth bright cortex — a thin <b>dark lucent line</b>, a step in the bone's edge, or a change in texture. Here, a transverse break crosses the <b>distal radius</b> at the wrist, the most common fracture site of all.</p>
+    <div class="viz centered">
+      <span class="xframe"><canvas class="xr xr-md" data-ref="one" width="440" height="600" role="img" aria-label="A wrist X-ray with a distal radius fracture marked"></canvas></span>
+      <p class="note spaced-sm">The arrow marks the break across the distal radius.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s3" aria-labelledby="s3-title">
+    <div class="kick">Stage 3 · Preprocess</div>
+    <h2 id="s3-title">Make the bone edges speak</h2>
+    <p>Raw films are noisy and unevenly exposed, so each image is cleaned before the model sees it. Contrast enhancement (<b>CLAHE</b>) lifts faint structure out of flat regions; a smoothing <b>filter</b> suppresses grain; and <b>edge detection</b> sharpens the cortical outlines where fractures hide. The result is resized, normalised, and augmented (flips, small rotations) to enlarge the dataset.</p>
+    <div class="viz centered">
+      <div class="seg" role="group" aria-label="Preprocessing step">
+        <button type="button" data-m="raw" aria-pressed="true">Raw</button>
+        <button type="button" data-m="clahe" aria-pressed="false">Contrast (CLAHE)</button>
+        <button type="button" data-m="edges" aria-pressed="false">Edges</button>
+      </div>
+      <div><span class="xframe"><canvas class="xr xr-md" data-ref="pre" width="440" height="600" role="img" aria-label="The wrist X-ray under different preprocessing steps"></canvas></span></div>
+      <p class="note spaced-sm" data-ref="preNote" aria-live="polite">The original film — faint, grainy, unevenly lit.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s4" aria-labelledby="s4-title">
+    <div class="kick">Stage 4 · CNN</div>
+    <h2 id="s4-title">A CNN reads structure, coarse to fine</h2>
+    <p>The prepared image flows through a deep <b>convolutional network</b>. Early layers fire on edges and gradients; middle layers assemble them into bone outlines and joint spaces; deep layers respond to the abnormal patterns of a break — a discontinuity in the cortex, an unexpected lucency. Each block shrinks the map and grows the channels, distilling the film into features a classifier can judge.</p>
+    <div class="viz">
+      <div class="cnn">
+        {CNN_MAPS.map((m, i) => (
+          <>
+            {i > 0 && <span class="parrow" aria-hidden="true">→</span>}
+            <div class="blk">
+              <canvas class="fmapc" data-s={m.s} data-cells={m.cells} data-depth={m.depth} data-seed={i * 19 + 5} aria-hidden="true"></canvas>
+              <div class="lab"><b>{m.l}</b>{m.d}</div>
+            </div>
+          </>
+        ))}
+      </div>
+      <p class="note center spaced">conv → pool, repeated — local detail becomes abstract "fracture-ness."</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s5" aria-labelledby="s5-title">
+    <div class="kick">Stage 5 · Localise</div>
+    <h2 id="s5-title">Grad-CAM — not just "yes", but "here"</h2>
+    <p>A yes/no answer isn't enough for a clinician; they need to know <em>where</em>. <b>Grad-CAM</b> traces the "fracture" decision back through the final convolutional layer to produce a <b>heatmap</b> over the image — warm where the evidence is strongest. Overlaid on the film, it turns a label into a pointer, drawing the eye straight to the suspected break for confirmation.</p>
+    <div class="viz centered">
+      <button type="button" class="toggle" role="switch" aria-checked="false" data-ref="camToggle"><span class="switch" aria-hidden="true"></span> Show Grad-CAM heatmap</button>
+      <div class="spaced"><span class="xframe"><canvas class="xr xr-lg" data-ref="cam" width="440" height="600" role="img" aria-label="The wrist X-ray with an optional Grad-CAM heatmap over the fracture"></canvas></span></div>
+      <p class="note spaced-sm">Illustrative heatmap. A true Grad-CAM map is computed from the model's own gradients, not drawn.</p>
+    </div>
+  </section>
+
+  <section class="stage" id="s6" aria-labelledby="s6-title">
+    <div class="kick">Stage 6 · The verdict</div>
+    <h2 id="s6-title">Reading the output — and choosing how cautious to be</h2>
+    <p>The classifier returns a <b>fracture probability</b>. Turning that into a flag means picking a <b>threshold</b>, and that choice is a trade-off: lower it and you catch more fractures (high <b class="c-frac">sensitivity</b>) at the cost of more false alarms (lower <b class="c-norm">specificity</b>). For a triage tool meant to catch missed breaks, you lean toward sensitivity and let the clinician rule out the extras. Drag the threshold to feel the trade-off.</p>
+    <div class="viz">
+      <div class="verdict-wrap">
+        <div class="verdict-film">
+          <span class="xframe"><canvas class="xr xr-sm2" data-ref="verdict" width="440" height="600" role="img" aria-label="Wrist X-ray with heatmap and a fracture flag"></canvas></span>
+          <div class="note flag" data-ref="flag" aria-live="polite"><span class="c-frac">⚑ Flagged for review</span> · p(fracture)={prob}</div>
+        </div>
+        <div class="gauge">
+          <label class="thlbl" for="xray-thr">Flag a fracture when probability ≥ <b data-ref="thVal">{TH}</b>%</label>
+          <input type="range" id="xray-thr" data-ref="thr" min="5" max="95" value={TH} />
+          <div class="opbar sens"><span class="nm">Sensitivity</span><span class="track"><span class="fill" data-ref="sensFill" style={`--p:${op.sens}`}></span></span><span class="pct" data-ref="sensPct">{op.sens}%</span></div>
+          <div class="opbar spec"><span class="nm">Specificity</span><span class="track"><span class="fill" data-ref="specFill" style={`--p:${op.spec}`}></span></span><span class="pct" data-ref="specPct">{op.spec}%</span></div>
+          <p class="note spaced-sm">Illustrative operating curve — the shape of the sensitivity/specificity trade-off, not measured values. The p(fracture) of {prob} is an example output, also illustrative.</p>
+        </div>
+      </div>
+      <p class="note center spaced">However it's tuned, the output is a <b>flag for a radiologist</b>, never a final diagnosis.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  import { CAM_HEAT, EXAMPLE_PROB, PRENOTE, WRIST_ARROW, opCurve, radiograph, type Part, type PreMode } from './xray-data';
+  import { drawStack, onThemeChange, railNav, revealStages, seeded } from './explainer';
+
+  const root = document.querySelector<HTMLElement>('.xray-xp');
+  if (root) {
+    revealStages(root.closest<HTMLElement>('.xp') ?? root);
+    railNav(root);
+    const $ = <T extends Element = HTMLElement>(ref: string) => root.querySelector<T>(`[data-ref="${ref}"]`);
+
+    // Stage 1: the gallery of body parts.
+    root.querySelectorAll<HTMLCanvasElement>('canvas[data-part]').forEach((cv) =>
+      radiograph(cv, cv.dataset.part as Part, { fracture: cv.dataset.fracture === '1' }));
+
+    // Stage 2: the wrist with the fracture arrow (accent colour, so redrawn
+    // when the theme changes).
+    const one = $<HTMLCanvasElement>('one');
+    const drawOne = () => one && radiograph(one, 'wrist', { fracture: true, arrow: WRIST_ARROW });
+    drawOne();
+    onThemeChange(drawOne);
+
+    // Stage 3: Raw / CLAHE / Edges.
+    const pre = $<HTMLCanvasElement>('pre'), preNote = $('preNote');
+    const segBtns = [...root.querySelectorAll<HTMLButtonElement>('#s3 .seg button')];
+    const drawPre = (m: PreMode) => {
+      if (pre) radiograph(pre, 'wrist', { fracture: true, enhance: m === 'clahe', edges: m === 'edges' });
+      if (preNote) preNote.textContent = PRENOTE[m];
+    };
+    for (const b of segBtns) {
+      b.addEventListener('click', () => {
+        for (const x of segBtns) x.setAttribute('aria-pressed', String(x === b));
+        drawPre(b.dataset.m as PreMode);
+      });
+    }
+    drawPre('raw');
+
+    // Stage 4: the CNN's feature maps.
+    root.querySelectorAll<HTMLCanvasElement>('.fmapc').forEach((cv) => drawStack(cv, seeded(Number(cv.dataset.seed))));
+
+    // Stage 5: Grad-CAM on and off.
+    const cam = $<HTMLCanvasElement>('cam'), camToggle = $<HTMLButtonElement>('camToggle');
+    let camOn = false;
+    const drawCam = () => cam && radiograph(cam, 'wrist', { fracture: true, heat: camOn ? CAM_HEAT : null });
+    camToggle?.addEventListener('click', () => {
+      camOn = !camOn;
+      camToggle.setAttribute('aria-checked', String(camOn));
+      drawCam();
+    });
+    drawCam();
+
+    // Stage 6: the threshold drives the illustrative operating curve and the flag.
+    const verdict = $<HTMLCanvasElement>('verdict');
+    if (verdict) radiograph(verdict, 'wrist', { fracture: true, heat: CAM_HEAT });
+    const thr = $<HTMLInputElement>('thr');
+    const prob = EXAMPLE_PROB.toFixed(2);
+    const update = () => {
+      if (!thr) return;
+      const th = Number(thr.value), { sens, spec } = opCurve(th);
+      const set = (ref: string, v: string) => { const e = $(ref); if (e) e.textContent = v; };
+      set('thVal', String(th));
+      set('sensPct', `${sens}%`);
+      set('specPct', `${spec}%`);
+      $('sensFill')?.style.setProperty('--p', String(sens));
+      $('specFill')?.style.setProperty('--p', String(spec));
+      const flagged = EXAMPLE_PROB * 100 >= th, flag = $('flag');
+      if (flag) flag.innerHTML = flagged
+        ? `<span class="c-frac">⚑ Flagged for review</span> · p(fracture)=${prob}`
+        : `<span class="c-norm">○ Not flagged</span> · p(fracture)=${prob}`;
+    };
+    thr?.addEventListener('input', update);
+    update();
+  }
+</script>
+
+<style>
+  /* This page's colours, named as in the reference: --ctrl (normal,
+     specificity) is a site token; --cam has the values of the site's --vit. */
+  .xray-xp {
+    --cam: var(--vit);
+    --cam-soft: var(--vit-soft);
+  }
+  .xray-xp .stage p b.c-norm,
+  .xray-xp :global(.c-norm) { color: var(--ctrl); }
+  .xray-xp .stage p b.c-frac,
+  .xray-xp :global(.c-frac) { color: var(--accent-ink); }
+  .xray-xp .stage .note.spaced { margin: 12px 0 0; }
+  .xray-xp .stage .note.spaced-sm { margin: 8px 0 0; }
+  .spaced { margin-top: 12px; }
+
+  /* Films are dark in both site themes, as real radiographs are. */
+  .xframe {
+    display: inline-block;
+    max-width: 100%;
+    padding: 3px;
+    line-height: 0;
+    border-radius: 8px;
+    background: #05070a;
+  }
+  .xr {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+  .xr-sm { width: 124px; }
+  .xr-sm2 { width: 158px; }
+  .xr-md { width: 206px; }
+  .xr-lg { width: 224px; }
+
+  /* Stage 1 */
+  .gal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 14px;
+  }
+  .gcell {
+    margin: 0;
+    text-align: center;
+  }
+  .cap {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    margin-top: 6px;
+  }
+  .cap.norm { color: var(--ctrl); }
+  .cap.frac { color: var(--accent-ink); }
+
+  /* Stage 3 */
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+    padding: 4px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .seg button {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+
+  /* Stage 5 */
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink-2);
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .switch {
+    position: relative;
+    width: 38px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    transition: background .2s, border-color .2s;
+  }
+  .switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--ink-3);
+    transition: transform .2s, background .2s;
+  }
+  .toggle[aria-checked='true'] .switch {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .toggle[aria-checked='true'] .switch::after {
+    transform: translateX(16px);
+    background: #fff;
+  }
+
+  /* Stage 6 */
+  .verdict-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 22px;
+  }
+  .verdict-film { text-align: center; }
+  .xray-xp .note.flag { margin-top: 6px; font-style: normal; }
+  .gauge {
+    flex: 1 1 260px;
+    min-width: 0;
+    max-width: 340px;
+  }
+  .thlbl {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    margin-bottom: 4px;
+  }
+  .thlbl b { color: var(--ink); }
+  .gauge input[type='range'] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .opbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 7px 0;
+    font-size: 13px;
+  }
+  .opbar .nm {
+    width: 84px;
+    color: var(--ink-2);
+  }
+  .opbar .track {
+    flex: 1;
+    height: 13px;
+    overflow: hidden;
+    border-radius: 7px;
+    background: var(--surface-2);
+  }
+  /* Full width, slid left to show --p % (compositor-only); the track clips it. */
+  .opbar .fill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 7px;
+    transform: translateX(calc(var(--p, 0) * 1% - 100%));
+    transition: transform .3s;
+  }
+  .opbar.sens .fill { background: var(--accent); }
+  .opbar.spec .fill { background: var(--ctrl); }
+  .opbar .pct {
+    width: 42px;
+    text-align: right;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .switch, .switch::after, .opbar .fill { transition: none; }
+  }
+</style>
