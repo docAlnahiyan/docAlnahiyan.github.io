@@ -103,10 +103,6 @@ html {
      room to spare. This is the one offset for every anchor and
      scrollIntoView on the site; elements don't add their own scroll-margin. */
   scroll-padding-top: 72px;
-  /* No scroll chaining or rubber-band bounce past the page's ends. Set on
-     the root as well as body, since browsers read the viewport's value
-     from the root element. */
-  overscroll-behavior-y: none;
 }
 
 /* Anchor links and in-page jumps glide; with reduced motion they jump. */
@@ -118,7 +114,6 @@ html {
 
 body {
   margin: 0;
-  overscroll-behavior-y: none;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
