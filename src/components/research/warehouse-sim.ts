@@ -252,7 +252,7 @@ export function startSim(root: HTMLElement): Sim | undefined {
         const isThief = revealed && (r.id === physThief || r.id === recThief);
         const w = Math.max(4, Math.min(100, (r.score / maxAbs) * 100));
         return `<div class="rank ${isThief ? 'truth' : ''}"><span class="pos">${i + 1}</span><span class="who">${r.id}</span>` +
-          `<span class="barwrap"><span class="bar" style="width:${w}%"></span></span><span class="scoreval">${fmt(r.score)}</span></div>`;
+          `<span class="barwrap"><span class="bar" style="--p:${w}"></span></span><span class="scoreval">${fmt(r.score)}</span></div>`;
       })
       .join('');
   }

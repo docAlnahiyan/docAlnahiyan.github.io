@@ -99,12 +99,26 @@
 
 html {
   -webkit-text-size-adjust: 100%;
-  /* Keep #anchor targets clear of the sticky nav. */
-  scroll-padding-top: 80px;
+  /* Keep #anchor targets clear of the sticky nav (59px tall) with a little
+     room to spare. This is the one offset for every anchor and
+     scrollIntoView on the site; elements don't add their own scroll-margin. */
+  scroll-padding-top: 72px;
+  /* No scroll chaining or rubber-band bounce past the page's ends. Set on
+     the root as well as body, since browsers read the viewport's value
+     from the root element. */
+  overscroll-behavior-y: none;
+}
+
+/* Anchor links and in-page jumps glide; with reduced motion they jump. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
   margin: 0;
+  overscroll-behavior-y: none;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -247,6 +261,21 @@ main {
   .theme-anim body,
   .theme-anim body :not(#hero, #hero *) {
     transition: background-color .17s ease, border-color .17s ease, color .17s ease !important;
+  }
+}
+
+/* ---------- long scrollytelling pages ----------
+   The stages of the research and project explainers skip rendering while
+   far off-screen. The estimated height is close to a typical stage, and
+   "auto" makes the browser remember each stage's real height once it has
+   been rendered, so scrolling back up never jumps. */
+.stage {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto 500px;
+}
+@media (max-width: 599.98px) {
+  .stage {
+    contain-intrinsic-block-size: auto 680px;
   }
 }
 

@@ -315,7 +315,7 @@ const scores = [
             {[['ctl', 'Control', 82], ['prod', 'Prodromal', 12], ['pd', 'PD', 6]].map(([c, nm, p]) => (
               <div class={`prob ${c}`}>
                 <span class="nm">{nm}</span>
-                <span class="track"><span class="fill" data-fill={c} style={`width:${p}%`}></span></span>
+                <span class="track"><span class="fill" data-fill={c} style={`--p:${p}`}></span></span>
                 <span class="pct" data-pct={c}>{p}%</span>
               </div>
             ))}
@@ -400,8 +400,19 @@ const scores = [
         const target = document.getElementById(a.dataset.rail!);
         if (!target) return;
         e.preventDefault();
-        target.scrollIntoView({ behavior: reduced.matches ? 'auto' : 'smooth', block: 'start' });
+        const behavior: ScrollBehavior = reduced.matches ? 'auto' : 'smooth';
+        target.scrollIntoView({ behavior, block: 'start' });
         history.replaceState(null, '', `#${target.id}`);
+        // Stages not yet rendered are sized by an estimate (content-visibility),
+        // so a long jump can end a little off. Once it stops, glide the rest.
+        const settle = () => {
+          const pad = parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0;
+          const off = target.getBoundingClientRect().top - pad;
+          const atEnd = Math.ceil(scrollY + innerHeight) >= document.documentElement.scrollHeight;
+          if (Math.abs(off) > 2 && !(off > 0 && atEnd)) target.scrollIntoView({ behavior, block: 'start' });
+        };
+        if ('onscrollend' in window) window.addEventListener('scrollend', settle, { once: true });
+        else setTimeout(settle, 900);
       });
     }
 
@@ -478,7 +489,7 @@ const scores = [
       (['ctl', 'prod', 'pd'] as const).forEach((k, i) => {
         const fill = root!.querySelector<HTMLElement>(`[data-fill="${k}"]`);
         const pct = root!.querySelector<HTMLElement>(`[data-pct="${k}"]`);
-        if (fill) fill.style.width = `${e.p[i]}%`;
+        fill?.style.setProperty('--p', String(e.p[i]));
         if (pct) pct.textContent = `${e.p[i]}%`;
       });
       const verdict = $('verdict');
@@ -522,6 +533,9 @@ const scores = [
     top: 50%;
     transform: translateY(-50%);
     z-index: 20;
+    /* Its own compositor layer: on 1x screens Chrome may otherwise repaint
+       this fixed rail into the page on every scroll frame. */
+    will-change: transform;
     display: flex;
     flex-direction: column;
     gap: 11px;
@@ -544,7 +558,7 @@ const scores = [
     height: 9px;
     border-radius: 50%;
     background: var(--border-strong);
-    transition: .2s;
+    transition: transform .2s;
   }
   .rail a.on .pip {
     background: var(--accent);
@@ -556,7 +570,7 @@ const scores = [
   .lbl {
     opacity: 0;
     white-space: nowrap;
-    transition: .2s;
+    transition: opacity .2s;
   }
   .rail:hover .lbl,
   .rail:focus-within .lbl,
@@ -572,7 +586,6 @@ const scores = [
   .stage {
     border-top: 1px solid var(--border);
     padding: 38px 0;
-    scroll-margin-top: 70px;
   }
   /* Hidden until revealed, only for visitors who allow motion and only once
      the script is running. */
@@ -926,11 +939,15 @@ const scores = [
     background: var(--surface-2);
     border-radius: 6px;
   }
+  /* The fill is full width and slides in from the left to show --p %
+     (compositor-only); the rounded track clips it. */
   .fill {
     display: block;
+    width: 100%;
     height: 100%;
     border-radius: 6px;
-    transition: width .5s;
+    transform: translateX(calc(var(--p, 0) * 1% - 100%));
+    transition: transform .5s;
   }
   .prob.ctl .fill { background: var(--ctl); }
   .prob.prod .fill { background: var(--prod); }

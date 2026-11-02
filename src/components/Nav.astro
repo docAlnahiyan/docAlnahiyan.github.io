@@ -112,9 +112,14 @@ const isActive = (href: string) =>
     top: env(safe-area-inset-top, 0px);
     z-index: 50;
     background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     border-bottom: 1px solid var(--border);
+    /* Its own compositor layer, so scrolling content under the translucent
+       bar never forces it (or the page) to be repainted each frame. The
+       dropdown menu is absolutely positioned, so the transform is safe. */
+    will-change: transform;
+    transform: translateZ(0);
   }
   .nav-inner {
     max-width: var(--maxw-wide);

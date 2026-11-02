@@ -226,12 +226,16 @@
   background: var(--surface-2);
   border-radius: 6px;
 }
+/* The fill is full width and slides in from the left to show --p %
+   (compositor-only); the rounded track clips it. */
 .xp .bar .fill {
   display: block;
+  width: 100%;
   height: 100%;
   border-radius: 6px;
   background: var(--ctrl);
-  transition: width .5s;
+  transform: translateX(calc(var(--p, 0) * 1% - 100%));
+  transition: transform .5s;
 }
 .xp .bar.win .fill {
   background: var(--accent);

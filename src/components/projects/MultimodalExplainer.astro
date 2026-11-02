@@ -217,7 +217,7 @@ const mono = 'font-family:var(--font-mono)';
           {CLASSES.map((c, i) => (
             <div class:list={['bar', { win: c === START }]} data-bar={c}>
               <span class="nm">{c}</span>
-              <span class="track"><span class="fill" style={`width:${startDist[i]}%`}></span></span>
+              <span class="track"><span class="fill" style={`--p:${startDist[i]}`}></span></span>
               <span class="pct">{startDist[i]}%</span>
             </div>
           ))}
@@ -275,7 +275,7 @@ const mono = 'font-family:var(--font-mono)';
         bar.classList.toggle('win', i === ti);
         const fill = bar.querySelector<HTMLElement>('.fill');
         const pct = bar.querySelector<HTMLElement>('.pct');
-        if (fill) fill.style.width = `${p[i]}%`;
+        fill?.style.setProperty('--p', String(p[i]));
         if (pct) pct.textContent = `${p[i]}%`;
       });
       const set = (ref: string, text: string) => {
