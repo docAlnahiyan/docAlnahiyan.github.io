@@ -3,6 +3,7 @@
 // entries stops the build instead of reaching the live site.
 
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
+import { readdirSync } from 'node:fs';
 
 export type Research = CollectionEntry<'research'>;
 export type Project = CollectionEntry<'projects'>;
@@ -64,6 +65,15 @@ export async function getPosts(): Promise<Post[]> {
 }
 
 export async function getUpworkItems(): Promise<UpworkItem[]> {
+  // No items yet (they are added from the admin): skip the lookup, which
+  // would log an "empty collection" warning.
+  let hasItems = false;
+  try {
+    hasItems = readdirSync('./src/content/upwork').some((f) => /\.mdx?$/.test(f));
+  } catch {
+    hasItems = false;
+  }
+  if (!hasItems) return [];
   const items = await getCollection('upwork', (i) => !i.data.draft);
   return items.sort((a, b) => a.data.order - b.data.order);
 }

@@ -1,4 +1,5 @@
 ---
+import { ext } from '../../lib/links';
 import { getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PaperTags from '../../components/PaperTags.astro';
@@ -8,6 +9,7 @@ import { WALKTHROUGHS } from '../../components/walkthroughs/registry';
 import { REPLACED_PAGES } from '../../components/research/themes';
 import { getProfile, getResearch, type Research } from '../../lib/content';
 import { authorsHtml, doiUrl, requestPaperMailto } from '../../lib/format';
+import { scholarlyArticleLd } from '../../lib/jsonld';
 
 // Entries with a hand-built page get no page here; their old address
 // redirects to the new one (astro.config.mjs).
@@ -28,12 +30,15 @@ const Walkthrough = d.walkthrough ? WALKTHROUGHS[d.walkthrough] : undefined;
 const doi = pub?.data.doi;
 const paperUrl = pub?.data.url ?? d.links.pdf;
 const code = pub?.data.code_url ?? d.links.code;
+// Search results show ~60 characters: a long title keeps the part before its colon.
+const pageTitle = d.title.length > 40 && d.title.includes(':') ? d.title.split(':')[0] : d.title;
+const jsonLd = pub ? scholarlyArticleLd(pub, profile, Astro.url.pathname) : undefined;
 const meta = pub
   ? `${authorsHtml(pub.data.authors)} · ${pub.data.venue_short ?? pub.data.venue} · ${pub.data.year}`
   : undefined;
 ---
 
-<BaseLayout title={d.title} description={d.subtitle} type="article" image={d.thumbnail}>
+<BaseLayout title={pageTitle} description={d.subtitle} type="article" image={d.thumbnail} jsonLd={jsonLd}>
   <article class="wrap view">
     <a class="back" href="/research/">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
@@ -52,9 +57,9 @@ const meta = pub
     <Metrics items={d.metrics} />
 
     <div class="actions">
-      {doi && <a class="btn ghost" href={doiUrl(doi)}>DOI</a>}
-      {paperUrl && <a class="btn ghost" href={paperUrl}>Paper</a>}
-      {code && <a class="btn ghost" href={code}>Code</a>}
+      {doi && <a class="btn ghost" href={doiUrl(doi)} {...ext(doiUrl(doi))}>DOI</a>}
+      {paperUrl && <a class="btn ghost" href={paperUrl} {...ext(paperUrl)}>Paper</a>}
+      {code && <a class="btn ghost" href={code} {...ext(code)}>Code</a>}
       {pub && <a class="btn ghost" href={`/publications/#${pub.id}`}>Citation details</a>}
       {pub && <CopyButton text={pub.data.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />}
       {pub && !pub.data.url && (

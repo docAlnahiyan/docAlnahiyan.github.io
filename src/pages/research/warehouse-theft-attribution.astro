@@ -3,6 +3,7 @@
 // (spec: design-reference/research-page-spec.md §3). The paper's record (title,
 // date, BibTeX, code link) comes from its publications entry, so this page
 // and the publications list never disagree.
+import { ext } from '../../lib/links';
 import { getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import CopyButton from '../../components/CopyButton.astro';
@@ -10,11 +11,13 @@ import DigDeeper from '../../components/research/DigDeeper.astro';
 import WarehouseSim from '../../components/research/WarehouseSim.astro';
 import { getProfile } from '../../lib/content';
 import { fullDate, requestPaperMailto } from '../../lib/format';
+import { scholarlyArticleLd } from '../../lib/jsonld';
 
 const pub = await getEntry('publications', 'inventory-shrinkage-attribution');
 if (!pub) throw new Error('Missing publication "inventory-shrinkage-attribution".');
 const profile = await getProfile();
 const p = pub.data;
+const jsonLd = scholarlyArticleLd(pub, profile, Astro.url.pathname);
 
 const requestHref = requestPaperMailto(profile.links.email, p.title);
 // TODO: add code_url to the publication entry when the code is public; the
@@ -42,8 +45,9 @@ const worlds = [
 ---
 
 <BaseLayout
+  jsonLd={jsonLd}
   title="Catching Theft When the Records Lie"
-  description="Catching warehouse theft even when the thief edits the records to hide it — attributing physical loss to people, with a live simulation. Preprint, not peer-reviewed."
+  description="Catching warehouse theft even when the thief edits the records — attributing loss to people, with a live simulation. Preprint, not peer-reviewed."
   type="article"
 >
   <article class="wrap view research">
@@ -64,7 +68,7 @@ const worlds = [
     <div class="actions head-actions">
       <a class="btn" href={requestHref}>Request full paper</a>
       {codeHref
-        ? <a class="btn ghost" href={codeHref}>Code</a>
+        ? <a class="btn ghost" href={codeHref} {...ext(codeHref)}>Code</a>
         : <button class="btn ghost" type="button" disabled title="Code not yet released">Code</button>}
       <a class="btn ghost" href="#dig-paper" data-open-tab="paper">Cite</a>
     </div>
@@ -136,7 +140,7 @@ const worlds = [
         <div class="actions paper-actions">
           <a class="btn" href={requestHref}>Request full paper</a>
           {codeHref
-            ? <a class="btn ghost" href={codeHref}>View code</a>
+            ? <a class="btn ghost" href={codeHref} {...ext(codeHref)}>View code</a>
             : <button class="btn ghost" type="button" disabled title="Code not yet released">View code</button>}
         </div>
         <div class="cite-head">

@@ -216,6 +216,7 @@ collections:
       - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true }
       - { name: excerpt, label: Excerpt, widget: text, hint: "One or two sentences for the blog list and link previews." }
       - { name: cover, label: Cover image, widget: image, required: false }
+      - { name: cover_alt, label: Cover description (alt text), widget: string, required: false, hint: "What the cover shows, for screen readers. If empty, the post title is used." }
       - { name: draft, label: Draft (hidden from the site), widget: boolean, default: false, required: false }
       - { name: body, label: Post, widget: markdown }
 
@@ -250,14 +251,14 @@ collections:
         file: src/content/site/profile.yml
         fields:
           - { name: name, label: Name, widget: string }
-          - { name: role, label: Role line, widget: string, hint: "Shown under your name on the home page, e.g. PhD Researcher in Artificial Intelligence." }
+          - { name: role, label: Role line, widget: string, hint: "Shown under your name on the home page, e.g. Researcher in Artificial Intelligence." }
+          - { name: card_role, label: "About card: role line", widget: string, required: false, hint: "Short line under your name on the About card, e.g. Researcher · AI engineer. Falls back to the role line." }
           - { name: affiliation, label: Affiliation, widget: string, required: false, hint: "University or organisation, shown above your name." }
           - { name: bio, label: Bio, widget: text, hint: "Wrap words in **double asterisks** to make them bold." }
-          - { name: photo, label: Photo, widget: image, required: false, hint: "Square works best; shown small in the Research focus card on the home page." }
-          - { name: research_area, label: "Research focus: Area", widget: string, required: false, hint: "Leave empty to hide this row." }
-          - { name: methods, label: "Research focus: Methods", widget: string, required: false }
-          - { name: location, label: "Research focus: Based in", widget: string, required: false }
-          - { name: active_since, label: "Research focus: Since", widget: string, required: false }
+          - { name: photo, label: Photo, widget: image, required: false, hint: "Square works best; shown small on the About card on the home page." }
+          - { name: research_area, label: "About card: Research area", widget: string, required: false, hint: "Leave empty to hide this row." }
+          - { name: methods, label: "About card: Methods", widget: string, required: false }
+          - { name: location, label: "About card: Location", widget: string, required: false, hint: "e.g. Currently in Chengdu, China" }
           - name: links
             label: Links
             widget: object

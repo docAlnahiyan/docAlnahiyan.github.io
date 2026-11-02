@@ -1,12 +1,12 @@
 name: Al-Nahiyan Khushbu
 role: Researcher in Artificial Intelligence
+card_role: Researcher · AI engineer
 affiliation: ""
 bio: I'm a **researcher in artificial intelligence** working in medical imaging and computer vision — building models that read medical scans to detect disease earlier and more reliably.
 photo: /uploads/me-and-lila.jpg
 research_area: Medical imaging · Computer vision
 methods: Deep learning · Machine learning · AI
 location: Currently in Chengdu, China
-active_since: Sep 2025
 links:
   cv: /cv/
   scholar: ""

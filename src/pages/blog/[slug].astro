@@ -1,8 +1,11 @@
 ---
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPosts, type Post } from '../../lib/content';
+import { getPosts, getProfile, type Post } from '../../lib/content';
 import { fullDate, isoDate } from '../../lib/format';
+import { imageSize } from '../../lib/images';
+import { blogPostingLd } from '../../lib/jsonld';
+import { SITE } from '../../site';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
@@ -12,9 +15,13 @@ export async function getStaticPaths() {
 const { entry } = Astro.props as { entry: Post };
 const d = entry.data;
 const { Content } = await render(entry);
+const profile = await getProfile();
+const coverSize = await imageSize(d.cover);
+const coverAlt = d.cover_alt ?? d.title;
+const jsonLd = blogPostingLd(entry, profile, Astro.url.pathname, d.cover ?? SITE.ogImage);
 ---
 
-<BaseLayout title={d.title} description={d.excerpt} type="article" image={d.cover}>
+<BaseLayout title={d.title} description={d.excerpt} type="article" image={d.cover} imageAlt={d.cover ? coverAlt : undefined} jsonLd={jsonLd}>
   <article class="wrap view">
     <a class="back" href="/blog/">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
@@ -22,7 +29,7 @@ const { Content } = await render(entry);
     </a>
     <h1 class="detail-title">{d.title}</h1>
     <p class="detail-meta"><time datetime={isoDate(d.date)}>{fullDate(d.date)}</time></p>
-    {d.cover && <img class="cover" src={d.cover} alt="" />}
+    {d.cover && <img class="cover" src={d.cover} alt={coverAlt} width={coverSize?.width} height={coverSize?.height} />}
     <div class="prose">
       <Content />
     </div>
@@ -32,6 +39,8 @@ const { Content } = await render(entry);
 <style>
   .cover {
     display: block;
+    width: 100%;
+    height: auto;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     margin: 0 0 28px;

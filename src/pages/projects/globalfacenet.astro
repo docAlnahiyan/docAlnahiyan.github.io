@@ -3,6 +3,7 @@
 // design-reference/globalfacenet-explainer.html. Replaces the page generated
 // from src/content/projects/globalfacenet.md (see explainers.ts); the code
 // link comes from that entry.
+import { ext } from '../../lib/links';
 import { getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import GlobalFaceNetExplainer from '../../components/projects/GlobalFaceNetExplainer.astro';
@@ -16,7 +17,7 @@ const repo = entry.data.repo_url;
 
 <BaseLayout
   title="GlobalFaceNet"
-  description="GlobalFaceNet, a CNN–Transformer hybrid that reads emotion from a single face by combining fine local detail with global context — explained stage by stage. 85.0% on RAF-DB."
+  description="GlobalFaceNet: a CNN–Transformer hybrid that reads emotion from one face by combining local detail with global context. 85.0% on RAF-DB."
   type="article"
 >
   <article class="wrap view xp">
@@ -34,7 +35,7 @@ const repo = entry.data.repo_url;
     <p class="meta">A CNN–Transformer hybrid that classifies a face into one of seven emotions. Two pathways: one reads local detail, the other the global layout, then they combine.</p>
     {repo && (
       <div class="actions head-actions">
-        <a class="btn" href={repo}>View code</a>
+        <a class="btn" href={repo} {...ext(repo)}>View code</a>
       </div>
     )}
     <ul class="badges">

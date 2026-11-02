@@ -1,4 +1,5 @@
 ---
+import { ext } from '../lib/links';
 import type { Publication } from '../lib/content';
 import PaperTags from './PaperTags.astro';
 import CopyButton from './CopyButton.astro';
@@ -47,9 +48,9 @@ const theme = themeForPublication(pub.id);
   )}
 
   <div class="actions">
-    {d.doi && <a class="btn ghost small" href={doiUrl(d.doi)}>DOI</a>}
-    {d.url && <a class="btn ghost small" href={d.url}>Paper</a>}
-    {d.code_url && <a class="btn ghost small" href={d.code_url}>Code</a>}
+    {d.doi && <a class="btn ghost small" href={doiUrl(d.doi)} {...ext(doiUrl(d.doi))}>DOI</a>}
+    {d.url && <a class="btn ghost small" href={d.url} {...ext(d.url)}>Paper</a>}
+    {d.code_url && <a class="btn ghost small" href={d.code_url} {...ext(d.code_url)}>Code</a>}
     <CopyButton text={d.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />
     {canRequest && (
       <a class="btn ghost small" href={requestPaperMailto(requestEmail, d.title)}>Request full paper</a>

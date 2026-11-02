@@ -2,7 +2,7 @@
   "name": "al-nahiyan-portfolio",
   "private": true,
   "version": "2.0.0",
-  "description": "Academic portfolio of Al-Nahiyan Khushbu, PhD researcher in AI at Southwest Jiaotong University.",
+  "description": "Academic portfolio of Al-Nahiyan Khushbu, researcher in artificial intelligence.",
   "homepage": "https://docalnahiyan.github.io",
   "license": "MIT",
   "type": "module",
@@ -15,9 +15,25 @@
     "preview": "astro preview"
   },
   "dependencies": {
+    "@astrojs/markdown-satteri": "0.4.6",
     "@astrojs/mdx": "8.0.2",
     "@astrojs/sitemap": "3.7.4",
+    "@fontsource-variable/newsreader": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
+    "@fontsource/newsreader": "5.3.0",
+    "@resvg/resvg-js": "2.6.2",
+    "@tensorflow-models/blazeface": "0.1.0",
+    "@tensorflow/tfjs-backend-cpu": "4.22.0",
+    "@tensorflow/tfjs-backend-webgl": "4.22.0",
+    "@tensorflow/tfjs-converter": "4.22.0",
+    "@tensorflow/tfjs-core": "4.22.0",
     "astro": "7.3.5",
-    "roughjs": "4.6.6"
+    "roughjs": "4.6.6",
+    "satori": "0.63.2",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "pagefind": "1.6.0"
   }
 }

@@ -2,6 +2,8 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import { satteri } from '@astrojs/markdown-satteri';
+import { externalLinks } from './src/lib/external-links-plugin.ts';
 import { REPLACED_PAGES } from './src/components/research/themes.ts';
 
 // The public address, used for canonical links, Open Graph URLs and the
@@ -19,4 +21,9 @@ export default defineConfig({
   output: 'static',
   redirects,
   integrations: [mdx(), sitemap()],
+  markdown: {
+    // Off-site links in Markdown and MDX open in a new tab; links within the
+    // site (relative, or to this origin) stay in the same tab.
+    processor: satteri({ hastPlugins: [externalLinks(site)] }),
+  },
 });

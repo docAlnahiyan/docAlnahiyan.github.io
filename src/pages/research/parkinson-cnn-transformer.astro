@@ -5,11 +5,19 @@
 // parkinsons-hybrid-cnn-transformer-2d, whose old address redirects here.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ParkinsonExplainer from '../../components/research/ParkinsonExplainer.astro';
+import { getEntry } from 'astro:content';
+import { getProfile } from '../../lib/content';
+import { scholarlyArticleLd } from '../../lib/jsonld';
+
+const pub = await getEntry('publications', 'parkinsons-hybrid-cnn-transformer-2d');
+if (!pub) throw new Error('Missing publication "parkinsons-hybrid-cnn-transformer-2d".');
+const jsonLd = scholarlyArticleLd(pub, await getProfile(), Astro.url.pathname);
 ---
 
 <BaseLayout
+  jsonLd={jsonLd}
   title="Reading Parkinson's from a brain MRI"
-  description="A hybrid CNN–Transformer that sorts a structural brain scan into Control, Prodromal, or Parkinson's — followed stage by stage from the PPMI archive to a prediction. IARCE 2024 Best Paper."
+  description="A hybrid CNN–Transformer that sorts a brain MRI into Control, Prodromal or Parkinson's, followed stage by stage. IARCE 2024 Best Paper."
   type="article"
 >
   <article class="wrap view research">

@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PublicationItem from '../components/PublicationItem.astro';
 import { getProfile, getPublications } from '../lib/content';
+import { scholarlyArticleLd } from '../lib/jsonld';
 
 const profile = await getProfile();
 const pubs = await getPublications();
@@ -23,9 +24,15 @@ const groups = [
     items: pubs.filter((p) => p.data.status === 'preprint'),
   },
 ].filter((g) => g.items.length > 0);
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': pubs.map((p) => scholarlyArticleLd(p, profile, `/publications/#${p.id}`, false)),
+};
 ---
 
 <BaseLayout
+  jsonLd={jsonLd}
   title="Publications"
   description="Publications by Al-Nahiyan Khushbu: peer-reviewed papers, papers under review and preprints, with abstracts, DOIs and BibTeX."
 >

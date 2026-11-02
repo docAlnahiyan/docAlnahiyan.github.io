@@ -1,8 +1,19 @@
 ---
+// Self-hosted fonts (no request to Google Fonts): only the faces the site
+// uses. Each @font-face has font-display: swap.
+import '@fontsource-variable/newsreader/opsz.css';
+import '@fontsource-variable/newsreader/opsz-italic.css';
+import '@fontsource/ibm-plex-sans/400.css';
+import '@fontsource/ibm-plex-sans/400-italic.css';
+import '@fontsource/ibm-plex-sans/500.css';
+import '@fontsource/ibm-plex-sans/600.css';
+import '@fontsource/ibm-plex-mono/400.css';
+import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import { SITE } from '../site';
+import { serializeLd } from '../lib/jsonld';
 
 interface Props {
   /** Page title; the site name is appended. Omit on the home page. */
@@ -13,6 +24,8 @@ interface Props {
   imageAlt?: string;
   type?: 'website' | 'article';
   noindex?: boolean;
+  /** schema.org structured data (see src/lib/jsonld.ts). */
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
@@ -22,9 +35,14 @@ const {
   imageAlt = SITE.ogImageAlt,
   type = 'website',
   noindex = false,
+  jsonLd,
 } = Astro.props;
 
-const fullTitle = title ? `${title} · ${SITE.name}` : SITE.name;
+// The site name is appended only while the whole title stays within what
+// search results show (~60 characters).
+const TITLE_MAX = 60;
+const withSite = title ? `${title} · ${SITE.name}` : SITE.name;
+const fullTitle = title && withSite.length > TITLE_MAX ? title : withSite;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const imageUrl = new URL(image, Astro.site).href;
 const isDefaultImage = image === SITE.ogImage;
@@ -57,6 +75,8 @@ const isDefaultImage = image === SITE.ogImage;
     <meta name="twitter:image" content={imageUrl} />
     <meta name="twitter:image:alt" content={imageAlt} />
 
+    {jsonLd && <script type="application/ld+json" set:html={serializeLd(jsonLd)} />}
+
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />
 
@@ -71,12 +91,6 @@ const isDefaultImage = image === SITE.ogImage;
       } catch {}
     </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap"
-    />
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>

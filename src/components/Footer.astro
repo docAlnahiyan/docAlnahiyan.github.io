@@ -1,4 +1,5 @@
 ---
+import { ext } from '../lib/links';
 import { getProfile } from '../lib/content';
 
 const profile = await getProfile();
@@ -24,7 +25,7 @@ const external = [
     </p>
     <ul class="footer-links">
       <li><a href="/upwork/">Upwork</a></li>
-      {external.map((l) => <li><a href={l.href} rel="me">{l.label}</a></li>)}
+      {external.map((l) => <li><a href={l.href} {...ext(l.href, 'me')}>{l.label}</a></li>)}
     </ul>
     <p class="footer-copy">© {year} {profile.name}</p>
   </div>

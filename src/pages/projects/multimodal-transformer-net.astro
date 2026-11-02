@@ -3,6 +3,7 @@
 // design-reference/multimodal-explainer.html. Replaces the page generated
 // from src/content/projects/multimodal-transformer-net.md (see
 // explainers.ts); the code link comes from that entry.
+import { ext } from '../../lib/links';
 import { getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import MultimodalExplainer from '../../components/projects/MultimodalExplainer.astro';
@@ -16,7 +17,7 @@ const repo = entry.data.repo_url;
 
 <BaseLayout
   title="MultimodalTransformerNet"
-  description="MultimodalTransformerNet reads emotion from a face and a voice together, with cross-modal attention letting each stream weigh the other — explained stage by stage. 99.7% on balanced RAF-DB + RAVDESS."
+  description="Reading emotion from a face and a voice together, with cross-modal attention letting each stream weigh the other. 99.7% on balanced RAF-DB + RAVDESS."
   type="article"
 >
   <article class="wrap view xp">
@@ -34,7 +35,7 @@ const repo = entry.data.repo_url;
     <p class="meta">Two streams — a CNN–Transformer that reads the face, a deep network that reads the voice — meet in a cross-modal attention layer that lets each modality weigh the other before deciding.</p>
     {repo && (
       <div class="actions head-actions">
-        <a class="btn" href={repo}>View code</a>
+        <a class="btn" href={repo} {...ext(repo)}>View code</a>
       </div>
     )}
     <ul class="badges">

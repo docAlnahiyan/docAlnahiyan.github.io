@@ -166,7 +166,7 @@ Fonts: **Newsreader** (name/display), **IBM Plex Sans** (body), **IBM Plex Mono*
 - **Position:** **upper-left**, name at ≈ **x 6%, y 15%**; bio line directly under it.
 - **Content:** 
   - **Name** = the large scatter-text (display font).
-  - **Bio** = one small line under it: e.g. *"PhD researcher in Artificial Intelligence, doing a PhD at Southwest Jiaotong University."* — **mention Southwest Jiaotong University only once, here.** Tiny mono/sans.
+  - **Bio** = one small line under it: e.g. *"Researcher in Artificial Intelligence."* Tiny mono/sans.
 - **No background, no card** — fully transparent so the scene shows through.
 - **Effect:** each character is its own element; on cursor-move nearby letters are **pushed away** from the pointer and spring back with a bouncy overshoot (the "knocked" wobble). Port the **Repel Text** demo's physics exactly. Approved defaults:
   - radius of influence `R = 130px`

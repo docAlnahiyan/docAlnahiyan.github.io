@@ -1,4 +1,5 @@
 ---
+import { ext } from '../../lib/links';
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Metrics from '../../components/Metrics.astro';
@@ -42,7 +43,7 @@ const { Content } = await render(entry);
 
     {d.repo_url && (
       <div class="actions">
-        <a class="btn ghost" href={d.repo_url}>Code on GitHub</a>
+        <a class="btn ghost" href={d.repo_url} {...ext(d.repo_url)}>Code on GitHub</a>
       </div>
     )}
   </article>

@@ -1,4 +1,5 @@
 ---
+import { ext } from '../../lib/links';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import ExpandItem from '../../components/ExpandItem.astro';
 import Metrics from '../../components/Metrics.astro';
@@ -33,7 +34,7 @@ const projects = await getProjects();
         {firstParagraph(p.body) && <p>{firstParagraph(p.body)}</p>}
         <Metrics items={p.data.metrics} />
         {p.data.repo_url && (
-          <a slot="actions" class="btn ghost" href={p.data.repo_url}>Code on GitHub</a>
+          <a slot="actions" class="btn ghost" href={p.data.repo_url} {...ext(p.data.repo_url)}>Code on GitHub</a>
         )}
       </ExpandItem>
     ))}

@@ -11,6 +11,21 @@
 import { defineCollection, reference } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
+import { readdirSync } from 'node:fs';
+
+/**
+ * glob() for a folder that may hold no entries yet (Upwork items are added
+ * from the admin): an empty folder loads nothing instead of logging a warning.
+ */
+const optionalFolder = (base: string, pattern: string) => {
+  let hasEntries = false;
+  try {
+    hasEntries = readdirSync(base).some((f) => /\.mdx?$/.test(f));
+  } catch {
+    hasEntries = false;
+  }
+  return hasEntries ? glob({ pattern, base }) : { name: 'empty-folder', load: async () => {} };
+};
 
 // The admin writes an empty string when an optional field is cleared.
 const blankToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v);
@@ -115,12 +130,14 @@ const blog = defineCollection({
     date: z.coerce.date(),
     excerpt: z.string(),
     cover: optionalImage,
+    /** Describes the cover for screen readers; the title is used if empty. */
+    cover_alt: optionalText,
     draft: z.boolean().default(false),
   }),
 });
 
 const upwork = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/upwork' }),
+  loader: optionalFolder('./src/content/upwork', '**/*.{md,mdx}'),
   schema: z.object({
     title: z.string(),
     summary: z.string(),
@@ -142,11 +159,12 @@ const site = defineCollection({
     /** Markdown; **bold** is allowed. */
     bio: z.string(),
     photo: optionalImage,
-    // "Research focus" card on the home page; empty fields are hidden.
+    // "About" card on the home page; empty fields are hidden.
+    /** Short role line under the name on the card; falls back to `role`. */
+    card_role: optionalText,
     research_area: optionalText,
     methods: optionalText,
     location: optionalText,
-    active_since: optionalText,
     links: z.object({
       cv: optionalText,
       scholar: optionalUrl,

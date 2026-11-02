@@ -2,6 +2,8 @@
 // Home: the animated sketch hero (design-reference/landing-scene-spec.md), then
 // About with the author card, then the wider "At a glance" row.
 // Other pages keep the narrow reading width.
+import { ext } from '../lib/links';
+import { personLd } from '../lib/jsonld';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroScene from '../components/HeroScene.astro';
 import { getProfile, getPublications, getProjects, getPosts, getUpworkItems } from '../lib/content';
@@ -92,10 +94,9 @@ const facts = [
   { label: 'Location', value: profile.location && `${profile.location}\u00a0🇨🇳` },
 ].filter((f): f is { label: string; value: string } => Boolean(f.value));
 
-const plainBio = profile.bio.replace(/\*\*/g, '');
 ---
 
-<BaseLayout description={`${profile.name} — ${plainBio}`}>
+<BaseLayout description={`${profile.name}, AI researcher in medical imaging and computer vision, building models that read medical scans to detect disease earlier.`} jsonLd={personLd(profile)}>
   <HeroScene
     name={profile.name}
     bio={[profile.role, profile.affiliation].filter(Boolean).join(' at ')}
@@ -106,7 +107,7 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
       <h2 id="about-head" class="k">About</h2>
       <p class="bio copy" set:html={inlineMarkdown(profile.bio)} />
       <ul class="links">
-        {aboutLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+        {aboutLinks.map((l) => <li><a href={l.href} {...ext(l.href)}>{l.label}</a></li>)}
         <li><span class="selectable">{links.email}</span></li>
       </ul>
     </div>
@@ -124,7 +125,7 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
           <div>
             <h2 id="focus-label" class="k">About</h2>
             <p class="focus-name">{profile.name}&nbsp;🇧🇩</p>
-            {profile.role && <p class="focus-role">{profile.role}</p>}
+            {(profile.card_role ?? profile.role) && <p class="focus-role">{profile.card_role ?? profile.role}</p>}
           </div>
         </div>
         <dl class="facts">
