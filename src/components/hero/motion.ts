@@ -246,7 +246,8 @@ const clamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v);
 const mapc = (v: number, a: number, b: number, oa: number, ob: number) =>
   oa + (ob - oa) * clamp((v - a) / (b - a), 0, 1);
 
-type Mode = 'genie' | 'jump';
+/** The dive into a mountain button: a quick collapse up into it (genie). */
+type Mode = 'genie';
 
 interface Dive {
   t: number;
@@ -273,8 +274,8 @@ export interface Geo {
 /**
  * The explorer and dog, ported from design-reference/explorer-proto.html:
  * road-locked, following the pointer's x with distance-based speed (spec
- * §5.1), the dog trailing with a hop now and then (§4.12), and the genie or
- * jump dive into a mountain button on click (§5.2). The proto's per-frame
+ * §5.1), the dog trailing with a hop now and then (§4.12), and a quick dive
+ * into a mountain button on click (§5.2). The proto's per-frame
  * factors are kept and scaled by frame time, so speed is the same at 60 or
  * 120 Hz.
  */
@@ -307,38 +308,27 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
   });
 
   // ---- dive into a mountain button ----
-  let hoverSince = 0;
-  let lastPointerType = 'mouse';
   let navTimer: number | null = null;
   heroEl.querySelectorAll<HTMLAnchorElement>('.peak-link').forEach((a, i) => {
-    a.addEventListener('pointerenter', () => {
-      hoverSince = performance.now();
-    });
-    a.addEventListener('pointerdown', (e) => { lastPointerType = e.pointerType || 'mouse'; });
     a.addEventListener('click', (e) => {
-      // Keyboard (detail 0), new-tab and modified clicks stay plain links —
-      // navigate instantly, no dive.
+      // Keyboard (detail 0), new-tab and modified clicks stay plain links.
       if (e.detail === 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
       const to = geo.buttons[i];
       if (!to) return; // buttons hidden (narrow screen): plain link
       e.preventDefault();
       if (ex.dive) return; // a dive is already running
       const href = a.href;
-      // A quick, direct click gets the genie; a leisurely one the jump.
-      const touch = lastPointerType !== 'mouse';
-      const mode: Mode = (touch || performance.now() - hoverSince < 500) ? 'genie' : 'jump';
-      const dur = mode === 'genie' ? 0.5 : 0.8;
-      ex.facing = to[0] > ex.x ? 1 : -1;
+      const dur = 0.35; // quick, snappy
+      ex.facing = 1;
+      // Anchor the dive AT the button: he collapses up into it from the road
+      // directly below, so there's no slow travel across the scene.
       ex.dive = {
-        t: 0, start: performance.now(), dur, mode, rippled: false,
-        from: { x: ex.x, y: geo.roadY(ex.x) }, to: { x: to[0], y: to[1] },
+        t: 0, start: performance.now(), dur, mode: 'genie', rippled: true,
+        from: { x: to[0], y: geo.roadY(to[0]) }, to: { x: to[0], y: to[1] },
       };
-      ripple(to[0], to[1]);   // respond at the tap point at once
-      ex.dive.rippled = true; // so the mid-dive ripple doesn't double up
-      // Hold the navigation so the dive is seen, then go. The timeout is a
-      // safety net; it fires a hair after the ripple lands.
+      ripple(to[0], to[1]); // respond at the tap point immediately
       if (navTimer !== null) clearTimeout(navTimer);
-      navTimer = window.setTimeout(() => { window.location.href = href; }, dur * 1000 + 80);
+      navTimer = window.setTimeout(() => { window.location.href = href; }, dur * 1000 + 40);
     });
   });
   // If the visitor clicks a different link during the dive's hold, let that
@@ -421,34 +411,14 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
       const A = ex.dive;
       A.t += dt / A.dur;
       const t = clamp(A.t, 0, 1);
-      let x: number;
-      let y: number;
-      let s: number;
-      let r = 0;
-      let op = 1;
-      if (A.mode === 'genie') {
-        // Slide onto the button, then collapse into it with a slight swirl.
-        const e = Math.pow(t, 1.3);
-        x = A.from.x + (A.to.x - A.from.x) * e;
-        y = A.from.y + (A.to.y - A.from.y) * e;
-        s = 1 - t * t;
-        r = ex.facing * t * 26;
-        op = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15;
-      } else if (t < 0.72) {
-        // Arc up and land exactly on the button...
-        const e = t / 0.72;
-        x = A.from.x + (A.to.x - A.from.x) * e;
-        y = A.from.y + (A.to.y - A.from.y) * e - 150 * geo.fig * Math.sin(Math.PI * e);
-        s = 1;
-      } else {
-        // ...then dive in.
-        const k = (t - 0.72) / 0.28;
-        x = A.to.x;
-        y = A.to.y;
-        s = 1 - k;
-        r = ex.facing * k * 20;
-      }
-      if (!A.rippled && t >= (A.mode === 'genie' ? 0.6 : 0.72)) {
+      // Rise from the road onto the button, collapsing into it with a slight swirl.
+      const e = Math.pow(t, 1.3);
+      const x = A.from.x + (A.to.x - A.from.x) * e;
+      const y = A.from.y + (A.to.y - A.from.y) * e;
+      const s = 1 - t * t;
+      const r = ex.facing * t * 26;
+      const op = t < 0.85 ? 1 : 1 - (t - 0.85) / 0.15;
+      if (!A.rippled && t >= 0.6) {
         A.rippled = true;
         ripple(A.to.x, A.to.y);
       }
