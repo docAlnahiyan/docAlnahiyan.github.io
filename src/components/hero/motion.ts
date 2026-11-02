@@ -308,6 +308,7 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
 
   // ---- dive into a mountain button ----
   let hoverSince = 0;
+  let navTimer: number | null = null;
   heroEl.querySelectorAll<HTMLAnchorElement>('.peak-link').forEach((a, i) => {
     a.addEventListener('pointerenter', () => {
       hoverSince = performance.now();
@@ -331,8 +332,23 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
       };
       // Hold the navigation so the dive is seen, then go. The timeout is a
       // safety net; it fires a hair after the ripple lands.
-      window.setTimeout(() => { window.location.href = href; }, dur * 1000 + 80);
+      if (navTimer !== null) clearTimeout(navTimer);
+      navTimer = window.setTimeout(() => { window.location.href = href; }, dur * 1000 + 80);
     });
+  });
+  // If the visitor clicks a different link during the dive's hold, let that
+  // navigation win — cancel the pending peak navigation so they aren't pulled
+  // to the peak's page on a slow load.
+  document.addEventListener('click', (e) => {
+    if (navTimer === null) return;
+    const link = (e.target as Element)?.closest?.('a[href]');
+    if (link && !link.classList.contains('peak-link')) {
+      clearTimeout(navTimer);
+      navTimer = null;
+    }
+  }, true);
+  window.addEventListener('pagehide', () => {
+    if (navTimer !== null) { clearTimeout(navTimer); navTimer = null; }
   });
   // Coming back with the Back button restores this page as it was left;
   // put the explorer back on the road.
