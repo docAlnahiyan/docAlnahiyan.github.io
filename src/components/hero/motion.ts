@@ -308,11 +308,13 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
 
   // ---- dive into a mountain button ----
   let hoverSince = 0;
+  let lastPointerType = 'mouse';
   let navTimer: number | null = null;
   heroEl.querySelectorAll<HTMLAnchorElement>('.peak-link').forEach((a, i) => {
     a.addEventListener('pointerenter', () => {
       hoverSince = performance.now();
     });
+    a.addEventListener('pointerdown', (e) => { lastPointerType = e.pointerType || 'mouse'; });
     a.addEventListener('click', (e) => {
       // Keyboard (detail 0), new-tab and modified clicks stay plain links —
       // navigate instantly, no dive.
@@ -323,13 +325,16 @@ export function explorer(heroEl: HTMLElement, getGeo: () => Geo): Tick {
       if (ex.dive) return; // a dive is already running
       const href = a.href;
       // A quick, direct click gets the genie; a leisurely one the jump.
-      const mode: Mode = performance.now() - hoverSince < 500 ? 'genie' : 'jump';
+      const touch = lastPointerType !== 'mouse';
+      const mode: Mode = (touch || performance.now() - hoverSince < 500) ? 'genie' : 'jump';
       const dur = mode === 'genie' ? 0.5 : 0.8;
       ex.facing = to[0] > ex.x ? 1 : -1;
       ex.dive = {
         t: 0, start: performance.now(), dur, mode, rippled: false,
         from: { x: ex.x, y: geo.roadY(ex.x) }, to: { x: to[0], y: to[1] },
       };
+      ripple(to[0], to[1]);   // respond at the tap point at once
+      ex.dive.rippled = true; // so the mid-dive ripple doesn't double up
       // Hold the navigation so the dive is seen, then go. The timeout is a
       // safety net; it fires a hair after the ripple lands.
       if (navTimer !== null) clearTimeout(navTimer);
