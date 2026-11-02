@@ -6,7 +6,10 @@
 import { ext } from '../../lib/links';
 import { getEntry } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import CopyButton from '../../components/CopyButton.astro';
+import ReadingProgress from '../../components/reading/ReadingProgress.astro';
+import PrevNext from '../../components/reading/PrevNext.astro';
+import { neighbours, researchSequence } from '../../lib/reading';
+import Cite from '../../components/Cite.astro';
 import DigDeeper from '../../components/research/DigDeeper.astro';
 import WarehouseSim from '../../components/research/WarehouseSim.astro';
 import { getProfile } from '../../lib/content';
@@ -42,6 +45,7 @@ const worlds = [
   ['strategic_high', 'Strategic', '1.23%', 378, 3490],
   ['careful_high', 'Careful', '1.47%', 1241, 4174],
 ] as const;
+const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
 ---
 
 <BaseLayout
@@ -50,7 +54,8 @@ const worlds = [
   description="Catching warehouse theft even when the thief edits the records — attributing loss to people, with a live simulation. Preprint, not peer-reviewed."
   type="article"
 >
-  <article class="wrap view research">
+  <ReadingProgress />
+  <article data-pagefind-body class="wrap view research">
     <nav class="crumb" aria-label="Breadcrumb">
       <a href="/research/">Research</a> <span aria-hidden="true">›</span> <span aria-current="page">Warehouse theft attribution</span>
     </nav>
@@ -145,11 +150,12 @@ const worlds = [
         </div>
         <div class="cite-head">
           <h3>Cite</h3>
-          <CopyButton text={p.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />
+          <Cite pub={pub} />
         </div>
         <pre class="cite">{p.bibtex}</pre>
       </Fragment>
     </DigDeeper>
+    <PrevNext prev={prev} next={next} kind="research page" />
   </article>
 </BaseLayout>
 

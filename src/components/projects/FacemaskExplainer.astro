@@ -6,6 +6,7 @@
 // drawings, not photographs; the demo confidences are illustrative.
 import { CAM_FACES, DET_FACES, HAIR, HERO_FACES, SKIN, detBoxesSvg, faceSvg } from './facemask-data';
 import { seeded } from './explainer';
+import FacemaskLiveDemo from './FacemaskLiveDemo.astro';
 
 // Fixed blink offsets, so every build draws the same page.
 const rand = seeded(11);
@@ -97,6 +98,8 @@ const mono = 'font-family:var(--font-mono)';
       <p class="note">The detector only answers "is this a face, and where?" — it says nothing yet about masks.</p>
     </div>
   </section>
+
+  <FacemaskLiveDemo />
 
   <section class="stage" id="s4" aria-labelledby="s4-title">
     <div class="kick">Stage 4 · The classifier</div>

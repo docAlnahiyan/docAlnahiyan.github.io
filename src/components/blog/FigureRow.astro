@@ -1,0 +1,23 @@
+---
+// Two or more figures side by side, each with its own caption (MDX):
+//   <FigureRow>
+//     <Figure src="…" alt="…" caption="…" />
+//     <Figure src="…" alt="…" caption="…" />
+//   </FigureRow>
+// Stacks on phones.
+---
+
+<div class="fig-row"><slot /></div>
+
+<style>
+  .fig-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+    clear: both;
+  }
+  .fig-row > :global(.fig) {
+    margin: 0;
+  }
+</style>

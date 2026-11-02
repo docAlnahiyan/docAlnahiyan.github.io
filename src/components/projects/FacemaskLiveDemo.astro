@@ -1,0 +1,265 @@
+---
+// Live demo on the facemask page: a real pre-trained face detector
+// (BlazeFace) running in the browser on a bundled sample photo or, with the
+// visitor's explicit go-ahead, their own camera. See facemask-live.ts.
+
+const samples = [
+  { id: 'masked-nurse', label: 'Masked, close-up', src: '/projects/facemask/samples/masked-nurse.jpg', w: 960, h: 640, alt: 'A soldier wearing a black face mask in an office, with masked colleagues behind her' },
+  { id: 'unmasked-crew', label: 'No masks', src: '/projects/facemask/samples/unmasked-crew.jpg', w: 960, h: 768, alt: 'Three astronauts in blue flight suits posing for a crew portrait' },
+  { id: 'masked-crowd', label: 'Masked crowd', src: '/projects/facemask/samples/masked-crowd.jpg', w: 960, h: 561, alt: 'A group of sailors in camouflage uniforms, all wearing face masks, standing on a ship’s deck' },
+];
+---
+
+<section class="stage live" id="s-live" aria-labelledby="s-live-title">
+  <div class="kick">Try it · Runs in your browser</div>
+  <h2 id="s-live-title">A real face detector, live on this page</h2>
+  <p>The diagrams above are illustrations. This one is not: it runs <b>BlazeFace</b>, a small pre-trained face detector from Google, inside your browser with TensorFlow.js — the same job as the project's first stage, finding every face and boxing it. It is a <b>stand-in</b>: the project's own trained models were lost, so faces are found but <b>not classified</b> as masked or unmasked here.</p>
+  <div class="viz">
+    <div class="live-controls">
+      <div class="seg" role="group" aria-label="Sample photo">
+        {samples.map((s, i) => (
+          <button type="button" data-sample={s.id} aria-pressed={i === 0 ? 'true' : 'false'}>{s.label}</button>
+        ))}
+      </div>
+      <button type="button" class="btn" data-ref="run">Run the detector</button>
+    </div>
+    <div class="stagebox">
+      {samples.map((s, i) => (
+        <img class="sample" data-sample-img={s.id} src={s.src} width={s.w} height={s.h} alt={s.alt} loading="lazy" decoding="async" hidden={i !== 0} />
+      ))}
+      <video class="cam-video" data-ref="video" playsinline muted hidden></video>
+      <canvas class="overlay" data-ref="overlay" aria-hidden="true"></canvas>
+    </div>
+    <p class="live-status" data-ref="status" role="status" aria-live="polite">The model (about 0.5 MB) loads only when you press Run.</p>
+
+    <div class="camera">
+      <p class="cam-note"><b>Use your own camera instead?</b> Video stays on your device: frames are processed in this tab and nothing is uploaded or stored. The camera turns off when you press Stop or leave the page.</p>
+      <button type="button" class="btn ghost" data-ref="cam" aria-pressed="false">Turn on my camera</button>
+    </div>
+    <p class="note spaced">Boxes and scores are the detector's own output on that image — a demonstration of the method, not a measured accuracy. Small, turned or partly hidden faces can be missed. Sample photos: U.S. Army, NASA and U.S. Navy, public domain (<a href="/projects/facemask/samples/CREDITS.txt">credits</a>).</p>
+  </div>
+</section>
+
+<script>
+  const root = document.getElementById('s-live');
+  if (root) {
+    const $ = <T extends Element = HTMLElement>(ref: string) => root.querySelector<T>(`[data-ref="${ref}"]`)!;
+    const status = $('status'), overlay = $<HTMLCanvasElement>('overlay'), video = $<HTMLVideoElement>('video');
+    const runBtn = $<HTMLButtonElement>('run'), camBtn = $<HTMLButtonElement>('cam');
+    const imgs = [...root.querySelectorAll<HTMLImageElement>('[data-sample-img]')];
+    const segBtns = [...root.querySelectorAll<HTMLButtonElement>('[data-sample]')];
+    let current = imgs[0];
+    let lib: typeof import('./facemask-live') | undefined;
+    let stream: MediaStream | undefined;
+    let raf = 0;
+
+    const accent = () => getComputedStyle(root).getPropertyValue('--accent').trim() || '#c96442';
+
+    function draw(source: HTMLImageElement | HTMLVideoElement, faces: { x: number; y: number; w: number; h: number; score: number }[]) {
+      const w = source instanceof HTMLVideoElement ? source.videoWidth : source.naturalWidth;
+      const h = source instanceof HTMLVideoElement ? source.videoHeight : source.naturalHeight;
+      overlay.width = w;
+      overlay.height = h;
+      const ctx = overlay.getContext('2d')!;
+      ctx.clearRect(0, 0, w, h);
+      const lw = Math.max(2, w / 320), fs = Math.max(12, w / 48);
+      ctx.lineWidth = lw;
+      ctx.font = `600 ${fs}px ${getComputedStyle(document.body).getPropertyValue('--font-mono') || 'monospace'}`;
+      for (const f of faces) {
+        ctx.strokeStyle = accent();
+        ctx.strokeRect(f.x, f.y, f.w, f.h);
+        const label = `face ${(f.score * 100).toFixed(0)}%`;
+        const tw = ctx.measureText(label).width + fs * 0.6;
+        ctx.fillStyle = accent();
+        ctx.fillRect(f.x - lw / 2, f.y - fs * 1.4, tw, fs * 1.4);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, f.x + fs * 0.3 - lw / 2, f.y - fs * 0.38);
+      }
+    }
+
+    async function ensureModel() {
+      if (lib) return lib;
+      status.textContent = 'Loading TensorFlow.js and the BlazeFace model…';
+      runBtn.disabled = camBtn.disabled = true;
+      try {
+        lib = await import('./facemask-live');
+        const backend = await lib.loadDetector();
+        status.textContent = `Model ready (running on ${backend === 'webgl' ? 'your GPU via WebGL' : 'the CPU'}).`;
+        return lib;
+      } catch (err) {
+        lib = undefined;
+        status.textContent = "The live model couldn't load in this browser, so the demo is off. The illustrated stages above show the same method.";
+        root.classList.add('failed');
+        throw err;
+      } finally {
+        runBtn.disabled = camBtn.disabled = false;
+      }
+    }
+
+    async function runOnImage() {
+      if (stream) stopCamera();
+      const l = await ensureModel().catch(() => undefined);
+      if (!l) return;
+      if (!current.complete) await new Promise((r) => current.addEventListener('load', r, { once: true }));
+      const t0 = performance.now();
+      const faces = await l.detect(current);
+      draw(current, faces);
+      const ms = Math.round(performance.now() - t0);
+      status.textContent = faces.length
+        ? `Found ${faces.length} face${faces.length === 1 ? '' : 's'} in ${ms} ms, on your device.`
+        : `No faces found (${ms} ms). The detector misses small or turned faces.`;
+    }
+
+    function clear() {
+      overlay.getContext('2d')?.clearRect(0, 0, overlay.width, overlay.height);
+    }
+
+    for (const b of segBtns) {
+      b.addEventListener('click', () => {
+        for (const x of segBtns) x.setAttribute('aria-pressed', String(x === b));
+        if (stream) stopCamera();
+        current = imgs.find((i) => i.dataset.sampleImg === b.dataset.sample)!;
+        for (const i of imgs) i.hidden = i !== current;
+        clear();
+        if (lib) runOnImage();
+        else status.textContent = 'Press Run to detect faces in this photo.';
+      });
+    }
+    runBtn.addEventListener('click', runOnImage);
+
+    function stopCamera() {
+      cancelAnimationFrame(raf);
+      stream?.getTracks().forEach((t) => t.stop());
+      stream = undefined;
+      video.srcObject = null;
+      video.hidden = true;
+      current.hidden = false;
+      clear();
+      camBtn.textContent = 'Turn on my camera';
+      camBtn.setAttribute('aria-pressed', 'false');
+      status.textContent = 'Camera off.';
+    }
+
+    async function startCamera() {
+      const l = await ensureModel().catch(() => undefined);
+      if (!l) return;
+      if (!navigator.mediaDevices?.getUserMedia) {
+        status.textContent = "This browser doesn't offer camera access. Try a sample photo instead.";
+        return;
+      }
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } }, audio: false });
+      } catch {
+        status.textContent = 'Camera permission was not given, so the camera stays off.';
+        return;
+      }
+      video.srcObject = stream;
+      await video.play();
+      for (const i of imgs) i.hidden = true;
+      video.hidden = false;
+      camBtn.textContent = 'Stop camera';
+      camBtn.setAttribute('aria-pressed', 'true');
+      status.textContent = 'Camera on — detecting faces on your device. Nothing is uploaded.';
+      const loop = async () => {
+        if (!stream) return;
+        if (video.readyState >= 2) draw(video, await l.detect(video));
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+    }
+
+    camBtn.addEventListener('click', () => (stream ? stopCamera() : startCamera()));
+    // Never leave the camera running in the background.
+    addEventListener('pagehide', () => stream && stopCamera());
+    document.addEventListener('visibilitychange', () => document.hidden && stream && stopCamera());
+  }
+</script>
+
+<style>
+  .live-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 14px;
+    margin-bottom: 12px;
+  }
+  .seg {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 10px;
+    background: var(--surface-2);
+  }
+  .seg button {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    background: transparent;
+    border: none;
+    border-radius: 7px;
+    padding: 7px 12px;
+    cursor: pointer;
+  }
+  .seg button[aria-pressed='true'] {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .stagebox {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #11141a;
+    line-height: 0;
+  }
+  .sample,
+  .cam-video {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .sample[hidden],
+  .cam-video[hidden] {
+    display: none;
+  }
+  /* Mirror the camera like a mirror; the boxes are mirrored with it. */
+  .cam-video:not([hidden]),
+  .cam-video:not([hidden]) ~ .overlay {
+    transform: scaleX(-1);
+  }
+  .overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .live-status {
+    margin: 10px 0 0;
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .camera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 16px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    border: 1px dashed var(--border-strong);
+    border-radius: 10px;
+  }
+  .cam-note {
+    flex: 1 1 280px;
+    margin: 0 !important;
+    font-size: 13.5px !important;
+  }
+  .live.failed .camera,
+  .live.failed [data-ref='run'] {
+    display: none;
+  }
+  .live :global(.note.spaced) {
+    margin: 12px 0 0;
+  }
+</style>

@@ -514,16 +514,27 @@ const scores = [
     --pd: #c0564b;
     --prod: #c99a3f;
     --ctl: #3f8f6b;
+    /* Text in the cohort colours: darker (light theme) or lighter (dark
+       theme) so cohort names reach 4.5:1 contrast on the cards. */
+    --ctl-ink: #2c6a4e;
+    --prod-ink: #86601c;
+    --pd-ink: #a03a30;
   }
   @media (prefers-color-scheme: dark) {
     :global(:root:not([data-theme='light'])) .explainer {
       --ctrl: #6ea3df;
       --ctrl-soft: #26303a;
+      --ctl-ink: #6cc39b;
+      --prod-ink: #e2b867;
+      --pd-ink: #ec8a7f;
     }
   }
   :global(:root[data-theme='dark']) .explainer {
     --ctrl: #6ea3df;
     --ctrl-soft: #26303a;
+    --ctl-ink: #6cc39b;
+    --prod-ink: #e2b867;
+    --pd-ink: #ec8a7f;
   }
 
   /* Progress rail, fixed in the left margin on wide screens. */
@@ -659,9 +670,9 @@ const scores = [
     font-weight: 600;
     font-size: 15px;
   }
-  .nm.ctl { color: var(--ctl); }
-  .nm.prod { color: var(--prod); }
-  .nm.pd { color: var(--pd); }
+  .nm.ctl { color: var(--ctl-ink); }
+  .nm.prod { color: var(--prod-ink); }
+  .nm.pd { color: var(--pd-ink); }
   .cohort .ds {
     font-size: 13px;
     color: var(--ink-2);

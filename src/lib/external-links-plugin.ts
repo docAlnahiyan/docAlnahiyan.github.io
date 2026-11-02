@@ -2,6 +2,9 @@
 // tab with rel="noopener noreferrer". Astro 7 renders Markdown with Sätteri,
 // which takes hast plugins of its own instead of rehype plugins, so this does
 // what rehype-external-links did on the old unified pipeline.
+//
+// lazyImages: images written in Markdown load lazily and decode off the
+// main thread.
 
 import { defineHastPlugin } from 'satteri';
 
@@ -15,6 +18,18 @@ export const externalLinks = (siteOrigin: string) =>
         if (!/^https?:\/\//i.test(href) || href.startsWith(siteOrigin)) return;
         ctx.setProperty(node, 'target', '_blank');
         ctx.setProperty(node, 'rel', ['noopener', 'noreferrer']);
+      },
+    },
+  });
+
+export const lazyImages = () =>
+  defineHastPlugin({
+    name: 'lazy-images',
+    element: {
+      filter: ['img'],
+      visit(node, ctx) {
+        if (!node.properties?.loading) ctx.setProperty(node, 'loading', 'lazy');
+        if (!node.properties?.decoding) ctx.setProperty(node, 'decoding', 'async');
       },
     },
   });

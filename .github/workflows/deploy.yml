@@ -30,6 +30,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      # Accessibility, best-practice and SEO checks (Lighthouse, whose
+      # accessibility audits run axe-core) on key pages of the built site.
+      # Scores below the thresholds in lighthouserc.json fail the build, so
+      # nothing is deployed until they are fixed.
+      - name: Lighthouse CI
+        run: npx --yes @lhci/cli@0.15.1 autorun
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

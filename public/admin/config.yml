@@ -199,7 +199,9 @@ collections:
     label: Blog
     label_singular: Post
     folder: src/content/blog
-    extension: md
+    # MDX, so posts can place figures in the text (the "Figure" button in the
+    # editor inserts one). Plain Markdown is valid MDX.
+    extension: mdx
     format: frontmatter
     create: true
     slug: "{{fields.slug}}"
@@ -218,7 +220,17 @@ collections:
       - { name: cover, label: Cover image, widget: image, required: false }
       - { name: cover_alt, label: Cover description (alt text), widget: string, required: false, hint: "What the cover shows, for screen readers. If empty, the post title is used." }
       - { name: draft, label: Draft (hidden from the site), widget: boolean, default: false, required: false }
-      - { name: body, label: Post, widget: markdown }
+      - name: gallery
+        label: Image gallery
+        widget: list
+        required: false
+        hint: "Optional images shown as a gallery after the post; visitors can open each one large. To put a single image inside the text, use the Figure button in the editor."
+        summary: "{{fields.alt}}"
+        fields:
+          - { name: src, label: Image, widget: image }
+          - { name: alt, label: Description (alt text), widget: string, hint: "What the image shows, for screen readers." }
+          - { name: caption, label: Caption, widget: string, required: false }
+      - { name: body, label: Post, widget: markdown, hint: "Use the Figure button (+ menu) to place an image beside or within the text." }
 
   # -------------------------------------------------------------------- upwork
   - name: upwork

@@ -12,8 +12,9 @@ import '@fontsource/ibm-plex-mono/500.css';
 import '../styles/global.css';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
-import { SITE } from '../site';
+import { ANALYTICS, SITE } from '../site';
 import { serializeLd } from '../lib/jsonld';
+import { ogKey, ogPages } from '../lib/og';
 
 interface Props {
   /** Page title; the site name is appended. Omit on the home page. */
@@ -28,11 +29,16 @@ interface Props {
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
+// A page's own image wins; otherwise its generated card (src/lib/og.ts);
+// otherwise the site-wide image.
+const card = (await ogPages()).get(Astro.url.pathname.replace(/\/?$/, '/'));
+const generated = card ? `/og/${ogKey(Astro.url.pathname.replace(/\/?$/, '/'))}.png` : undefined;
+
 const {
   title,
   description = SITE.description,
-  image = SITE.ogImage,
-  imageAlt = SITE.ogImageAlt,
+  image = generated ?? SITE.ogImage,
+  imageAlt = card ? `${card.kind}: ${card.title} — Al-Nahiyan Khushbu` : SITE.ogImageAlt,
   type = 'website',
   noindex = false,
   jsonLd,
@@ -43,9 +49,14 @@ const {
 const TITLE_MAX = 60;
 const withSite = title ? `${title} · ${SITE.name}` : SITE.name;
 const fullTitle = title && withSite.length > TITLE_MAX ? title : withSite;
+
+// Analytics (ANALYTICS in src/site.ts): cookieless page counts, never loaded
+// for visitors with Do Not Track or Global Privacy Control switched on, nor
+// on localhost.
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const imageUrl = new URL(image, Astro.site).href;
-const isDefaultImage = image === SITE.ogImage;
+// Both the default image and the generated cards are 1200×630.
+const isDefaultImage = image === SITE.ogImage || image === generated;
 ---
 
 <!doctype html>
@@ -76,6 +87,20 @@ const isDefaultImage = image === SITE.ogImage;
     <meta name="twitter:image:alt" content={imageAlt} />
 
     {jsonLd && <script type="application/ld+json" set:html={serializeLd(jsonLd)} />}
+
+    {ANALYTICS.enabled && (
+      <script is:inline define:vars={{ domain: ANALYTICS.domain, src: ANALYTICS.src }}>
+        (function () {
+          var dnt = navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.globalPrivacyControl === true;
+          if (dnt || location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+          var s = document.createElement('script');
+          s.defer = true;
+          s.src = src;
+          s.dataset.domain = domain;
+          document.head.appendChild(s);
+        })();
+      </script>
+    )}
 
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="sitemap" href="/sitemap-index.xml" />

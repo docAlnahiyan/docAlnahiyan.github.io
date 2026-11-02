@@ -1,0 +1,228 @@
+---
+// A grid of thumbnails that open in a lightbox (MDX, or the post's
+// "gallery" field in the admin):
+//   <Gallery images={[{ src: '…', alt: '…', caption: '…' }]} />
+// The lightbox is a modal <dialog>: focus stays inside it, Esc closes it,
+// arrow keys step through the images, and focus returns to the thumbnail.
+import { imageSize } from '../../lib/images';
+
+export interface GalleryImage {
+  src: string;
+  alt: string;
+  caption?: string;
+}
+
+interface Props {
+  images: GalleryImage[];
+  /** Accessible name of the gallery, e.g. "MRI slices". */
+  label?: string;
+}
+
+const { images, label = 'Image gallery' } = Astro.props;
+const sized = await Promise.all(images.map(async (img) => ({ ...img, size: await imageSize(img.src) })));
+---
+
+{sized.length > 0 && (
+  <div class="gallery" role="group" aria-label={label}>
+    <ul class="grid">
+      {sized.map((img, i) => (
+        <li>
+          <button type="button" class="thumb" data-index={i} aria-label={`Open image ${i + 1} of ${sized.length}: ${img.alt}`}>
+            <img src={img.src} alt="" width={img.size?.width} height={img.size?.height} loading="lazy" decoding="async" />
+          </button>
+          {img.caption && <p class="cap">{img.caption}</p>}
+        </li>
+      ))}
+    </ul>
+    <dialog class="lightbox" aria-label={label}>
+      <div class="lb-inner">
+        <img class="lb-img" loading="lazy" decoding="async" src={sized[0].src} alt={sized[0].alt} width={sized[0].size?.width} height={sized[0].size?.height} />
+        <p class="lb-cap" aria-live="polite"></p>
+        <div class="lb-bar">
+          <button type="button" class="lb-btn" data-step="-1" aria-label="Previous image">←</button>
+          <span class="lb-count"></span>
+          <button type="button" class="lb-btn" data-step="1" aria-label="Next image">→</button>
+          <button type="button" class="lb-btn lb-close" aria-label="Close">Close ✕</button>
+        </div>
+      </div>
+    </dialog>
+    <script type="application/json" class="gallery-data" set:html={JSON.stringify(sized.map(({ src, alt, caption, size }) => ({ src, alt, caption, w: size?.width, h: size?.height })))} />
+  </div>
+)}
+
+<script>
+  type Item = { src: string; alt: string; caption?: string; w?: number; h?: number };
+  for (const gallery of document.querySelectorAll<HTMLElement>('.gallery')) {
+    const dialog = gallery.querySelector<HTMLDialogElement>('.lightbox');
+    const data = gallery.querySelector('.gallery-data')?.textContent;
+    if (!dialog || !data) continue;
+    const items: Item[] = JSON.parse(data);
+    const img = dialog.querySelector<HTMLImageElement>('.lb-img')!;
+    const cap = dialog.querySelector<HTMLElement>('.lb-cap')!;
+    const count = dialog.querySelector<HTMLElement>('.lb-count')!;
+    const thumbs = [...gallery.querySelectorAll<HTMLButtonElement>('.thumb')];
+    let current = 0;
+
+    const show = (i: number) => {
+      current = (i + items.length) % items.length;
+      const it = items[current];
+      img.src = it.src;
+      img.alt = it.alt;
+      if (it.w && it.h) {
+        img.width = it.w;
+        img.height = it.h;
+      }
+      cap.textContent = it.caption ?? '';
+      count.textContent = `${current + 1} / ${items.length}`;
+    };
+
+    for (const t of thumbs) {
+      t.addEventListener('click', () => {
+        show(Number(t.dataset.index));
+        dialog.showModal();
+        dialog.querySelector<HTMLButtonElement>('.lb-close')?.focus();
+      });
+    }
+    for (const b of dialog.querySelectorAll<HTMLButtonElement>('[data-step]')) {
+      b.addEventListener('click', () => show(current + Number(b.dataset.step)));
+    }
+    dialog.querySelector('.lb-close')?.addEventListener('click', () => dialog.close());
+    // Arrow keys step; Esc is handled by the dialog itself.
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') show(current + 1);
+      else if (e.key === 'ArrowLeft') show(current - 1);
+    });
+    // A click on the backdrop closes.
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) dialog.close();
+    });
+    dialog.addEventListener('close', () => thumbs[current]?.focus());
+    // Keep Tab inside the dialog's controls.
+    dialog.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+      const f = [...dialog.querySelectorAll<HTMLButtonElement>('button')];
+      const first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
+  }
+</script>
+
+<style>
+  .gallery {
+    margin: 24px 0;
+    clear: both;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .grid li + li {
+    margin-top: 0;
+  }
+  .thumb {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface-2);
+    cursor: zoom-in;
+  }
+  .thumb img {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border: none;
+    border-radius: 0;
+  }
+  .thumb:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .cap {
+    margin: 6px 0 0 !important;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: var(--ink-3);
+  }
+  .lightbox {
+    max-width: min(92vw, 900px);
+    max-height: 92vh;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    color: var(--ink);
+  }
+  .lightbox::backdrop {
+    background: rgb(0 0 0 / .72);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] {
+      animation: lb-in .18s ease-out;
+    }
+  }
+  @keyframes lb-in {
+    from { opacity: 0; transform: scale(.98); }
+  }
+  .lb-img {
+    display: block;
+    max-width: 100%;
+    max-height: 70vh;
+    width: auto;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 8px;
+  }
+  .lb-cap {
+    margin: 10px 0 0;
+    font-size: 13.5px;
+    color: var(--ink-2);
+    text-align: center;
+  }
+  .lb-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .lb-btn {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+  }
+  .lb-btn:hover {
+    border-color: var(--accent);
+  }
+  .lb-btn:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .lb-close {
+    margin-left: auto;
+  }
+  .lb-count {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+</style>

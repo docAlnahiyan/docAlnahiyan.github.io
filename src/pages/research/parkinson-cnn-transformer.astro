@@ -4,14 +4,21 @@
 // Replaces the generated page of research entry
 // parkinsons-hybrid-cnn-transformer-2d, whose old address redirects here.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReadingProgress from '../../components/reading/ReadingProgress.astro';
+import PrevNext from '../../components/reading/PrevNext.astro';
+import { neighbours, researchSequence } from '../../lib/reading';
 import ParkinsonExplainer from '../../components/research/ParkinsonExplainer.astro';
 import { getEntry } from 'astro:content';
 import { getProfile } from '../../lib/content';
 import { scholarlyArticleLd } from '../../lib/jsonld';
+import { doiUrl } from '../../lib/format';
+import { ext } from '../../lib/links';
+import Cite from '../../components/Cite.astro';
 
 const pub = await getEntry('publications', 'parkinsons-hybrid-cnn-transformer-2d');
 if (!pub) throw new Error('Missing publication "parkinsons-hybrid-cnn-transformer-2d".');
 const jsonLd = scholarlyArticleLd(pub, await getProfile(), Astro.url.pathname);
+const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
 ---
 
 <BaseLayout
@@ -20,7 +27,8 @@ const jsonLd = scholarlyArticleLd(pub, await getProfile(), Astro.url.pathname);
   description="A hybrid CNN–Transformer that sorts a brain MRI into Control, Prodromal or Parkinson's, followed stage by stage. IARCE 2024 Best Paper."
   type="article"
 >
-  <article class="wrap view research">
+  <ReadingProgress />
+  <article data-pagefind-body class="wrap view research">
     <nav class="crumb" aria-label="Breadcrumb">
       <a href="/research/">Research</a> <span aria-hidden="true">›</span> <span aria-current="page">Parkinson's from brain MRI</span>
     </nav>
@@ -36,12 +44,39 @@ const jsonLd = scholarlyArticleLd(pub, await getProfile(), Astro.url.pathname);
     <p class="intro-note">Walk down the page to follow one scan from the archive to a prediction. Scrub, switch cohorts, and toggle the attention map as you go.</p>
 
     <ParkinsonExplainer />
+
+    <section class="paper" aria-labelledby="paper-head">
+      <h2 id="paper-head" class="paper-head">The paper</h2>
+      <p class="paper-ref">{pub.data.authors} · <i>{pub.data.venue}</i>{pub.data.pages ? `, ${pub.data.pages}` : ''}, {pub.data.year}.</p>
+      <div class="actions">
+        {pub.data.doi && <a class="btn ghost" href={doiUrl(pub.data.doi)} {...ext(doiUrl(pub.data.doi))}>DOI</a>}
+        {pub.data.code_url && <a class="btn ghost" href={pub.data.code_url} {...ext(pub.data.code_url)}>Code</a>}
+        <Cite pub={pub} />
+        <a class="btn ghost" href={`/publications/#${pub.id}`}>Citation details</a>
+      </div>
+    </section>
+    <PrevNext prev={prev} next={next} kind="research page" />
   </article>
 </BaseLayout>
 
 <style>
   .research {
     max-width: 900px;
+  }
+  .paper {
+    border-top: 1px solid var(--border);
+    margin-top: 12px;
+    padding-top: 28px;
+  }
+  .paper-head {
+    font-size: 22px;
+    margin: 0 0 8px;
+  }
+  .paper-ref {
+    font-size: 14.5px;
+    color: var(--ink-2);
+    margin: 0 0 14px;
+    max-width: 70ch;
   }
   .crumb {
     font-family: var(--font-mono);

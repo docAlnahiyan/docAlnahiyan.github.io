@@ -23,3 +23,4 @@ npm-debug.log*
 
 # private, unpublished papers: never commit
 source-papers/
+.lighthouseci/

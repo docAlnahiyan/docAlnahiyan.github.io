@@ -1,0 +1,16 @@
+Sample photos for the in-browser face-detection demo. All are works of the
+United States federal government and in the public domain; downscaled and
+re-encoded (metadata removed) for this site.
+
+masked-nurse.jpg
+  "-IGottheShot- SETAF-AF nurse (6496500).jpg", U.S. Army / DVIDS.
+  https://commons.wikimedia.org/wiki/File:-IGottheShot-_SETAF-AF_nurse_(6496500).jpg
+
+unmasked-crew.jpg
+  "Expedition 30 crew portrait v2.jpg", NASA.
+  https://commons.wikimedia.org/wiki/File:Expedition_30_crew_portrait_v2.jpg
+
+masked-crowd.jpg
+  "Sailors from HMAS Brisbane tour USS Ronald Reagan while wearing face masks
+  in November 2021.jpg", U.S. Navy.
+  https://commons.wikimedia.org/wiki/File:Sailors_from_HMAS_Brisbane_tour_USS_Ronald_Reagan_while_wearing_face_masks_in_November_2021.jpg

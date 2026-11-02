@@ -132,6 +132,10 @@ const blog = defineCollection({
     cover: optionalImage,
     /** Describes the cover for screen readers; the title is used if empty. */
     cover_alt: optionalText,
+    /** Images shown as a gallery (with a lightbox) after the post. */
+    gallery: z
+      .array(z.object({ src: z.string().regex(/^(\/|https?:\/\/)/), alt: z.string(), caption: optionalText }))
+      .default([]),
     draft: z.boolean().default(false),
   }),
 });

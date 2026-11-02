@@ -1,0 +1,85 @@
+---
+// One image with an optional caption, for blog posts (MDX):
+//   <Figure src="/uploads/a.jpg" alt="…" caption="…" float="right" width={280} />
+// float sets the image beside the text on wide screens (full width on
+// phones); bleed makes it span the whole window. Width and height are read
+// from the file, so the page doesn't jump while it loads.
+import { imageSize } from '../../lib/images';
+
+interface Props {
+  src: string;
+  alt: string;
+  caption?: string;
+  float?: 'left' | 'right' | 'none';
+  /** Display width in px for a floated figure (default 280). */
+  width?: number;
+  /** Span the full width of the window. */
+  bleed?: boolean;
+}
+
+const { src, alt, caption, float = 'none', width, bleed = false } = Astro.props;
+const size = await imageSize(src);
+const floated = float !== 'none' && !bleed;
+---
+
+<figure
+  class:list={['fig', floated && `float-${float}`, bleed && 'bleed']}
+  style={floated ? `--fig-w:${width ?? 280}px` : undefined}
+>
+  <img src={src} alt={alt} width={size?.width} height={size?.height} loading="lazy" decoding="async" />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .fig {
+    margin: 24px 0;
+  }
+  .fig img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  figcaption {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--ink-3);
+  }
+  /* Beside the text on wider screens; full width on phones. */
+  @media (min-width: 600px) {
+    .float-right,
+    .float-left {
+      width: var(--fig-w);
+      max-width: 45%;
+      margin-top: 4px;
+      margin-bottom: 12px;
+    }
+    .float-right {
+      float: right;
+      margin-left: 24px;
+    }
+    .float-left {
+      float: left;
+      margin-right: 24px;
+    }
+  }
+  /* Edge to edge: the reading column is left-aligned inside a centred
+     .wrap (max --maxw, 20px padding), so step out by that offset. */
+  .bleed {
+    width: 100vw;
+    max-width: none;
+    margin-left: calc(-1 * ((100vw - min(100vw, var(--maxw))) / 2 + 20px));
+  }
+  .bleed img {
+    border-radius: 0;
+    border-inline: none;
+  }
+  .bleed figcaption {
+    max-width: var(--maxw);
+    margin-inline: auto;
+    padding-inline: 20px;
+  }
+</style>

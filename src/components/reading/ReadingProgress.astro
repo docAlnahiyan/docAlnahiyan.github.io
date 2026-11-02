@@ -1,0 +1,47 @@
+---
+// A thin bar along the top of the window showing how far down the page the
+// reader is. Decorative (the scrollbar says the same), so hidden from
+// assistive technology. Moves with the scroll, without easing.
+---
+
+<div class="read-progress" aria-hidden="true"><span></span></div>
+
+<script>
+  const bar = document.querySelector<HTMLElement>('.read-progress span');
+  if (bar) {
+    let queued = false;
+    const update = () => {
+      queued = false;
+      const max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 0})`;
+    };
+    const queue = () => {
+      if (!queued) {
+        queued = true;
+        requestAnimationFrame(update);
+      }
+    };
+    addEventListener('scroll', queue, { passive: true });
+    addEventListener('resize', queue);
+    update();
+  }
+</script>
+
+<style>
+  .read-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 60;
+    pointer-events: none;
+  }
+  .read-progress span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+</style>

@@ -6,6 +6,7 @@ import { ext } from '../lib/links';
 import { personLd } from '../lib/jsonld';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroScene from '../components/HeroScene.astro';
+import WorkWithMe from '../components/WorkWithMe.astro';
 import { getProfile, getPublications, getProjects, getPosts, getUpworkItems } from '../lib/content';
 import {
   cumulativeSpark,
@@ -117,7 +118,7 @@ const facts = [
         <div class="focus-head">
           <span class="avatar">
             {profile.photo ? (
-              <img src={profile.photo} alt="" width="58" height="58" />
+              <img src={profile.photo} alt="" width="58" height="58" loading="lazy" decoding="async" />
             ) : (
               <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="9" r="3.6" /><path d="M5.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5" /></svg>
             )}
@@ -186,6 +187,8 @@ const facts = [
       )}
     </div>
   </section>
+
+  <WorkWithMe email={links.email} />
 </BaseLayout>
 
 <style>

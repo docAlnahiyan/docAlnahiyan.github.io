@@ -23,9 +23,37 @@ Recent scientific reviews highlight how computer vision, speech signal processin
 
 ## 2. Multimodal Biomarkers and Machine Learning
 
+<Figure
+  src="/research/parkinson/mri/slice_06.png"
+  alt="An axial slice of a T1-weighted brain MRI from the MNI152 template, showing the ventricles and surrounding grey and white matter."
+  caption="A structural brain MRI slice — one of the imaging inputs AI models learn from. Shown here: the open MNI152 template, an averaged reference brain, not patient data."
+  float="right"
+  width={240}
+/>
+
 No single test can comprehensively map a complex neurodegenerative disorder. Modern computational frameworks are tackling this by integrating multimodal biomarkers—combining genetics, digital sensor logs, blood-based molecular tests, and imaging data.
 
 Long-running research cohorts such as the Parkinson’s Progression Markers Initiative (PPMI), alongside newer openly shared digital datasets, supply researchers with the robust training ground required to build generalizable AI models. By feeding diverse data streams into algorithms, machine learning models can cross-validate signals, lowering false-positive rates and helping predict disease trajectories before clinical criteria are met.
+
+A single scan is a 3D volume, so a model can look at it slice by slice or as a whole. The slices below come from different heights through the same template brain.
+
+<FigureRow>
+  <Figure src="/research/parkinson/mri/slice_03.png" alt="A lower axial slice of the MNI152 brain template MRI." caption="A lower slice through the template brain." />
+  <Figure src="/research/parkinson/mri/slice_09.png" alt="A higher axial slice of the MNI152 brain template MRI." caption="A higher slice through the same volume." />
+</FigureRow>
+
+<Gallery
+  label="Axial slices through the MNI152 template brain"
+  images={[
+    { src: "/research/parkinson/mri/slice_00.png", alt: "Axial MRI slice 1 of 7 through the MNI152 template, lowest.", caption: "Slice 1 — lowest" },
+    { src: "/research/parkinson/mri/slice_02.png", alt: "Axial MRI slice 2 of 7 through the MNI152 template.", caption: "Slice 2" },
+    { src: "/research/parkinson/mri/slice_04.png", alt: "Axial MRI slice 3 of 7 through the MNI152 template.", caption: "Slice 3" },
+    { src: "/research/parkinson/mri/slice_06.png", alt: "Axial MRI slice 4 of 7 through the MNI152 template, middle.", caption: "Slice 4 — middle" },
+    { src: "/research/parkinson/mri/slice_08.png", alt: "Axial MRI slice 5 of 7 through the MNI152 template.", caption: "Slice 5" },
+    { src: "/research/parkinson/mri/slice_10.png", alt: "Axial MRI slice 6 of 7 through the MNI152 template.", caption: "Slice 6" },
+    { src: "/research/parkinson/mri/slice_12.png", alt: "Axial MRI slice 7 of 7 through the MNI152 template, highest.", caption: "Slice 7 — highest" },
+  ]}
+/>
 
 ## 3. Shifting Toward Remote and Scalable Screening
 

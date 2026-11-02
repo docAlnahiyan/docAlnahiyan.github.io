@@ -1,8 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PublicationItem from '../components/PublicationItem.astro';
-import { getProfile, getPublications } from '../lib/content';
+import { getProfile, getPublications, getResearch } from '../lib/content';
 import { scholarlyArticleLd } from '../lib/jsonld';
+import { REPLACED_PAGES } from '../components/research/themes';
 
 const profile = await getProfile();
 const pubs = await getPublications();
@@ -25,6 +26,20 @@ const groups = [
   },
 ].filter((g) => g.items.length > 0);
 
+// Each paper's illustrated research page: a hand-built page, or the page
+// generated from its research entry.
+const research = await getResearch();
+const explainerFor = (id: string) => {
+  const entry = research.find((r) => r.data.publication?.id === id);
+  return entry ? (REPLACED_PAGES[entry.id] ?? `/research/${entry.id}/`) : undefined;
+};
+
+// Filter options, from the papers themselves.
+const years = [...new Set(pubs.map((p) => p.data.year))].sort((a, b) => b - a);
+const venues = [...new Set(pubs.map((p) => p.data.venue_short ?? p.data.venue))].sort();
+const topics = [...new Map(pubs.flatMap((p) => p.data.keywords).map((k) => [k.toLowerCase(), k])).entries()]
+  .sort((a, b) => a[0].localeCompare(b[0]));
+
 const jsonLd = {
   '@context': 'https://schema.org',
   '@graph': pubs.map((p) => scholarlyArticleLd(p, profile, `/publications/#${p.id}`, false)),
@@ -36,11 +51,44 @@ const jsonLd = {
   title="Publications"
   description="Publications by Al-Nahiyan Khushbu: peer-reviewed papers, papers under review and preprints, with abstracts, DOIs and BibTeX."
 >
-  <div class="wrap view">
+  <div class="wrap view" data-pagefind-body>
     <header class="page-head">
       <h1>Publications</h1>
       <p>Peer-reviewed work first, then papers under review and preprints. Each entry has its abstract, links and a BibTeX citation.</p>
     </header>
+
+    <form class="filters" aria-label="Filter publications" data-filters hidden>
+      <label>
+        <span>Year</span>
+        <select name="year">
+          <option value="">All years</option>
+          {years.map((y) => <option value={y}>{y}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Venue</span>
+        <select name="venue">
+          <option value="">All venues</option>
+          {venues.map((v) => <option value={v}>{v}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Topic</span>
+        <select name="topic">
+          <option value="">All topics</option>
+          {topics.map(([value, label]) => <option value={value}>{label}</option>)}
+        </select>
+      </label>
+      <label>
+        <span>Sort</span>
+        <select name="sort">
+          <option value="desc">Newest first</option>
+          <option value="asc">Oldest first</option>
+        </select>
+      </label>
+      <button type="reset" class="btn ghost small">Reset</button>
+      <p class="filter-status" role="status" aria-live="polite"></p>
+    </form>
 
     {groups.map((g) => (
       <section class="group" aria-labelledby={`g-${g.id}`}>
@@ -48,13 +96,109 @@ const jsonLd = {
           <h2 id={`g-${g.id}`}>{g.title} <span class="count">{g.items.length}</span></h2>
           {g.note && <p>{g.note}</p>}
         </div>
-        {g.items.map((p) => <PublicationItem pub={p} requestEmail={profile.links.email} />)}
+        <div class="group-items">
+          {g.items.map((p) => <PublicationItem pub={p} requestEmail={profile.links.email} explainerHref={explainerFor(p.id)} />)}
+        </div>
       </section>
     ))}
+    <p class="no-match" hidden>No publications match these filters.</p>
   </div>
 </BaseLayout>
 
+<script>
+  // Filters and sort for the list. Without JavaScript the form stays hidden
+  // and every paper is listed, grouped by review status.
+  const form = document.querySelector<HTMLFormElement>('[data-filters]');
+  if (form) {
+    form.hidden = false;
+    const status = form.querySelector<HTMLElement>('.filter-status')!;
+    const noMatch = document.querySelector<HTMLElement>('.no-match')!;
+    const groups = [...document.querySelectorAll<HTMLElement>('.group')];
+    const apply = () => {
+      const f = new FormData(form);
+      const year = String(f.get('year') ?? ''), venue = String(f.get('venue') ?? '');
+      const topic = String(f.get('topic') ?? ''), dir = f.get('sort') === 'asc' ? 1 : -1;
+      let shown = 0;
+      for (const g of groups) {
+        const list = g.querySelector<HTMLElement>('.group-items')!;
+        const items = [...list.querySelectorAll<HTMLElement>('.pub')];
+        items.sort((a, b) => dir * (a.dataset.sort ?? '').localeCompare(b.dataset.sort ?? ''));
+        let inGroup = 0;
+        for (const it of items) {
+          const ok =
+            (!year || it.dataset.year === year) &&
+            (!venue || it.dataset.venue === venue) &&
+            (!topic || (it.dataset.topics ?? '').split('|').includes(topic));
+          it.hidden = !ok;
+          if (ok) inGroup++;
+          list.append(it);
+        }
+        g.hidden = inGroup === 0;
+        const count = g.querySelector('.count');
+        if (count) count.textContent = String(inGroup);
+        shown += inGroup;
+      }
+      noMatch.hidden = shown > 0;
+      const total = document.querySelectorAll('.pub').length;
+      status.textContent = shown === total ? `Showing all ${total} publications.` : `Showing ${shown} of ${total} publications.`;
+    };
+    form.addEventListener('change', apply);
+    form.addEventListener('reset', () => setTimeout(apply));
+    form.addEventListener('submit', (e) => e.preventDefault());
+  }
+</script>
+
 <style>
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 10px 14px;
+    margin: 0 0 32px;
+    padding: 14px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .filters[hidden] {
+    display: none;
+  }
+  .filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .filters label span {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .filters select {
+    font: inherit;
+    font-size: 14px;
+    max-width: 220px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 6px 8px;
+  }
+  .filter-status {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+  .no-match {
+    color: var(--ink-2);
+  }
+  .group[hidden],
+  .group :global(.pub[hidden]) {
+    display: none;
+  }
   .group + .group {
     margin-top: 48px;
   }

@@ -4,12 +4,16 @@ import { getEntry, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PaperTags from '../../components/PaperTags.astro';
 import Metrics from '../../components/Metrics.astro';
-import CopyButton from '../../components/CopyButton.astro';
+import Cite from '../../components/Cite.astro';
 import { WALKTHROUGHS } from '../../components/walkthroughs/registry';
 import { REPLACED_PAGES } from '../../components/research/themes';
 import { getProfile, getResearch, type Research } from '../../lib/content';
 import { authorsHtml, doiUrl, requestPaperMailto } from '../../lib/format';
 import { scholarlyArticleLd } from '../../lib/jsonld';
+import { neighbours, readingMinutes, researchSequence } from '../../lib/reading';
+import ReadingProgress from '../../components/reading/ReadingProgress.astro';
+import Toc from '../../components/reading/Toc.astro';
+import PrevNext from '../../components/reading/PrevNext.astro';
 
 // Entries with a hand-built page get no page here; their old address
 // redirects to the new one (astro.config.mjs).
@@ -24,7 +28,9 @@ const { entry } = Astro.props as { entry: Research };
 const d = entry.data;
 const pub = d.publication ? await getEntry(d.publication) : undefined;
 const profile = await getProfile();
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
+const minutes = readingMinutes(entry.body);
+const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
 const Walkthrough = d.walkthrough ? WALKTHROUGHS[d.walkthrough] : undefined;
 
 const doi = pub?.data.doi;
@@ -39,7 +45,8 @@ const meta = pub
 ---
 
 <BaseLayout title={pageTitle} description={d.subtitle} type="article" image={d.thumbnail} jsonLd={jsonLd}>
-  <article class="wrap view">
+  <ReadingProgress />
+  <article class="wrap view" data-pagefind-body>
     <a class="back" href="/research/">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
       Back to research
@@ -47,6 +54,8 @@ const meta = pub
     <PaperTags status={d.status} publication={pub} extra={d.tags} />
     <h1 class="detail-title">{d.title}</h1>
     {meta && <p class="detail-meta" set:html={meta} />}
+    <p class="detail-meta read-time">{minutes} min read</p>
+    <Toc headings={headings} />
 
     <div class="prose lede-first">
       <Content />
@@ -61,11 +70,12 @@ const meta = pub
       {paperUrl && <a class="btn ghost" href={paperUrl} {...ext(paperUrl)}>Paper</a>}
       {code && <a class="btn ghost" href={code} {...ext(code)}>Code</a>}
       {pub && <a class="btn ghost" href={`/publications/#${pub.id}`}>Citation details</a>}
-      {pub && <CopyButton text={pub.data.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />}
+      {pub && <Cite pub={pub} />}
       {pub && !pub.data.url && (
         <a class="btn ghost" href={requestPaperMailto(profile.links.email, pub.data.title)}>Request full paper</a>
       )}
     </div>
+    <PrevNext prev={prev} next={next} kind="research page" />
   </article>
 </BaseLayout>
 

@@ -2,7 +2,7 @@
 import { ext } from '../lib/links';
 import type { Publication } from '../lib/content';
 import PaperTags from './PaperTags.astro';
-import CopyButton from './CopyButton.astro';
+import Cite from './Cite.astro';
 import { authorsHtml, doiUrl, fullDate, requestPaperMailto } from '../lib/format';
 import { themeForPublication } from './research/themes';
 
@@ -10,9 +10,11 @@ interface Props {
   pub: Publication;
   /** Address for "Request full paper". */
   requestEmail: string;
+  /** The illustrated research page for this paper, if there is one. */
+  explainerHref?: string;
 }
 
-const { pub, requestEmail } = Astro.props;
+const { pub, requestEmail, explainerHref } = Astro.props;
 const d = pub.data;
 const abstractParas = d.abstract ? d.abstract.split(/\n\s*\n/) : [];
 // An open link (e.g. a preprint page) makes a request unnecessary.
@@ -20,10 +22,19 @@ const canRequest = !d.url;
 const when = d.date ? fullDate(d.date) : String(d.year);
 const afterVenue = `${d.pages ? `, ${d.pages}` : ''}, ${when}.`;
 // Papers with an interactive research page link to it.
-const theme = themeForPublication(pub.id);
+const explore = explainerHref ?? themeForPublication(pub.id)?.href;
+// For the filters on the publications page.
+const sortKey = d.date ? d.date.toISOString().slice(0, 10) : `${d.year}-00-00`;
 ---
 
-<article class="pub" id={pub.id}>
+<article
+  class="pub"
+  id={pub.id}
+  data-year={d.year}
+  data-venue={d.venue_short ?? d.venue}
+  data-topics={d.keywords.map((k) => k.toLowerCase()).join('|')}
+  data-sort={sortKey}
+>
   <PaperTags status={d.status} publication={pub} />
   <h3 class="pub-title">{d.title}</h3>
   <p class="pub-authors" set:html={authorsHtml(d.authors)} />
@@ -51,11 +62,11 @@ const theme = themeForPublication(pub.id);
     {d.doi && <a class="btn ghost small" href={doiUrl(d.doi)} {...ext(doiUrl(d.doi))}>DOI</a>}
     {d.url && <a class="btn ghost small" href={d.url} {...ext(d.url)}>Paper</a>}
     {d.code_url && <a class="btn ghost small" href={d.code_url} {...ext(d.code_url)}>Code</a>}
-    <CopyButton text={d.bibtex} label="Copy BibTeX" fallbackLabel="BibTeX" />
+    <Cite pub={pub} small />
     {canRequest && (
       <a class="btn ghost small" href={requestPaperMailto(requestEmail, d.title)}>Request full paper</a>
     )}
-    {theme && <a class="explore" href={theme.href}>Explore →</a>}
+    {explore && <a class="explore" href={explore}>Explore the illustrated explainer →</a>}
   </div>
 </article>
 

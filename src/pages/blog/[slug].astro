@@ -1,42 +1,76 @@
 ---
 import { render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import Figure from '../../components/blog/Figure.astro';
+import FigureRow from '../../components/blog/FigureRow.astro';
+import Gallery from '../../components/blog/Gallery.astro';
+import ReadingProgress from '../../components/reading/ReadingProgress.astro';
+import Toc from '../../components/reading/Toc.astro';
+import PrevNext from '../../components/reading/PrevNext.astro';
 import { getPosts, getProfile, type Post } from '../../lib/content';
 import { fullDate, isoDate } from '../../lib/format';
 import { imageSize } from '../../lib/images';
 import { blogPostingLd } from '../../lib/jsonld';
+import { readingMinutes } from '../../lib/reading';
 import { SITE } from '../../site';
 
 export async function getStaticPaths() {
   const posts = await getPosts();
-  return posts.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  // Posts are newest first: "previous" is the older post, "next" the newer.
+  const link = (p?: Post) => p && { title: p.data.title, href: `/blog/${p.id}/` };
+  return posts.map((entry, i) => ({
+    params: { slug: entry.id },
+    props: { entry, prev: link(posts[i + 1]), next: link(posts[i - 1]) },
+  }));
 }
 
-const { entry } = Astro.props as { entry: Post };
+const { entry, prev, next } = Astro.props as {
+  entry: Post;
+  prev?: { title: string; href: string };
+  next?: { title: string; href: string };
+};
 const d = entry.data;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
 const profile = await getProfile();
 const coverSize = await imageSize(d.cover);
 const coverAlt = d.cover_alt ?? d.title;
+const minutes = readingMinutes(entry.body);
 const jsonLd = blogPostingLd(entry, profile, Astro.url.pathname, d.cover ?? SITE.ogImage);
 ---
 
-<BaseLayout title={d.title} description={d.excerpt} type="article" image={d.cover} imageAlt={d.cover ? coverAlt : undefined} jsonLd={jsonLd}>
-  <article class="wrap view">
+<BaseLayout title={d.title} description={d.excerpt} type="article" jsonLd={jsonLd}>
+  <ReadingProgress />
+  <article class="wrap view" data-pagefind-body>
     <a class="back" href="/blog/">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
       Back to blog
     </a>
     <h1 class="detail-title">{d.title}</h1>
-    <p class="detail-meta"><time datetime={isoDate(d.date)}>{fullDate(d.date)}</time></p>
-    {d.cover && <img class="cover" src={d.cover} alt={coverAlt} width={coverSize?.width} height={coverSize?.height} />}
+    <p class="detail-meta">
+      <time datetime={isoDate(d.date)}>{fullDate(d.date)}</time>
+      <span aria-hidden="true"> · </span>
+      <span>{minutes} min read</span>
+    </p>
+    {d.cover && <img class="cover" fetchpriority="high" src={d.cover} alt={coverAlt} width={coverSize?.width} height={coverSize?.height} />}
+    <Toc headings={headings} />
     <div class="prose">
-      <Content />
+      <Content components={{ Figure, FigureRow, Gallery }} />
+      {d.gallery.length > 0 && <Gallery images={d.gallery} label={`Images for “${d.title}”`} />}
     </div>
+    <PrevNext prev={prev} next={next} kind="post" />
   </article>
 </BaseLayout>
 
 <style>
+  /* A full-bleed figure is 100vw wide; where scrollbars take space that is
+     a little wider than the page, so clip the overflow (sticky stays). */
+  :global(main) {
+    overflow-x: clip;
+  }
+  /* Floated figures never hang into the next section. */
+  .prose :global(h2) {
+    clear: both;
+  }
   .cover {
     display: block;
     width: 100%;

@@ -14,5 +14,49 @@
       integrity="sha384-A/Gdn928CNLufmnGWGs9RM4Q9o8bSNLeJERqBFrBjwzL7FRpoLT3MPF8Tl0+Wd2p"
       crossorigin="anonymous"
     ></script>
+    <script>
+      // "Figure" in the blog editor's + menu: inserts an MDX <Figure /> that
+      // the site renders with a caption, optionally beside the text
+      // (src/components/blog/Figure.astro).
+      (function () {
+        var esc = function (v) { return String(v == null ? '' : v).replace(/"/g, '&quot;'); };
+        var unesc = function (v) { return String(v).replace(/&quot;/g, '"'); };
+        var attr = function (s, name) {
+          var m = s.match(new RegExp('\\b' + name + '="([^"]*)"'));
+          if (m) return unesc(m[1]);
+          var n = s.match(new RegExp('\\b' + name + '=\\{(\\d+)\\}'));
+          return n ? Number(n[1]) : undefined;
+        };
+        CMS.registerEditorComponent({
+          id: 'figure',
+          label: 'Figure',
+          fields: [
+            { name: 'src', label: 'Image', widget: 'image' },
+            { name: 'alt', label: 'Description (alt text)', widget: 'string' },
+            { name: 'caption', label: 'Caption', widget: 'string', required: false },
+            { name: 'float', label: 'Position', widget: 'select', default: 'none', options: [
+              { label: 'Full width', value: 'none' },
+              { label: 'Beside the text, right', value: 'right' },
+              { label: 'Beside the text, left', value: 'left' },
+            ] },
+            { name: 'width', label: 'Width beside the text (px)', widget: 'number', value_type: 'int', required: false, hint: 'Default 280' },
+          ],
+          pattern: /^<Figure\s([^]*?)\/>$/m,
+          fromBlock: function (m) {
+            return { src: attr(m[1], 'src'), alt: attr(m[1], 'alt'), caption: attr(m[1], 'caption'), float: attr(m[1], 'float') || 'none', width: attr(m[1], 'width') };
+          },
+          toBlock: function (d) {
+            var out = '<Figure src="' + esc(d.src) + '" alt="' + esc(d.alt) + '"';
+            if (d.caption) out += ' caption="' + esc(d.caption) + '"';
+            if (d.float && d.float !== 'none') out += ' float="' + d.float + '"';
+            if (d.width) out += ' width={' + Number(d.width) + '}';
+            return out + ' />';
+          },
+          toPreview: function (d) {
+            return '<figure><img src="' + esc(d.src) + '" alt="' + esc(d.alt) + '" style="max-width:100%"/>' + (d.caption ? '<figcaption>' + esc(d.caption) + '</figcaption>' : '') + '</figure>';
+          },
+        });
+      })();
+    </script>
   </body>
 </html>

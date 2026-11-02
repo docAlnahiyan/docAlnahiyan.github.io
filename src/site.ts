@@ -21,3 +21,23 @@ export const NAV = [
   { href: '/blog/', label: 'Blog' },
   { href: '/cv/', label: 'CV' },
 ] as const;
+
+/**
+ * CONTACT FORM — the "Work with me" form on the home page.
+ * Paste a Formspree form endpoint here (e.g. 'https://formspree.io/f/abcdwxyz';
+ * it is a public address, not a secret). While it is empty the form opens
+ * the visitor's email app with the message filled in instead.
+ */
+export const CONTACT_FORM_ENDPOINT = '';
+
+/**
+ * ANALYTICS — privacy-friendly, cookieless page counts (Plausible).
+ * `domain` must match the site added in the Plausible account. Set
+ * `enabled: false` to remove the script entirely. Visitors with Do Not
+ * Track or Global Privacy Control switched on are never counted.
+ */
+export const ANALYTICS = {
+  enabled: true,
+  domain: 'docalnahiyan.github.io',
+  src: 'https://plausible.io/js/script.js',
+};

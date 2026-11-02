@@ -1,0 +1,7 @@
+BlazeFace face detector (TensorFlow.js graph model), by Google.
+From the tfjs-models project: https://github.com/tensorflow/tfjs-models/tree/master/blazeface
+Model files downloaded from TensorFlow Hub / Kaggle Models:
+https://tfhub.dev/tensorflow/tfjs-model/blazeface/1/default/1
+Licensed under the Apache License, Version 2.0.
+Self-hosted here so the in-browser demo on /projects/covid-facemask-detection/
+needs no third-party request.

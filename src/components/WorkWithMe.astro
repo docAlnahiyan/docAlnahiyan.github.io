@@ -1,0 +1,318 @@
+---
+// "Work with me" on the home page: a short, factual timeline (from the CV)
+// and a contact form beside the email address. The form posts to
+// CONTACT_FORM_ENDPOINT (src/site.ts) when one is set; otherwise sending it
+// opens the visitor's email app with the message filled in.
+import { CONTACT_FORM_ENDPOINT } from '../site';
+
+interface Props {
+  email: string;
+}
+
+const { email } = Astro.props;
+
+const milestones = [
+  { when: '2017–2021', what: 'BEng, Software Engineering', where: 'Sichuan University', note: 'Thesis: bird species identification with deep neural networks', href: '/projects/bird-species-identification/' },
+  { when: '2020–2021', what: 'Software Engineer Intern', where: 'Chengdu Suncape Data Co., Ltd' },
+  { when: '2022–2025', what: 'MSc, Computer Science and Technology', where: 'Southwest Jiaotong University', note: 'Thesis: hybrid deep learning for early Parkinson’s disease recognition from 2D and 3D MRI (May 2025)' },
+  { when: '2024', what: 'Best Paper Award, IARCE 2024', where: 'Hybrid CNN–Transformer for Parkinson’s disease recognition', href: '/research/parkinson-cnn-transformer/' },
+  { when: '2025–now', what: 'Software Requirements Research and Publisher', where: 'SoftFlames Ventures LLC' },
+  { when: '2026', what: 'HybridTransMedFormer — under review', where: 'Artificial Intelligence in Medicine', href: '/research/hybridtransmedformer/' },
+  { when: 'Sep 2026', what: 'Preprint: catching warehouse theft when records lie', where: 'Not peer-reviewed', href: '/research/warehouse-theft-attribution/' },
+];
+---
+
+<section class="wide work" id="work-with-me" aria-labelledby="work-head">
+  <h2 id="work-head" class="work-title">Work with me</h2>
+  <p class="open">Open to research collaborations in medical imaging and computer vision, and to reviewing for journals and conferences in those areas.</p>
+
+  <div class="work-grid">
+    <div>
+      <h3 class="sub-head">Milestones</h3>
+      <ol class="timeline">
+        {milestones.map((m) => (
+          <li>
+            <span class="when">{m.when}</span>
+            <div class="what">
+              {m.href ? <a href={m.href}>{m.what}</a> : <span>{m.what}</span>}
+              <span class="where">{m.where}</span>
+              {m.note && <span class="note">{m.note}</span>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+
+    <div class="contact">
+      <h3 class="sub-head">Get in touch</h3>
+      <p class="direct">Email <span class="selectable">{email}</span>, or send a note here.</p>
+      <form class="contact-form" data-contact-form data-endpoint={CONTACT_FORM_ENDPOINT} data-email={email} action={CONTACT_FORM_ENDPOINT || `mailto:${email}`} method="post" novalidate>
+        <div class="field">
+          <label for="cf-name">Name</label>
+          <input id="cf-name" name="name" type="text" autocomplete="name" required maxlength="120" aria-describedby="cf-name-err" />
+          <p class="err" id="cf-name-err" hidden>Please enter your name.</p>
+        </div>
+        <div class="field">
+          <label for="cf-email">Email</label>
+          <input id="cf-email" name="email" type="email" autocomplete="email" required maxlength="200" aria-describedby="cf-email-err" />
+          <p class="err" id="cf-email-err" hidden>Please enter a valid email address.</p>
+        </div>
+        <div class="field">
+          <label for="cf-topic">About</label>
+          <select id="cf-topic" name="topic">
+            <option>Research collaboration</option>
+            <option>Reviewing</option>
+            <option>Applied ML project</option>
+            <option>Something else</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="cf-message">Message</label>
+          <textarea id="cf-message" name="message" rows="5" required minlength="20" maxlength="4000" aria-describedby="cf-message-err"></textarea>
+          <p class="err" id="cf-message-err" hidden>Please write a message of at least 20 characters.</p>
+        </div>
+        <!-- Spam trap: hidden from people, filled in by bots. -->
+        <div class="hp" aria-hidden="true">
+          <label for="cf-company">Company</label>
+          <input id="cf-company" name="_gotcha" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+        <button type="submit" class="btn">Send message</button>
+        <p class="form-status" role="status" aria-live="polite" hidden></p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('[data-contact-form]');
+  if (form) {
+    const status = form.querySelector<HTMLElement>('.form-status')!;
+    const submit = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    const fields = [...form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input[required], textarea[required]')];
+
+    const showError = (el: HTMLInputElement | HTMLTextAreaElement, show: boolean) => {
+      el.setAttribute('aria-invalid', String(show));
+      const err = document.getElementById(el.getAttribute('aria-describedby') ?? '');
+      if (err) err.hidden = !show;
+    };
+    const check = (el: HTMLInputElement | HTMLTextAreaElement) => {
+      const ok = el.value.trim().length > 0 && el.checkValidity();
+      showError(el, !ok);
+      return ok;
+    };
+    for (const el of fields) el.addEventListener('blur', () => el.value && check(el));
+
+    const setStatus = (kind: 'ok' | 'error' | 'busy', text: string) => {
+      status.hidden = false;
+      status.dataset.kind = kind;
+      status.textContent = text;
+    };
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const bad = fields.filter((el) => !check(el));
+      if (bad.length) {
+        bad[0].focus();
+        setStatus('error', 'Please fix the highlighted fields.');
+        return;
+      }
+      const data = new FormData(form);
+      // A filled spam trap: pretend it worked and send nothing.
+      if (String(data.get('_gotcha') ?? '').trim()) {
+        setStatus('ok', 'Thanks — your message has been sent.');
+        form.reset();
+        return;
+      }
+      const endpoint = form.dataset.endpoint;
+      if (!endpoint) {
+        const subject = `${data.get('topic')} — from ${data.get('name')}`;
+        const body = `${data.get('message')}\n\n${data.get('name')}\n${data.get('email')}`;
+        window.location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        setStatus('ok', `Your email app should open with the message filled in. If it didn't, write to ${form.dataset.email}.`);
+        return;
+      }
+      submit.disabled = true;
+      setStatus('busy', 'Sending…');
+      try {
+        const res = await fetch(endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(String(res.status));
+        setStatus('ok', 'Thanks — your message has been sent. I’ll reply by email.');
+        form.reset();
+      } catch {
+        setStatus('error', `Sorry, the message couldn't be sent. Please email ${form.dataset.email} instead.`);
+      } finally {
+        submit.disabled = false;
+      }
+    });
+  }
+</script>
+
+<style>
+  .work {
+    padding-block: 8px 72px;
+  }
+  .work-title {
+    font-size: 26px;
+    margin: 0 0 6px;
+  }
+  .open {
+    color: var(--ink-2);
+    margin: 0 0 28px;
+    max-width: 70ch;
+  }
+  .work-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 40px;
+  }
+  @media (max-width: 860px) {
+    .work-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .sub-head {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 14px;
+  }
+  .timeline {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-left: 2px solid var(--border);
+  }
+  .timeline li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 12px;
+    padding: 0 0 18px 18px;
+  }
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: -6px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--accent);
+  }
+  .when {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-3);
+    padding-top: 2px;
+  }
+  .what {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+  .where {
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .note {
+    font-size: 12.5px;
+    color: var(--ink-3);
+  }
+  @media (max-width: 420px) {
+    .timeline li {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
+  }
+  .contact {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px;
+  }
+  .direct {
+    font-size: 14px;
+    color: var(--ink-2);
+    margin: 0 0 16px;
+    overflow-wrap: anywhere;
+  }
+  .selectable {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ink);
+    user-select: all;
+  }
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+  .field label {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    font: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--border-strong);
+    border-radius: 8px;
+    padding: 8px 10px;
+    width: 100%;
+    min-width: 0;
+  }
+  .field textarea {
+    resize: vertical;
+  }
+  .field input:focus-visible,
+  .field select:focus-visible,
+  .field textarea:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .field [aria-invalid='true'] {
+    border-color: var(--bad);
+  }
+  .err {
+    margin: 0;
+    font-size: 12.5px;
+    color: var(--bad);
+  }
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form-status {
+    margin: 12px 0 0;
+    font-size: 13.5px;
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+  .form-status[data-kind='ok'] {
+    color: var(--ink);
+    background: var(--ok-soft);
+    border: 1px solid var(--ok);
+  }
+  .form-status[data-kind='error'] {
+    color: var(--ink);
+    background: var(--bad-soft);
+    border: 1px solid var(--bad);
+  }
+  .form-status[data-kind='busy'] {
+    color: var(--ink-2);
+  }
+</style>

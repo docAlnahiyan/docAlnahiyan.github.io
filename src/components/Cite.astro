@@ -1,0 +1,148 @@
+---
+// "Cite" menu for a paper: copy BibTeX, copy RIS, or download a .ris file
+// (for reference managers). Without JavaScript it shows both formats as text.
+import type { Publication } from '../lib/content';
+import { toRis } from '../lib/cite';
+
+interface Props {
+  pub: Publication;
+  /** Smaller button, as in the publications list. */
+  small?: boolean;
+}
+
+const { pub, small = false } = Astro.props;
+const bibtex = pub.data.bibtex;
+const ris = toRis(pub);
+const id = `cite-${pub.id}`;
+---
+
+<div class="cite-box" data-cite>
+  <button
+    type="button"
+    class:list={['btn ghost cite-toggle', small && 'small']}
+    aria-expanded="false"
+    aria-controls={id}
+    hidden
+  >
+    Cite
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+  </button>
+  <div class="cite-menu" id={id} hidden>
+    <button type="button" data-copy-cite="bibtex">Copy BibTeX</button>
+    <button type="button" data-copy-cite="ris">Copy RIS</button>
+    <a href={`data:application/x-research-info-systems;charset=utf-8,${encodeURIComponent(ris)}`} download={`${pub.id}.ris`}>Download .ris</a>
+    <p class="cite-status" role="status" aria-live="polite"></p>
+  </div>
+  <template data-format="bibtex">{bibtex}</template>
+  <template data-format="ris">{ris}</template>
+  <noscript>
+    <details class="cite-fallback">
+      <summary>Cite (BibTeX / RIS)</summary>
+      <pre>{bibtex}</pre>
+      <pre>{ris}</pre>
+    </details>
+  </noscript>
+</div>
+
+<script>
+  for (const box of document.querySelectorAll<HTMLElement>('[data-cite]')) {
+    const toggle = box.querySelector<HTMLButtonElement>('.cite-toggle');
+    const menu = box.querySelector<HTMLElement>('.cite-menu');
+    const status = box.querySelector<HTMLElement>('.cite-status');
+    if (!toggle || !menu || !status) continue;
+    toggle.hidden = false;
+    const setOpen = (open: boolean) => {
+      menu.hidden = !open;
+      toggle.setAttribute('aria-expanded', String(open));
+      if (!open) status.textContent = '';
+    };
+    toggle.addEventListener('click', () => setOpen(menu.hidden));
+    // Close on Escape (focus back to the button) or a click elsewhere.
+    box.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !menu.hidden) {
+        setOpen(false);
+        toggle.focus();
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (!menu.hidden && !box.contains(e.target as Node)) setOpen(false);
+    });
+    for (const b of menu.querySelectorAll<HTMLButtonElement>('[data-copy-cite]')) {
+      const label = b.textContent ?? '';
+      b.addEventListener('click', async () => {
+        const fmt = b.dataset.copyCite!;
+        const text = box.querySelector<HTMLTemplateElement>(`template[data-format="${fmt}"]`)?.content.textContent ?? '';
+        try {
+          await navigator.clipboard.writeText(text);
+          b.textContent = 'Copied ✓';
+          status.textContent = `${fmt === 'ris' ? 'RIS' : 'BibTeX'} copied to the clipboard.`;
+        } catch {
+          b.textContent = 'Copy failed';
+          status.textContent = 'Copying is blocked here; use Download .ris or select the text.';
+        }
+        setTimeout(() => (b.textContent = label), 2000);
+      });
+    }
+  }
+</script>
+
+<style>
+  .cite-box {
+    position: relative;
+    display: inline-block;
+  }
+  .cite-toggle svg {
+    margin-left: 2px;
+  }
+  .cite-menu {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 190px;
+    display: flex;
+    flex-direction: column;
+    padding: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / .12);
+  }
+  .cite-menu[hidden] {
+    display: none;
+  }
+  .cite-menu button,
+  .cite-menu a {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    text-align: left;
+    color: var(--ink);
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+  }
+  .cite-menu button:hover,
+  .cite-menu a:hover {
+    background: var(--surface-2);
+    text-decoration: none;
+  }
+  .cite-status {
+    margin: 4px 10px 2px;
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .cite-status:empty {
+    display: none;
+  }
+  .cite-fallback pre {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+</style>
