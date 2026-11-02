@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bird Species Identification — Explainer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#faf7f0;--surface:#fffdf9;--surface-2:#f2ece0;--ink:#201e1a;--ink-2:#5c584f;--ink-3:#6e6a60;
+    --border:#e8e1d4;--accent:#c96442;--accent-ink:#a8482b;--accent-soft:#f6e7df;
+    --vgg:#3b6fb0;--vgg-soft:#e8f0f9;--res:#2f9e8f;--res-soft:#e3f2ef;--frozen:#7a52c4;--frozen-soft:#efe9f8;
+    --fd:"Newsreader",Georgia,serif;--fb:"IBM Plex Sans",system-ui,sans-serif;--fm:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--vgg:#6ea3df;--vgg-soft:#26303a;--res:#5cc3b3;--res-soft:#1f3330;--frozen:#b49ae6;--frozen-soft:#2d2740;color-scheme:dark}}
+  :root[data-theme="dark"]{--bg:#211f1c;--surface:#2a2824;--surface-2:#32302b;--ink:#efeae1;--ink-2:#b7b1a4;--ink-3:#9e988c;--border:#3a362f;--accent:#e08a6a;--accent-ink:#ea9c7e;--accent-soft:#3a2b24;--vgg:#6ea3df;--vgg-soft:#26303a;--res:#5cc3b3;--res-soft:#1f3330;--frozen:#b49ae6;--frozen-soft:#2d2740;color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--fb);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);position:sticky;top:0;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);z-index:30}
+  .brand{font-family:var(--fd);font-weight:600;font-size:17px}
+  .nav{display:flex;gap:18px;font-size:13px;color:var(--ink-2)}
+  .theme{border:1px solid var(--border);background:var(--surface);color:var(--ink);border-radius:999px;padding:6px 12px;font-family:var(--fm);font-size:12px;cursor:pointer}
+  .wrap{max-width:900px;margin:0 auto;padding:40px 24px 100px}
+  .crumb{font-size:12.5px;color:var(--ink-3);font-family:var(--fm);margin-bottom:16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+  .chip{font-family:var(--fm);font-size:11.5px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2)}
+  h1{font-family:var(--fd);font-weight:600;font-size:33px;line-height:1.18;margin:0 0 10px}
+  .plain{font-size:17px;color:var(--ink-2);font-family:var(--fd);font-style:italic;margin:0 0 14px}
+  .meta{font-size:14px;color:var(--ink-2);margin-bottom:6px}
+  .actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 4px}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:500;border:1px solid var(--border);background:var(--surface);color:var(--ink);padding:9px 15px;border-radius:9px;cursor:pointer;text-decoration:none}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .badges{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+  .badge{flex:1 1 140px;border:1px solid var(--border);border-radius:12px;padding:12px 15px;background:var(--surface)}
+  .badge .n{font-family:var(--fd);font-weight:600;font-size:22px;color:var(--accent-ink)}
+  .badge .l{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+
+  .stage{border-top:1px solid var(--border);padding:36px 0;opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}
+  .stage.in{opacity:1;transform:none}
+  .kick{font-family:var(--fm);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-ink);margin-bottom:6px}
+  .stage h2{font-family:var(--fd);font-weight:600;font-size:24px;margin:0 0 10px}
+  .stage p{font-size:15.5px;color:var(--ink-2);margin:0 0 12px;max-width:64ch}
+  .stage p b{color:var(--ink)}
+  .note{font-size:12.5px;color:var(--ink-3);font-style:italic}
+  .viz{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-top:16px}
+  svg{max-width:100%}
+
+  .birdgrid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .bcard{display:flex;flex-direction:column;align-items:center;gap:4px;width:118px}
+  .bcard .nm{font-family:var(--fm);font-size:10.5px;color:var(--ink-2);text-align:center}
+
+  .datarow{display:flex;gap:22px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .photo{position:relative;width:200px;height:150px;border-radius:10px;overflow:hidden;background:var(--surface-2);border:1px solid var(--border)}
+  .split{flex:1 1 140px;max-width:200px;text-align:center}
+  .split .big{font-family:var(--fd);font-weight:600;font-size:30px;color:var(--accent-ink)}
+  .split .lab{font-size:12.5px;color:var(--ink-2)}
+
+  .tl{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap;justify-content:center}
+  .block{border-radius:12px;padding:14px 16px;border:1px solid var(--border);text-align:center;min-width:150px;flex:1 1 150px}
+  .block.frozen{background:var(--frozen-soft);border-color:var(--frozen)}
+  .block.trainable{background:var(--accent-soft);border-color:var(--accent)}
+  .block .t{font-family:var(--fm);font-size:12px;font-weight:600}
+  .block .s{font-size:11.5px;color:var(--ink-2);margin-top:4px}
+  .block.frozen .t{color:var(--frozen)} .block.trainable .t{color:var(--accent-ink)}
+  .lockrow{display:flex;gap:6px;justify-content:center;margin-top:8px}
+
+  .seg{display:inline-flex;gap:4px;background:var(--surface-2);border-radius:10px;padding:4px;margin-bottom:12px}
+  .seg button{font-family:var(--fm);font-size:12.5px;border:none;background:transparent;color:var(--ink-2);padding:7px 14px;border-radius:7px;cursor:pointer}
+  .seg button.on{color:#fff}
+  .seg button.on[data-b="vgg"]{background:var(--vgg)} .seg button.on[data-b="res"]{background:var(--res)}
+
+  .phases{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+  .phase{flex:1 1 230px;border:1px solid var(--border);border-radius:12px;padding:14px;background:var(--surface-2)}
+  .phase .h{font-family:var(--fm);font-size:11.5px;font-weight:600;letter-spacing:.03em}
+  .phase.p1 .h{color:var(--frozen)} .phase.p2 .h{color:var(--accent-ink)}
+  .phase .d{font-size:12.5px;color:var(--ink-2);margin-top:5px}
+  .legend{display:flex;gap:16px;justify-content:center;font-family:var(--fm);font-size:11px;color:var(--ink-2);margin-top:6px}
+  .legend i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .acc-anchors{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+  .anchor{border:1px solid var(--border);border-radius:10px;padding:8px 12px;background:var(--surface);text-align:center;min-width:120px}
+  .anchor .n{font-family:var(--fd);font-weight:600;font-size:17px;color:var(--accent-ink)}
+  .anchor .l{font-size:11px;color:var(--ink-2)}
+
+  .pred{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .leftcol{flex:0 0 200px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  .switch{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:220px}
+  .switch button{font-family:var(--fm);font-size:11px;border:1px solid var(--border);background:var(--surface);color:var(--ink-2);padding:5px 9px;border-radius:8px;cursor:pointer}
+  .switch button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .bars{flex:1 1 300px;min-width:280px}
+  .bar{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:7px}
+  .bar .nm{width:132px;color:var(--ink-2);font-size:12px}
+  .bar .track{flex:1 1 auto;height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+  .bar .fill{height:100%;border-radius:6px;background:var(--vgg);transition:width .55s}
+  .bar.win .fill{background:var(--accent)}
+  .bar .pct{width:44px;text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:var(--ink-2)}
+  .verdict{font-size:14px;margin-top:8px}
+  .verdict b{font-family:var(--fd);font-size:16px}
+  .limits{margin-top:16px;border-left:3px solid var(--accent);padding:4px 0 4px 14px}
+  .limits li{font-size:13px;color:var(--ink-2);margin-bottom:4px}
+
+  /* ---- bird idle animation ---- */
+  @media (prefers-reduced-motion:no-preference){
+    .bird{transform-box:fill-box;transform-origin:center bottom;animation:breathe 3.8s ease-in-out infinite}
+    .bird .tail{transform-box:fill-box;transform-origin:left center;animation:tailflick 6.5s ease-in-out infinite}
+    .bird .head{transform-box:fill-box;transform-origin:58% 82%;animation:headbob 7.5s ease-in-out infinite}
+    .bird .lid{animation:blink 5s steps(1,end) infinite}
+  }
+  @keyframes breathe{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-0.5px) scaleY(1.016)}}
+  @keyframes tailflick{0%,84%,100%{transform:rotate(0)}89%{transform:rotate(4deg)}94%{transform:rotate(-1.5deg)}}
+  @keyframes headbob{0%,100%{transform:rotate(0)}32%{transform:rotate(-2deg)}64%{transform:rotate(1.4deg)}}
+  @keyframes blink{0%,93%,100%{transform:scaleY(0)}95%,97%{transform:scaleY(1)}}
+  @media (prefers-reduced-motion:reduce){.stage{opacity:1;transform:none;transition:none}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">Al-Nahiyan Khushbu</span>
+  <nav class="nav"><a href="#">Home</a><a href="#">Research</a><a href="#">Projects</a></nav>
+  <button class="theme" id="theme">☀︎ / ☾</button>
+</div>
+
+<div class="wrap">
+  <div class="crumb">Projects &nbsp;›&nbsp; Bird Species Identification</div>
+  <div class="chips"><span class="chip">Bachelor's thesis · 2021</span><span class="chip">Transfer learning</span><span class="chip">VGG-16 · ResNet-18</span><span class="chip">PyTorch</span></div>
+  <h1>Bird Species Identification</h1>
+  <p class="plain">Even expert birders disagree on a species from one photo. Can a network learn to tell them apart from only a handful of examples each?</p>
+  <p class="meta">A transfer-learning image classifier that names a bird's species from a single photo — standing on the shoulders of networks already trained on millions of images, then re-taught on a small bird dataset.</p>
+  <div class="actions"><a class="btn primary" href="#">Read the thesis</a></div>
+  <div class="badges">
+    <div class="badge"><div class="n">20</div><div class="l">Bird species (CUB-200 subset)</div></div>
+    <div class="badge"><div class="n">743</div><div class="l">Training images · ~37 each</div></div>
+    <div class="badge"><div class="n">2</div><div class="l">Backbones compared</div></div>
+  </div>
+
+  <!-- 1 -->
+  <section class="stage" id="s1">
+    <div class="kick">Stage 1 · The task</div>
+    <h2>Which bird is this?</h2>
+    <p>A Blue Jay and an Indigo Bunting are both blue; a House Sparrow and a dozen look-alikes blur together in the field. Telling species apart from a single still photo is a <b>fine-grained</b> recognition problem — the differences are a wing-bar here, an eye-ring there. This project learns to separate <b>20 species</b> drawn from the Caltech-UCSD Birds collection, the standard benchmark for exactly this kind of task.</p>
+    <div class="viz">
+      <div class="birdgrid" id="birdgrid"></div>
+      <p class="note" style="margin-top:12px">The real dataset is photographs; these six are hand-drawn, field-guide style, for illustration — hover and they preen a little.</p>
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section class="stage" id="s2">
+    <div class="kick">Stage 2 · The data</div>
+    <h2>A deliberately small dataset</h2>
+    <p>The full CUB-200-2011 set is 11,788 photos across 200 species, each annotated with a bounding box. This project worked small on purpose: a <b>20-species slice</b> — just <b>743 training</b> and <b>372 validation</b> images, roughly <b>37 photos per species</b>. Every image is cropped to the bird's bounding box so the background can't leak in, resized to <b>224 × 224</b>, and normalised to the range the pretrained network expects. With this little data, a deep network trained from scratch would simply memorise the training set — the "curse of dimensionality."</p>
+    <div class="viz">
+      <div class="datarow">
+        <div style="text-align:center">
+          <div class="photo" id="photo"></div>
+          <div class="note" style="margin-top:6px">crop to box → 224×224×3</div>
+        </div>
+        <div class="split"><div class="big">743</div><div class="lab">training images</div></div>
+        <div class="split"><div class="big">372</div><div class="lab">validation images</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section class="stage" id="s3">
+    <div class="kick">Stage 3 · Transfer learning</div>
+    <h2>Borrow a network that already knows how to see</h2>
+    <p>A network starting from zero on 743 images has nothing to go on. So the project borrows one that has already studied <b>1.2 million</b>: a backbone pre-trained on ImageNet's 1,000 everyday categories. Its early layers already detect edges, textures and feather-like patterns — vision that transfers straight to birds. Those layers are <b>frozen</b> (their weights locked), and only a fresh final classifier — mapping features to the 20 species — is trained. Far fewer parameters to fit means it converges in a handful of epochs instead of overfitting the tiny set.</p>
+    <div class="viz">
+      <div class="tl">
+        <div class="block frozen">
+          <div class="t">❄ Pre-trained backbone</div>
+          <div class="s">ImageNet features — kept frozen</div>
+          <div class="lockrow" id="locks"></div>
+        </div>
+        <div style="display:flex;align-items:center;color:var(--ink-3);font-size:20px">→</div>
+        <div class="block trainable">
+          <div class="t">New classifier head</div>
+          <div class="s">Linear → 20 species — trained</div>
+        </div>
+      </div>
+      <p class="note" style="text-align:center;margin-top:12px">Only the small head learns at first — a few thousand new weights instead of millions.</p>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section class="stage" id="s4">
+    <div class="kick">Stage 4 · Two backbones</div>
+    <h2>VGG-16 or ResNet-18?</h2>
+    <p>Two backbones were tried head-to-head. <b style="color:var(--vgg)">VGG-16</b> (the <span style="font-family:var(--fm);font-size:13px">vgg16_bn</span> variant, with batch-norm) is a tall, plain stack — 13 convolution layers in five blocks, then large fully-connected layers. <b style="color:var(--res)">ResNet-18</b> is shallower but smarter: its <b>residual skip connections</b> add each block's input back to its output, so gradients flow straight through and the network trains cleanly. In both, only the final layer is swapped for a clean <span style="font-family:var(--fm);font-size:13px">Linear → 20</span>.</p>
+    <div class="viz">
+      <div class="seg" id="seg"><button data-b="vgg" class="on">VGG-16</button><button data-b="res">ResNet-18</button></div>
+      <svg id="arch" viewBox="0 0 760 170" role="img" aria-label="Backbone architecture diagram"></svg>
+    </div>
+  </section>
+
+  <!-- 5 -->
+  <section class="stage" id="s5">
+    <div class="kick">Stage 5 · Two-phase training</div>
+    <h2>Freeze, then fine-tune</h2>
+    <p>Training ran in two phases. <b style="color:var(--frozen)">Phase 1</b> freezes the backbone and trains only the head for 20 epochs at learning rate 0.001 — loss drops from 5.3 to under 1 almost at once, and accuracy leaps from <b>0.5%</b> (random guessing over 20 classes) to <b>79.9% after a single epoch</b>. <b style="color:var(--accent-ink)">Phase 2</b> unfreezes everything and fine-tunes the whole network for 20 more epochs at a gentler 0.0001, letting the backbone adapt to birds. Adam optimiser, weight decay 1e-6, gradient clipping at 1.0, on a one-cycle schedule.</p>
+    <div class="viz">
+      <div class="phases">
+        <div class="phase p1"><div class="h">PHASE 1 · FROZEN · 20 epochs</div><div class="d">Only the classifier head learns. lr 0.001.</div></div>
+        <div class="phase p2"><div class="h">PHASE 2 · FINE-TUNE · 20 epochs</div><div class="d">Whole network unfrozen. lr 0.0001.</div></div>
+      </div>
+      <canvas id="curve" width="760" height="300" style="width:100%;height:auto"></canvas>
+      <div class="legend"><span><i style="background:var(--accent)"></i>training loss</span><span><i style="background:var(--vgg)"></i>validation loss</span></div>
+      <p class="note" style="text-align:center;margin-top:4px">The actual logged loss from the thesis — training loss falls 1.58 → 0.06, while validation loss flattens near 0.5.</p>
+      <div class="acc-anchors">
+        <div class="anchor"><div class="n">0.5%</div><div class="l">accuracy at init</div></div>
+        <div class="anchor"><div class="n">79.9%</div><div class="l">after epoch 1</div></div>
+        <div class="anchor"><div class="n">~100%</div><div class="l">training accuracy</div></div>
+        <div class="anchor"><div class="n">low-80s%</div><div class="l">validation (plateau)</div></div>
+      </div>
+      <p class="note" style="text-align:center;margin-top:8px">Training accuracy climbs toward 100% while validation plateaus in the low-80s — that gap is the small-data ceiling, honestly reported.</p>
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section class="stage" id="s6">
+    <div class="kick">Stage 6 · The prediction</div>
+    <h2>A top-5 score sheet</h2>
+    <p>For a given photo the model scores every species; the five highest make the score sheet, and the top one is the answer. Pick a bird to see an example — notice the model's doubt lands on genuinely similar species (the two blues, the streaky browns). <span class="note">(Illustrative outputs in the shape of a confident prediction — not live inference.)</span></p>
+    <div class="viz">
+      <div class="pred">
+        <div class="leftcol">
+          <svg id="predBird" viewBox="0 0 150 132" width="180" height="158" aria-label="The chosen bird"></svg>
+          <div class="switch" id="switch"></div>
+        </div>
+        <div class="bars">
+          <div id="barWrap"></div>
+          <p class="verdict">Top match: <b id="verdict">—</b></p>
+        </div>
+      </div>
+      <ul class="limits">
+        <li>Samples per species were uneven, so the model favoured some birds over others.</li>
+        <li>Accuracy drops at awkward camera angles and with lower-quality photos — a finding noted in the thesis.</li>
+        <li>With only ~37 images per species, the low-80s validation accuracy is a small-data result, not a production one.</li>
+        <li>Next step the thesis proposes: a phone app (iOS/Android) and camera-trap deployment for wildlife monitoring.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var root=document.documentElement, NS='http://www.w3.org/2000/svg';
+  try{var s=localStorage.getItem('bird');if(s)root.setAttribute('data-theme',s);}catch(e){}
+  document.getElementById('theme').addEventListener('click',function(){
+    var c=root.getAttribute('data-theme'),night=c==='dark'||(!c&&matchMedia('(prefers-color-scheme: dark)').matches),n=night?'light':'dark';
+    root.setAttribute('data-theme',n);try{localStorage.setItem('bird',n);}catch(e){}
+    drawCurve();drawArch();
+  });
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},{threshold:.15});
+  document.querySelectorAll('.stage').forEach(function(s){io.observe(s);});
+  function cssv(n){return getComputedStyle(document.body).getPropertyValue(n).trim();}
+  function E(p,n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);p.appendChild(e);return e;}
+  function grad(svg,id,c1,c2,vertical){
+    var defs=svg.querySelector('defs')||E(svg,'defs',{});
+    var g=document.createElementNS(NS,'linearGradient');g.setAttribute('id',id);g.setAttribute('x1','0');g.setAttribute('y1','0');g.setAttribute('x2',vertical?'0':'1');g.setAttribute('y2',vertical?'1':'0');
+    var s1=document.createElementNS(NS,'stop');s1.setAttribute('offset','0');s1.setAttribute('stop-color',c1);
+    var s2=document.createElementNS(NS,'stop');s2.setAttribute('offset','1');s2.setAttribute('stop-color',c2);
+    g.appendChild(s1);g.appendChild(s2);defs.appendChild(g);return 'url(#'+id+')';
+  }
+  function shade(hex,amt){var n=parseInt(hex.slice(1),16),r=(n>>16)+amt,g=((n>>8)&255)+amt,b=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+
+  var BUID=0;
+  function drawBird(svg,sp,opt){
+    opt=opt||{}; svg.innerHTML=''; var uid='b'+(BUID++);
+    var back=sp.back, belly=sp.belly, wing=sp.wing||shade(back,-22), head=sp.head||back;
+    var gBack=grad(svg,uid+'bk',shade(back,16),shade(back,-20),true), gBelly=grad(svg,uid+'bl',shade(belly,14),shade(belly,-14),true),
+        gWing=grad(svg,uid+'wg',shade(wing,12),shade(wing,-26),true), gHead=grad(svg,uid+'hd',shade(head,18),shade(head,-16),true);
+    var rootG=E(svg,'g',{});
+    if(opt.branch!==false){
+      E(rootG,'path',{d:'M 6 116 Q 60 108 148 118',fill:'none',stroke:'#8a6a44','stroke-width':6,'stroke-linecap':'round'});
+      E(rootG,'path',{d:'M 110 115 q 14 -8 26 -4',fill:'none',stroke:'#8a6a44','stroke-width':3.4,'stroke-linecap':'round'});
+      E(rootG,'path',{d:'M 40 113 q -6 6 -14 7',fill:'none',stroke:'#8a6a44','stroke-width':3,'stroke-linecap':'round'});
+    }
+    var bird=E(rootG,'g',{class:'bird'});
+    var d=(Math.random()*-5).toFixed(2)+'s'; bird.style.animationDelay=d;
+    // tail
+    var tail=E(bird,'g',{class:'tail'}); tail.style.animationDelay=d;
+    var tcol=sp.tail||wing;
+    E(tail,'path',{d:'M 112 70 L 150 84 L 150 92 L 110 84 Z',fill:grad(svg,uid+'tl',shade(tcol,8),shade(tcol,-28),false),stroke:shade(tcol,-34),'stroke-width':1});
+    for(var t=0;t<3;t++) E(tail,'line',{x1:116,y1:74+t*2,x2:148,y2:86+t*2.2,stroke:shade(tcol,-30),'stroke-width':.8,opacity:.6});
+    // body back
+    E(bird,'path',{d:'M 33 52 Q 40 30 62 33 Q 95 36 117 64 L 120 74 Q 101 97 74 97 Q 42 97 35 71 Q 31 60 33 52 Z',fill:gBack,stroke:shade(back,-30),'stroke-width':1.4});
+    // belly
+    E(bird,'path',{d:'M 35 70 Q 40 96 74 97 Q 94 97 107 86 Q 86 95 58 90 Q 42 86 35 70 Z',fill:gBelly,opacity:.96});
+    if(sp.breast) E(bird,'path',{d:'M 35 66 Q 37 90 64 93 Q 80 94 90 86 Q 70 90 50 84 Q 39 80 35 66 Z',fill:grad(svg,uid+'br',shade(sp.breast,14),shade(sp.breast,-16),true),opacity:.97});
+    // legs
+    E(bird,'path',{d:'M 66 92 L 66 112 M 76 92 L 78 112',stroke:sp.legs||'#7a5a38','stroke-width':2.6,'stroke-linecap':'round'});
+    E(bird,'path',{d:'M 66 112 l 7 3 M 66 112 l -5 3 M 66 112 l 1 5 M 78 112 l 7 3 M 78 112 l -5 3 M 78 112 l 1 5',stroke:sp.legs||'#7a5a38','stroke-width':1.8,'stroke-linecap':'round'});
+    // wing
+    var wg=E(bird,'g',{class:'wing'});
+    E(wg,'path',{d:'M 62 54 Q 100 54 114 82 Q 92 86 68 78 Q 58 70 62 54 Z',fill:gWing,stroke:shade(wing,-32),'stroke-width':1.2});
+    if(sp.wingbar) E(wg,'path',{d:'M 70 68 Q 92 70 106 80',fill:'none',stroke:sp.wingbar,'stroke-width':3,'stroke-linecap':'round',opacity:.95});
+    for(var f=0;f<5;f++) E(wg,'path',{d:'M '+(76+f*7)+' '+(60+f*3.5)+' Q '+(100+f*5)+' '+(74+f*2)+' '+(113+f*4)+' '+(84+f*1.5),fill:'none',stroke:shade(wing,-30),'stroke-width':.9,opacity:.6});
+    if(sp.wingspots) for(var sS=0;sS<4;sS++) E(wg,'circle',{cx:100+sS*3,cy:80-sS,r:1.6,fill:'#fff',opacity:.85});
+    // head
+    var hd=E(bird,'g',{class:'head'}); hd.style.animationDelay=d;
+    E(hd,'path',{d:'M 33 52 Q 34 32 52 31 Q 66 31 66 50 Q 62 68 44 70 Q 34 66 33 52 Z',fill:gHead,stroke:shade(head,-30),'stroke-width':1.3});
+    if(sp.crest){ var gcr=grad(svg,uid+'cr',shade(sp.crest,14),shade(sp.crest,-20),true);
+      E(hd,'path',{d:'M 44 33 Q 49 15 61 12 Q 58 22 55 33 Z',fill:gcr,stroke:shade(sp.crest,-30),'stroke-width':1,'stroke-linejoin':'round'});
+      E(hd,'path',{d:'M 50 30 Q 53 19 61 12',fill:'none',stroke:shade(sp.crest,-8),'stroke-width':1.4,opacity:.7});}
+    if(sp.cap) E(hd,'path',{d:'M 36 40 Q 42 30 56 32 Q 50 38 40 44 Q 36 43 36 40 Z',fill:sp.cap,opacity:.95});
+    if(sp.mask) E(hd,'path',{d:'M 30 52 Q 34 60 46 62 Q 42 54 42 48 Q 36 48 30 52 Z',fill:sp.mask,opacity:.95});
+    if(sp.eyestripe) E(hd,'path',{d:'M 40 46 Q 50 46 58 50',fill:'none',stroke:sp.eyestripe,'stroke-width':3,'stroke-linecap':'round',opacity:.9});
+    if(sp.throat) E(bird,'path',{d:'M 34 60 Q 40 72 50 72 Q 44 64 44 58 Q 38 58 34 60 Z',fill:sp.throat,opacity:.95});
+    // beak
+    var bk=sp.beak||'#d8a24a';
+    if(sp.coneBeak){E(bird,'path',{d:'M 33 50 L 16 53 L 33 57 Z',fill:bk,stroke:shade(bk,-40),'stroke-width':.8});E(bird,'path',{d:'M 33 55 L 16 53 L 33 59 Z',fill:shade(bk,-18)});}
+    else {E(bird,'path',{d:'M 33 51 L 13 54 L 33 55 Z',fill:bk,stroke:shade(bk,-40),'stroke-width':.8});E(bird,'path',{d:'M 33 55 L 15 55 L 33 58 Z',fill:shade(bk,-16)});}
+    // eye
+    var eye=E(hd,'g',{class:'eye'});
+    if(sp.eyering) E(eye,'circle',{cx:42,cy:47,r:5,fill:'none',stroke:'#f6efe2','stroke-width':2});
+    E(eye,'circle',{cx:42,cy:47,r:4.2,fill:'#1c1712'});
+    E(eye,'circle',{cx:43.4,cy:45.6,r:1.3,fill:'#fff',opacity:.9});
+    var lid=E(eye,'rect',{class:'lid',x:37,y:42,width:10,height:10,rx:4,fill:gHead,style:'transform-box:fill-box;transform-origin:center;transform:scaleY(0)'}); lid.style.animationDelay=d;
+  }
+
+  var SPECIES=[
+    {n:'Blue Jay', back:'#5b8bd0', belly:'#eef2f8', wing:'#4f7cc0', head:'#5b8bd0', crest:'#4f7cc0', wingbar:'#fbfdff', wingspots:1, beak:'#2a2620', tail:'#4f7cc0', legs:'#4a443c'},
+    {n:'Northern Cardinal', back:'#c63422', belly:'#c23526', wing:'#a52a1c', head:'#c63422', crest:'#c63422', mask:'#201712', coneBeak:1, beak:'#e8963a', tail:'#a52a1c', legs:'#9a6a5a'},
+    {n:'American Goldfinch', back:'#e8c21f', belly:'#f1e39a', wing:'#201e18', head:'#e8c21f', cap:'#201e18', wingbar:'#f6f0dc', coneBeak:1, beak:'#e0a24a', tail:'#201e18', legs:'#caa24a'},
+    {n:'Indigo Bunting', back:'#3f58b8', belly:'#5b70c8', wing:'#30429a', head:'#33459c', coneBeak:1, beak:'#c7ccd6', tail:'#30429a', legs:'#5a5a62'},
+    {n:'House Sparrow', back:'#9c7a4a', belly:'#e6ddc9', wing:'#8a6838', head:'#8f8578', cap:'#6e5a3a', eyestripe:'#7a4a2a', throat:'#3a322a', wingbar:'#efe6cf', beak:'#5a5048', tail:'#7a5a34', legs:'#b08a5a'},
+    {n:'American Robin', back:'#6b6660', belly:'#c2612f', breast:'#c2612f', wing:'#5a554f', head:'#4a4742', eyering:1, beak:'#e0a83a', tail:'#4a4742', legs:'#8a6a4a'}
+  ];
+
+  // stage 1 grid
+  var bg=document.getElementById('birdgrid');
+  SPECIES.forEach(function(sp){
+    var c=document.createElement('div');c.className='bcard';
+    var svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 150 132');svg.setAttribute('width','112');svg.setAttribute('height','98');
+    drawBird(svg,sp); var nm=document.createElement('div');nm.className='nm';nm.textContent=sp.n;
+    c.appendChild(svg);c.appendChild(nm);bg.appendChild(c);
+  });
+
+  // stage 2 photo + bounding box
+  (function(){
+    var host=document.getElementById('photo'); if(!host) return;
+    var svg=document.createElementNS(NS,'svg');svg.setAttribute('viewBox','0 0 150 132');svg.setAttribute('width','200');svg.setAttribute('height','150');
+    host.appendChild(svg); drawBird(svg,SPECIES[0],{branch:false});
+    var box=E(svg,'rect',{x:14,y:30,width:120,height:74,rx:3,fill:'none',stroke:cssv('--accent'),'stroke-width':2,'stroke-dasharray':'5 4'});
+    E(svg,'text',{x:132,y:24,'text-anchor':'end','font-size':9,fill:cssv('--accent-ink'),'font-family':cssv('--fm')}).textContent='bounding box';
+  })();
+
+  // stage 3 locks
+  var locks=document.getElementById('locks');
+  for(var i=0;i<5;i++){var s=document.createElementNS(NS,'svg');s.setAttribute('width','16');s.setAttribute('height','16');s.setAttribute('viewBox','0 0 16 16');
+    E(s,'rect',{x:3,y:7,width:10,height:7,rx:1.5,fill:cssv('--frozen'),opacity:.85});E(s,'path',{d:'M5 7 V5 a3 3 0 0 1 6 0 V7',fill:'none',stroke:cssv('--frozen'),'stroke-width':1.6});locks.appendChild(s);}
+
+  // stage 4 architecture toggle
+  var backbone='vgg';
+  function drawArch(){
+    var svg=document.getElementById('arch'); if(!svg) return; svg.innerHTML='';
+    var defs=E(svg,'defs',{});var mk=document.createElementNS(NS,'marker');mk.setAttribute('id','ah2');mk.setAttribute('markerWidth','7');mk.setAttribute('markerHeight','7');mk.setAttribute('refX','5.5');mk.setAttribute('refY','3');mk.setAttribute('orient','auto');var ap=document.createElementNS(NS,'path');ap.setAttribute('d','M0,0 L6,3 L0,6 Z');ap.setAttribute('fill',cssv('--ink-3'));mk.appendChild(ap);defs.appendChild(mk);
+    function box(x,y,w,h,o){o=o||{};E(svg,'rect',{x:x,y:y,width:w,height:h,rx:6,fill:o.fill||'var(--surface-2)',stroke:o.stroke||'var(--border)','stroke-width':o.sw||1.2});}
+    function tx(x,y,t,o){o=o||{};var e=E(svg,'text',{x:x,y:y,'text-anchor':o.a||'middle','font-size':o.fs||10,fill:o.fill||'var(--ink)','font-family':o.ff||cssv('--fb'),'font-weight':o.fw||400});e.textContent=t;}
+    function arr(x1,x2,y){E(svg,'line',{x1:x1,y1:y,x2:x2,y2:y,stroke:'var(--ink-3)','stroke-width':1.3,'marker-end':'url(#ah2)'});}
+    box(14,66,54,54,{fill:'var(--surface)'}); tx(41,90,'image',{fs:10}); tx(41,104,'224²·3',{fs:8,fill:'var(--ink-3)',ff:cssv('--fm')});
+    arr(68,92,93);
+    if(backbone==='vgg'){
+      var col=cssv('--vgg'); var blocks=['64·64','128·128','256³','512³','512³']; var x=92;
+      blocks.forEach(function(b,i){ box(x,70,66,46,{fill:'var(--vgg-soft)',stroke:col}); tx(x+33,92,b,{fs:9.5,fw:600,fill:col}); tx(x+33,106,'conv',{fs:8,fill:'var(--ink-3)',ff:cssv('--fm')}); x+=72; if(i<blocks.length-1) arr(x-6,x,93); });
+      arr(x-6,x+14,93); box(x+14,70,70,46,{fill:'var(--accent-soft)',stroke:'var(--accent)'}); tx(x+49,90,'FC → 20',{fs:10,fw:600,fill:'var(--accent-ink)'}); tx(x+49,104,'swapped head',{fs:7.5,fill:'var(--ink-3)',ff:cssv('--fm')});
+      tx(380,26,'VGG-16 · 13 conv layers in 5 blocks, then fully-connected',{fs:10,fill:col,ff:cssv('--fm'),fw:600});
+      tx(380,44,'a deep, plain stack of 3×3 convolutions (vgg16_bn)',{fs:9,fill:'var(--ink-3)'});
+    } else {
+      var col2=cssv('--res');
+      box(92,70,56,46,{fill:'var(--res-soft)',stroke:col2}); tx(120,90,'7×7 conv',{fs:9.5,fw:600,fill:col2}); tx(120,104,'stem',{fs:8,fill:'var(--ink-3)',ff:cssv('--fm')});
+      var stages=['64','128','256','512']; var x2=164;
+      stages.forEach(function(st,i){ box(x2,70,60,46,{fill:'var(--res-soft)',stroke:col2}); tx(x2+30,88,st+' ×2',{fs:9.5,fw:600,fill:col2}); tx(x2+30,102,'res block',{fs:7.5,fill:'var(--ink-3)',ff:cssv('--fm')});
+        E(svg,'path',{d:'M '+(x2+6)+' 70 q 24 -18 48 0',fill:'none',stroke:col2,'stroke-width':1.3,'stroke-dasharray':'3 3','marker-end':'url(#ah2)'});
+        if(i<stages.length-1) arr(x2+60,x2+72,93); x2+=72; });
+      box(452,70,48,46,{fill:'var(--surface-2)'}); tx(476,90,'GAP',{fs:9.5}); tx(476,104,'pool',{fs:8,fill:'var(--ink-3)',ff:cssv('--fm')}); arr(440,452,93);
+      arr(500,512,93); box(512,70,70,46,{fill:'var(--accent-soft)',stroke:'var(--accent)'}); tx(547,90,'FC → 20',{fs:10,fw:600,fill:'var(--accent-ink)'}); tx(547,104,'swapped head',{fs:7.5,fill:'var(--ink-3)',ff:cssv('--fm')});
+      tx(380,26,'ResNet-18 · 4 stages of residual blocks, then a 20-way head',{fs:10,fill:col2,ff:cssv('--fm'),fw:600});
+      tx(380,44,'dashed arcs are skip connections — gradients flow straight through',{fs:9,fill:'var(--ink-3)'});
+    }
+  }
+  document.querySelectorAll('#seg button').forEach(function(b){b.onclick=function(){backbone=b.dataset.b;document.querySelectorAll('#seg button').forEach(function(x){x.classList.toggle('on',x===b);});drawArch();};});
+
+  // stage 5 real loss curve
+  var TRAIN=[1.579827,0.484397,0.344628,0.255804,0.203335,0.196841,0.171930,0.130213,0.118600,0.116316,0.106292,0.133141,0.093042,0.085757,0.078770,0.058873,0.076792,0.077938,0.061053,0.058077];
+  var VALID=[0.735421,0.575804,0.546770,0.533436,0.531494,0.495609,0.497623,0.511590,0.506606,0.497882,0.531919,0.542378,0.521776,0.529921,0.560282,0.516175,0.506742,0.557134,0.504938,0.551698];
+  function drawCurve(){
+    var cv=document.getElementById('curve'); if(!cv) return;
+    var ctx=cv.getContext('2d'),W=cv.width,H=cv.height,pl=46,pb=34,pt=14,pr=14;
+    ctx.clearRect(0,0,W,H);
+    var ink3=cssv('--ink-3'),bord=cssv('--border'),acc=cssv('--accent'),vgg=cssv('--vgg');
+    var maxL=1.6,n=TRAIN.length;
+    function X(i){return pl+(W-pl-pr)*(i/(n-1));} function Y(v){return pt+(H-pt-pb)*(1-v/maxL);}
+    ctx.strokeStyle=bord;ctx.lineWidth=1;ctx.fillStyle=ink3;ctx.font='11px '+(cssv('--fm')||'monospace');
+    for(var g=0;g<=4;g++){var v=g*0.4;var y=Y(v);ctx.globalAlpha=.5;ctx.beginPath();ctx.moveTo(pl,y);ctx.lineTo(W-pr,y);ctx.stroke();ctx.globalAlpha=1;ctx.textAlign='right';ctx.fillText(v.toFixed(1),pl-6,y+3);}
+    ctx.textAlign='center';[1,5,10,15,20].forEach(function(e){ctx.fillText(e,X(e-1),H-pb+16);});ctx.fillText('epoch',W/2,H-4);
+    function plot(arr,color){ctx.strokeStyle=color;ctx.lineWidth=2.4;ctx.beginPath();arr.forEach(function(v,i){var x=X(i),y=Y(v);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});ctx.stroke();ctx.fillStyle=color;arr.forEach(function(v,i){ctx.beginPath();ctx.arc(X(i),Y(v),2.4,0,7);ctx.fill();});}
+    plot(VALID,vgg);plot(TRAIN,acc);
+  }
+
+  // stage 6 predict
+  var predBird=document.getElementById('predBird');
+  var DEMO={
+    'Blue Jay':{sp:0,top:[['Blue Jay',91],['Indigo Bunting',4],['American Robin',2],['House Sparrow',2],['Northern Cardinal',1]]},
+    'Northern Cardinal':{sp:1,top:[['Northern Cardinal',93],['American Robin',3],['House Sparrow',2],['American Goldfinch',1],['Blue Jay',1]]},
+    'American Goldfinch':{sp:2,top:[['American Goldfinch',88],['House Sparrow',6],['Northern Cardinal',3],['American Robin',2],['Blue Jay',1]]},
+    'Indigo Bunting':{sp:3,top:[['Indigo Bunting',85],['Blue Jay',9],['American Robin',3],['House Sparrow',2],['Northern Cardinal',1]]},
+    'House Sparrow':{sp:4,top:[['House Sparrow',74],['American Goldfinch',12],['American Robin',8],['Northern Cardinal',4],['Blue Jay',2]]},
+    'American Robin':{sp:5,top:[['American Robin',82],['House Sparrow',9],['Northern Cardinal',5],['Blue Jay',2],['American Goldfinch',2]]}
+  };
+  var sw=document.getElementById('switch'), barWrap=document.getElementById('barWrap');
+  for(var j=0;j<5;j++){var b=document.createElement('div');b.className='bar';b.innerHTML='<span class="nm" id="bn'+j+'"></span><span class="track"><span class="fill" id="bf'+j+'"></span></span><span class="pct" id="bp'+j+'"></span>';barWrap.appendChild(b);}
+  SPECIES.forEach(function(sp){var btn=document.createElement('button');btn.textContent=sp.n;btn.onclick=function(){select(sp.n);};sw.appendChild(btn);});
+  function select(name){
+    document.querySelectorAll('#switch button').forEach(function(x){x.classList.toggle('on',x.textContent===name);});
+    var d=DEMO[name]; drawBird(predBird,SPECIES[d.sp],{branch:false});
+    d.top.forEach(function(row,i){document.getElementById('bn'+i).textContent=row[0];document.getElementById('bf'+i).style.width=row[1]+'%';document.getElementById('bp'+i).textContent=row[1]+'%';document.querySelectorAll('.bar')[i].classList.toggle('win',i===0);});
+    document.getElementById('verdict').textContent=name;
+  }
+
+  drawArch();drawCurve();select('Northern Cardinal');
+})();
+</script>
+</body>
+</html>

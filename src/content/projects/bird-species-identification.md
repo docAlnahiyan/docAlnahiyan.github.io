@@ -5,7 +5,9 @@ one_liner: Bachelor's thesis — identifying bird species from photos with trans
 tags: [Bachelor's thesis, Transfer learning, VGG-16, ResNet18]
 repo_url: ""
 thumbnail: ""
-metrics: []
+metrics:
+  - { label: species, value: "20" }
+  - { label: training images, value: "743" }
 date: 2021-05-01
 order: 3
 ---

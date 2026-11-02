@@ -1,0 +1,38 @@
+---
+// Illustrated project page for the Bird Species Identification bachelor's
+// thesis, ported from design-reference/bird-explainer.html. Replaces the page
+// generated from src/content/projects/bird-species-identification.md (see
+// explainers.ts). The reference's "Read the thesis" button is left out: the
+// thesis PDF isn't public.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import BirdSpeciesExplainer from '../../components/projects/BirdSpeciesExplainer.astro';
+import '../../components/projects/explainer.css';
+---
+
+<BaseLayout
+  title="Bird Species Identification"
+  description="A transfer-learning image classifier that names a bird's species from a single photo — VGG-16 and ResNet-18 fine-tuned on a 20-species slice of CUB-200-2011, explained stage by stage. Bachelor's thesis, 2021."
+  type="article"
+>
+  <article class="wrap view xp">
+    <nav class="crumb" aria-label="Breadcrumb">
+      <a href="/projects/">Projects</a> <span aria-hidden="true">›</span> <span aria-current="page">Bird Species Identification</span>
+    </nav>
+    <ul class="chips">
+      <li class="chip">Bachelor's thesis · 2021</li>
+      <li class="chip">Transfer learning</li>
+      <li class="chip">VGG-16 · ResNet-18</li>
+      <li class="chip">PyTorch</li>
+    </ul>
+    <h1 class="title">Bird Species Identification</h1>
+    <p class="plain">Even expert birders disagree on a species from one photo. Can a network learn to tell them apart from only a handful of examples each?</p>
+    <p class="meta">A transfer-learning image classifier that names a bird's species from a single photo — standing on the shoulders of networks already trained on millions of images, then re-taught on a small bird dataset.</p>
+    <ul class="badges">
+      <li class="badge"><span class="n">20</span><span class="l">Bird species (CUB-200 subset)</span></li>
+      <li class="badge"><span class="n">743</span><span class="l">Training images · ~37 each</span></li>
+      <li class="badge"><span class="n">2</span><span class="l">Backbones compared</span></li>
+    </ul>
+
+    <BirdSpeciesExplainer />
+  </article>
+</BaseLayout>
