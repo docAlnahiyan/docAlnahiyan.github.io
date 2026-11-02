@@ -1,13 +1,10 @@
 ---
 title: CV
-description: Curriculum vitae of Al-Nahiyan Khushbu — PhD researcher in artificial intelligence at Southwest Jiaotong University.
+description: Curriculum vitae of Al-Nahiyan Khushbu — researcher in artificial intelligence, focused on medical imaging and computer vision.
 pdf: /cv/Al-Nahiyan-Khushbu-CV.pdf
 ---
 
 ## Education
-
-**PhD, Artificial Intelligence** — Southwest Jiaotong University, China · Sep 2025–present\
-Research direction: medical imaging and computer vision.
 
 **MSc, Computer Science and Technology** — Southwest Jiaotong University, China · 2022–2025\
 GPA 3.38 / 4.0. Thesis: *Hybrid Deep Learning Frameworks for Early Parkinson's Disease
