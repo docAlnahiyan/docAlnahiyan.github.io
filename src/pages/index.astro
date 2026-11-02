@@ -1,6 +1,6 @@
 ---
 // Home: the animated sketch hero (design-reference/landing-scene-spec.md), then
-// About with the research-focus card, then the wider "At a glance" row.
+// About with the author card, then the wider "At a glance" row.
 // Other pages keep the narrow reading width.
 import BaseLayout from '../layouts/BaseLayout.astro';
 import HeroScene from '../components/HeroScene.astro';
@@ -89,8 +89,7 @@ const aboutLinks = [
 const facts = [
   { label: 'Area', value: profile.research_area },
   { label: 'Methods', value: profile.methods },
-  { label: 'Based in', value: profile.location },
-  { label: 'Since', value: profile.active_since },
+  { label: 'Based in', value: profile.location && `${profile.location}\u00a0🇨🇳` },
 ].filter((f): f is { label: string; value: string } => Boolean(f.value));
 
 const plainBio = profile.bio.replace(/\*\*/g, '');
@@ -123,8 +122,9 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
             )}
           </span>
           <div>
-            <h2 id="focus-label" class="k">Research focus</h2>
-            <p class="focus-name">{profile.name}</p>
+            <h2 id="focus-label" class="k">About</h2>
+            <p class="focus-name">{profile.name}&nbsp;🇧🇩</p>
+            {profile.role && <p class="focus-role">{profile.role}</p>}
           </div>
         </div>
         <dl class="facts">
@@ -246,7 +246,7 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
     user-select: all;
   }
 
-  /* ---------- research focus card ---------- */
+  /* ---------- author card ---------- */
   .focus {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -290,6 +290,11 @@ const plainBio = profile.bio.replace(/\*\*/g, '');
     font-size: 16px;
     color: var(--ink);
     margin: 3px 0 0;
+  }
+  .focus-role {
+    font-size: 13px;
+    color: var(--ink-2);
+    margin: 2px 0 0;
   }
   .facts {
     margin: 0;
