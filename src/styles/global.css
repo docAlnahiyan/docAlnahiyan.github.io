@@ -7,13 +7,13 @@
    preference (unless the visitor chose light) or from an explicit choice. */
 :root {
   --bg: #ffffff;
-  --surface: #fffdf9;
-  --surface-2: #f2ece0;
+  --surface: #efefef;
+  --surface-2: #e5e5e5;
   --ink: #201e1a;
   --ink-2: #5c584f;
   --ink-3: #6e6a60;
-  --border: #e8e1d4;
-  --border-strong: #d9d1c1;
+  --border: #d6d6d6;
+  --border-strong: #d6d6d6;
   --accent: #c96442;
   --accent-ink: #a8482b;
   --accent-wash: #f6e9e1;
@@ -46,13 +46,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #000000;
-    --surface: #2a2824;
-    --surface-2: #32302b;
+    --surface: #303030;
+    --surface-2: #3a3a3a;
     --ink: #efeae1;
     --ink-2: #b7b1a4;
     --ink-3: #9e988c;
-    --border: #3a362f;
-    --border-strong: #4a453c;
+    --border: #474747;
+    --border-strong: #474747;
     --accent: #e08a6a;
     --accent-ink: #ea9c7e;
     --accent-wash: #3a2a22;
@@ -76,13 +76,13 @@
 
 :root[data-theme="dark"] {
   --bg: #000000;
-  --surface: #2a2824;
-  --surface-2: #32302b;
+  --surface: #303030;
+  --surface-2: #3a3a3a;
   --ink: #efeae1;
   --ink-2: #b7b1a4;
   --ink-3: #9e988c;
-  --border: #3a362f;
-  --border-strong: #4a453c;
+  --border: #474747;
+  --border-strong: #474747;
   --accent: #e08a6a;
   --accent-ink: #ea9c7e;
   --accent-wash: #3a2a22;
