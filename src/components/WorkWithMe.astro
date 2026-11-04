@@ -4,7 +4,7 @@
 // CONTACT_FORM_ENDPOINT (src/site.ts) when one is set; otherwise sending it
 // opens the visitor's email app with the message filled in.
 import { CONTACT_FORM_ENDPOINT } from '../site';
-import { ext } from '../lib/links';
+import { ext, isExternal } from '../lib/links';
 
 interface Props {
   email: string;
@@ -35,8 +35,8 @@ const milestones = [
           <li>
             <span class="when">{m.when}</span>
             <div class="what">
-              {m.href ? <a href={m.href} {...ext(m.href)}>{m.what}</a> : <span>{m.what}</span>}
-              {m.whereHref ? <a class="where" href={m.whereHref} {...ext(m.whereHref)}>{m.where}</a> : <span class="where">{m.where}</span>}
+              {m.href ? <a class:list={[isExternal(m.href) ? 'site' : 'page']} href={m.href} {...ext(m.href)}>{m.what}</a> : <span>{m.what}</span>}
+              {m.whereHref ? <a class:list={['where', isExternal(m.whereHref) ? 'site' : 'page']} href={m.whereHref} {...ext(m.whereHref)}>{m.where}</a> : <span class="where">{m.where}</span>}
               {m.note && <span class="note">{m.note}</span>}
             </div>
           </li>
@@ -226,18 +226,28 @@ const milestones = [
     font-size: 13.5px;
     color: var(--ink-2);
   }
-  /* A linked company / university / paper: same quiet text, with a clay
-     underline so it reads as clickable. */
-  a.where {
+  /* Milestone links. Off-site ones (company, university, award, journal)
+     are dark clay; links to pages on this site (papers, projects) keep the
+     normal text colour and show a dark clay underline on hover. */
+  .what a {
     align-self: flex-start;
+    text-decoration: none;
+  }
+  .what a.site {
+    color: var(--accent-ink);
+  }
+  .what a.page {
+    color: inherit;
+  }
+  .what a.where.page {
+    color: var(--ink-2);
+  }
+  .what a.page:hover,
+  .what a.page:focus-visible {
     text-decoration: underline;
-    text-decoration-color: var(--accent);
+    text-decoration-color: var(--accent-ink);
     text-decoration-thickness: 1px;
     text-underline-offset: 3px;
-  }
-  a.where:hover,
-  a.where:focus-visible {
-    color: var(--accent-ink);
   }
   .note {
     font-size: 12.5px;
