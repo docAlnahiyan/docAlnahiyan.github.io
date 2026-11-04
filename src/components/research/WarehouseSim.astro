@@ -30,7 +30,7 @@
     </div>
     <aside class="attr" aria-label="Who to review">
       <h4>Who to review</h4>
-      <p class="sub">Each employee ranked against their <em>own</em> baseline. No one is accused — this is a shortlist.</p>
+      <p class="sub">Each employee ranked against their <em>own</em> baseline. No one is accused; this is a shortlist.</p>
       <div class="chan chanA">
         <div class="ch-head"><span class="ch-name">A · Presence lift</span><span class="ch-tag">physical</span></div>
         <div class="ch-desc">In loss windows more than their routine predicts? &gt;1× = over-exposed.</div>
@@ -133,15 +133,15 @@
   .sim .steps .arrow { color: var(--shelf-dark); font-size: 11px; }
   .sim .mainrow { display: flex; align-items: stretch; }
   .sim .floor-wrap { flex: 1 1 auto; position: relative; background: var(--panel); display: flex; align-items: center; justify-content: center; padding: 12px 14px; min-width: 0; }
-  .sim canvas { display: block; background: var(--floor); border-radius: 10px; box-shadow: 0 1px 0 var(--line); max-width: 100%; height: auto; }
+  .sim canvas { display: block; background: var(--floor); border-radius: calc(10px * var(--round, 1)); box-shadow: 0 1px 0 var(--line); max-width: 100%; height: auto; }
   .sim .banner { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; font-size: 12px; font-weight: 600;
-    padding: 7px 14px; border-radius: 20px; box-shadow: 0 6px 18px rgba(192,57,43,.28); opacity: 0; pointer-events: none; transition: opacity .3s;
+    padding: 7px 14px; border-radius: calc(20px * var(--round, 1)); box-shadow: 0 6px 18px rgba(192,57,43,.28); opacity: 0; pointer-events: none; transition: opacity .3s;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; z-index: 5; max-width: 92%; }
   .sim .banner.show { opacity: 1; }
   .sim .attr { flex: 0 0 300px; border-left: 1px solid var(--line); padding: 13px 14px; display: flex; flex-direction: column; gap: 11px; background: #fff; }
   .sim .attr h4 { font-family: inherit; font-size: 11.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--navy); font-weight: 700; margin: 0; }
   .sim .attr .sub { font-size: 11px; color: var(--muted); line-height: 1.5; margin: 0; }
-  .sim .chan { border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; }
+  .sim .chan { border: 1px solid var(--line); border-radius: calc(10px * var(--round, 1)); padding: 9px 10px; }
   .sim .chan .ch-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 2px; }
   .sim .chan .ch-name { font-size: 12px; font-weight: 700; }
   .sim .chan .ch-tag { font-size: 9.5px; color: var(--muted); font-weight: 600; }
@@ -149,16 +149,16 @@
   .sim .rank { display: flex; align-items: center; gap: 7px; margin-top: 5px; font-size: 11.5px; }
   .sim .rank .pos { width: 14px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
   .sim .rank .who { width: 44px; font-weight: 700; font-family: "SF Mono", ui-monospace, Menlo, monospace; color: var(--ink); white-space: nowrap; }
-  .sim .rank .barwrap { flex: 1 1 auto; height: 8px; background: var(--panel); border-radius: 5px; overflow: hidden; }
+  .sim .rank .barwrap { flex: 1 1 auto; height: 8px; background: var(--panel); border-radius: calc(5px * var(--round, 1)); overflow: hidden; }
   /* Full width, slid left to show --p % (compositor-only); the track clips it. */
-  .sim .rank .bar { display: block; width: 100%; height: 100%; border-radius: 5px; transform: translateX(calc(var(--p, 0) * 1% - 100%)); transition: transform .4s; }
+  .sim .rank .bar { display: block; width: 100%; height: 100%; border-radius: calc(5px * var(--round, 1)); transform: translateX(calc(var(--p, 0) * 1% - 100%)); transition: transform .4s; }
   .sim .rank .scoreval { width: 38px; text-align: right; font-variant-numeric: tabular-nums; font-size: 10.5px; color: var(--muted); }
   .sim .rank.truth .who { color: var(--red); }
   .sim .rank.truth .who::after { content: " ✓"; color: var(--red); font-weight: 700; }
   .sim .chanA .bar { background: var(--navy); }
   .sim .chanB .bar { background: var(--amber); }
   .sim .chanA .rank.truth .bar, .sim .chanB .rank.truth .bar { background: var(--red); }
-  .sim .reveal-note { font-size: 11px; color: var(--red); background: var(--red-soft); border: 1px solid #E7B7B0; border-radius: 8px; padding: 8px 10px; line-height: 1.5; display: none; }
+  .sim .reveal-note { font-size: 11px; color: var(--red); background: var(--red-soft); border: 1px solid #E7B7B0; border-radius: calc(8px * var(--round, 1)); padding: 8px 10px; line-height: 1.5; display: none; }
   .sim .reveal-note.show { display: block; }
   .sim .bar-ctrl { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
   .sim .stats { display: flex; gap: 18px; }
@@ -167,7 +167,7 @@
   .sim .stat .v { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; }
   .sim .stat .v.red { color: var(--red); }
   .sim .spacer { flex: 1 1 auto; }
-  .sim button.simbtn { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 7px 11px; border-radius: 8px; cursor: pointer; }
+  .sim button.simbtn { font: inherit; font-size: 12px; font-weight: 600; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 7px 11px; border-radius: calc(8px * var(--round, 1)); cursor: pointer; }
   .sim button.simbtn:hover { border-color: var(--shelf-dark); }
   .sim button.simbtn:focus-visible, .sim input:focus-visible, .sim summary:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
   .sim button.simbtn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
@@ -190,7 +190,7 @@
     font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
   .sim .log-head .r { text-align: right; }
   .sim .log { height: 190px; overflow-y: auto; padding: 2px 12px 12px; min-width: 644px; }
-  .sim .row { align-items: center; padding: 8px 9px; margin-top: 5px; border-radius: 8px; font-size: 12px; min-width: 0;
+  .sim .row { align-items: center; padding: 8px 9px; margin-top: 5px; border-radius: calc(8px * var(--round, 1)); font-size: 12px; min-width: 0;
     background: #fff; border: 1px solid var(--line); font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; animation: simpop .3s ease; }
   @keyframes simpop { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
   .sim .row .t { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }

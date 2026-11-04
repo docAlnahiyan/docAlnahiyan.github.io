@@ -42,8 +42,8 @@ export function dist(emo: Emotion, mod: Mode): number[] {
 /** The note under the bars for each input setting. */
 export function jumpText(emo: Emotion, mod: Mode): string {
   const c = CONF[emo];
-  if (mod === 'img') return 'One modality only — the face. Turn on audio to see the lift.';
-  if (mod === 'aud') return 'One modality only — the voice. Turn on the image to see the lift.';
+  if (mod === 'img') return 'One modality only: the face. Turn on audio to see the lift.';
+  if (mod === 'aud') return 'One modality only: the voice. Turn on the image to see the lift.';
   return `Image-only would be ${c.img}% · audio-only ${c.aud}% → both ${c.both}%  (+${(c.both - Math.max(c.img, c.aud)).toFixed(1)} pts)`;
 }
 

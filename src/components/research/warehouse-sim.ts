@@ -146,7 +146,7 @@ export function startSim(root: HTMLElement): Sim | undefined {
   function addRow({ emp, act, zone, qty, note = '', cls = '' }: { emp: string; act: string; zone: string; qty: number; note?: string; cls?: string }) {
     const row = document.createElement('div');
     row.className = 'row' + (cls ? ' ' + cls : '');
-    const q = qty > 0 ? '+' + qty : qty < 0 ? String(qty) : '—';
+    const q = qty > 0 ? '+' + qty : qty < 0 ? String(qty) : 'n/a';
     const qcls = qty < 0 ? 'neg' : qty > 0 ? 'pos' : '';
     const cell = (c: string, text: string) => {
       const s = document.createElement('span');
@@ -186,7 +186,7 @@ export function startSim(root: HTMLElement): Sim | undefined {
     const m = pickMed(z), stolen = -(15 + ((Math.random() * 25) | 0));
     realStock[z] += stolen; w.flash = 1; noteActivity(w.id, z);
     answerFile.push({ t: ts(), emp: w.id, zone: z, qty: stolen, trick: 'physical removal' });
-    flashBanner(`Hidden removal by ${w.id} in ${z} — ${m.name}. Sealed, absent from the log.`);
+    flashBanner(`Hidden removal by ${w.id} in ${z}: ${m.name}. Sealed, absent from the log.`);
     stock[z] += -2; actionCount++;
     addRow({ emp: w.id, act: 'adjust stock', zone: z, qty: -2, note: 'looks normal' });
   }
@@ -194,7 +194,7 @@ export function startSim(root: HTMLElement): Sim | undefined {
     const z = zoneOf(w), m = pickMed('Z2'), qty = 8 + ((Math.random() * 14) | 0), v = qty * TIERVAL[m.tier];
     realStock[z] -= qty; stock[z] -= qty; woValue[w.id] += v; w.flash = 1; actionCount++; noteActivity(w.id, z);
     answerFile.push({ t: ts(), emp: w.id, zone: z, qty: -qty, trick: 'fake write-off' });
-    flashBanner(`${w.id} wrote off ${qty}× ${m.name} — books reconcile, no window. Sealed.`);
+    flashBanner(`${w.id} wrote off ${qty}× ${m.name}; books reconcile, no window. Sealed.`);
     addRow({ emp: w.id, act: 'approve write-off', zone: z, qty: 0, note: `${qty}× ${m.name} · signed` });
   }
 
@@ -208,7 +208,7 @@ export function startSim(root: HTMLElement): Sim | undefined {
     if (positive) {
       lossCount++; stock[z] = realStock[z];
       addRow({ emp, act: 'cycle count', zone: z, qty: -short, note: `SHORT ${short} · loss window`, cls: 'flag' });
-      flashBanner(`Cycle count in ${z}: ${short} units missing — loss window opened`);
+      flashBanner(`Cycle count in ${z}: ${short} units missing, loss window opened`);
     } else {
       addRow({ emp, act: 'cycle count', zone: z, qty: 0, note: 'all correct', cls: 'count' });
     }
@@ -269,10 +269,10 @@ export function startSim(root: HTMLElement): Sim | undefined {
     if (noteEl) {
       noteEl.classList.add('show');
       noteEl.innerHTML = `<b>Sealed file opened.</b> ${phys} removals by <b>${physThief}</b>, ${edit} edits by <b>${recThief}</b>.<br>` +
-        `Channel A ranks ${physThief} at <b>#${rA || '—'}</b>/${A.length} · Channel B ranks ${recThief} at <b>#${rB || '—'}</b>/${B.length}.`;
+        `Channel A ranks ${physThief} at <b>#${rA || 'n/a'}</b>/${A.length} · Channel B ranks ${recThief} at <b>#${rB || 'n/a'}</b>/${B.length}.`;
     }
     updateAttribution();
-    flashBanner('Sealed file revealed — compare the true actors to the list');
+    flashBanner('Sealed file revealed: compare the true actors to the list');
     render();
   }
 

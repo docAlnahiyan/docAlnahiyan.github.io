@@ -25,7 +25,7 @@ const stages = [
 
 const cohorts = [
   { c: 'ctl', name: 'Control', desc: "No Parkinson's. The healthy baseline." },
-  { c: 'prod', name: 'Prodromal', desc: 'Early, at-risk stage — before clinical diagnosis.' },
+  { c: 'prod', name: 'Prodromal', desc: 'Early, at-risk stage, before clinical diagnosis.' },
   { c: 'pd', name: "Parkinson's (PD)", desc: "Clinically diagnosed Parkinson's disease." },
 ];
 
@@ -192,8 +192,8 @@ const scores = [
 
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The data</div>
-    <h2 id="s1-title">PPMI — three cohorts</h2>
-    <p>Scans come from the <b>Parkinson's Progression Markers Initiative (PPMI)</b>: T1-weighted structural MRI from three groups the model learns to separate. Access needs a data-use agreement, so no raw scans are hosted here — the brain shown throughout is the open MNI152 template, for illustration.</p>
+    <h2 id="s1-title">PPMI: three cohorts</h2>
+    <p>Scans come from the <b>Parkinson's Progression Markers Initiative (PPMI)</b>: T1-weighted structural MRI from three groups the model learns to separate. Access needs a data-use agreement, so no raw scans are hosted here; the brain shown throughout is the open MNI152 template, for illustration.</p>
     <div class="viz">
       <div class="cohorts">
         {cohorts.map((c) => (
@@ -212,7 +212,7 @@ const scores = [
   <section class="stage" id="s2" aria-labelledby="s2-title">
     <div class="kick">Stage 2 · One scan</div>
     <h2 id="s2-title">A 3D volume → the middle axial slice</h2>
-    <p>Each scan is a 3D stack of slices. Rather than process the whole volume, the model takes the <b>middle axial slice</b> — one representative 2D image. Scrub the stack: the highlighted frame is the slice that goes forward.</p>
+    <p>Each scan is a 3D stack of slices. Rather than process the whole volume, the model takes the <b>middle axial slice</b>: one representative 2D image. Scrub the stack: the highlighted frame is the slice that goes forward.</p>
     <div class="viz">
       <div class="slice-row">
         <div class="volume" aria-hidden="true">
@@ -263,7 +263,7 @@ const scores = [
   <section class="stage" id="s4" aria-labelledby="s4-title">
     <div class="kick">Stage 4 · CNN</div>
     <h2 id="s4-title">ResNet18 reads local structure</h2>
-    <p>The 2D slice passes through <b>ResNet18</b>. Each block shrinks the image spatially and deepens it into more feature channels — capturing local structure: edges, tissue boundaries, shapes.</p>
+    <p>The 2D slice passes through <b>ResNet18</b>. Each block shrinks the image spatially and deepens it into more feature channels, capturing local structure: edges, tissue boundaries, shapes.</p>
     <div class="viz">
       <div class="cnn">
         {maps.map((m, i) => (
@@ -276,14 +276,14 @@ const scores = [
           </>
         ))}
       </div>
-      <p class="note center spaced">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The stacks show feature maps shrinking spatially and deepening in channels — hover a layer to watch its maps recompute.</p>
+      <p class="note center spaced">ResNet18 (ImageNet-pretrained), with the fully-connected head removed, ending in a 512-channel feature map (7×7×512). The stacks show feature maps shrinking spatially and deepening in channels. Hover a layer to watch its maps recompute.</p>
     </div>
   </section>
 
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · Transformer</div>
     <h2 id="s5-title">The Transformer relates distant regions</h2>
-    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder (6 layers, 8 heads)</b>. Self-attention lets any region influence any other — long-range relationships a CNN alone can't capture.</p>
+    <p>The feature map is flattened into a sequence of <b>tokens</b> (one per spatial position), given positional encodings, and passed to a <b>Transformer encoder (6 layers, 8 heads)</b>. Self-attention lets any region influence any other: long-range relationships a CNN alone can't capture.</p>
     <div class="viz">
       <svg
         class="tx"
@@ -292,13 +292,13 @@ const scores = [
         aria-label="Transformer encoder: tokens with positional encoding into six encoder blocks, each with multi-head self-attention and feed-forward sublayers with residual add and norm, then global average pooling, dropout and a fully-connected three-class head; a side panel shows the self-attention weight matrix across tokens for eight heads"
         set:html={encoder}
       />
-      <p class="note center tx-note">The 7×7×512 feature map is flattened to 49 tokens (d = 512) with positional encodings, then passed through <b>6 encoder blocks</b> — each: multi-head self-attention (8 heads) → Add &amp; Norm → feed-forward (dropout) → Add &amp; Norm. Global average pooling (no CLS token) → dropout p = 0.5 → fully-connected head → the three classes.</p>
+      <p class="note center tx-note">The 7×7×512 feature map is flattened to 49 tokens (d = 512) with positional encodings, then passed through <b>6 encoder blocks</b>, each with multi-head self-attention (8 heads) → Add &amp; Norm → feed-forward (dropout) → Add &amp; Norm. Global average pooling (no CLS token) → dropout p = 0.5 → fully-connected head → the three classes.</p>
     </div>
   </section>
 
   <section class="stage" id="s6" aria-labelledby="s6-title">
     <div class="kick">Stage 6 · Prediction &amp; attention</div>
-    <h2 id="s6-title">The verdict — and where it looked</h2>
+    <h2 id="s6-title">The verdict, and where it looked</h2>
     <p>A classification head turns the Transformer's output into three probabilities. Pick an example cohort to see a typical prediction, and toggle the <b>attention map</b> to see which regions of the slice drove it.</p>
     <div class="viz">
       <div class="out-row">
@@ -329,7 +329,7 @@ const scores = [
         ))}
       </div>
       <div class="bench">
-        <div class="bench-title">Benchmark — hybrid vs 3D CNN baselines (PPMI test set, %)</div>
+        <div class="bench-title">Benchmark: hybrid vs 3D CNN baselines (PPMI test set, %)</div>
         <svg
           viewBox="0 0 560 270"
           role="img"
@@ -341,9 +341,9 @@ const scores = [
           <span><i style="background:var(--ctrl)"></i>3D VGG16</span>
           <span><i style="background:var(--ink-3)"></i>3D DenseNet121</span>
         </div>
-        <p class="note bench-note">Slightly lower precision, but clearly higher recall and F1 — the balance that matters most in a clinical screen. Axis 70–85%.</p>
+        <p class="note bench-note">Slightly lower precision, but clearly higher recall and F1, the balance that matters most in a clinical screen. Axis 70–85%.</p>
       </div>
-      <p class="note next-step"><b>Next step:</b> region-level interpretability — showing which brain area drives each prediction. The published model reports classification only and notes this as future work.</p>
+      <p class="note next-step"><b>Next step:</b> region-level interpretability, showing which brain area drives each prediction. The published model reports classification only and notes this as future work.</p>
     </div>
   </section>
 </div>
@@ -648,7 +648,7 @@ const scores = [
   .viz {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: calc(14px * var(--round, 1));
     padding: 20px;
     margin-top: 16px;
   }
@@ -662,7 +662,7 @@ const scores = [
   .cohort {
     flex: 1 1 180px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px;
     background: var(--surface-2);
   }
@@ -687,7 +687,7 @@ const scores = [
     height: 28px;
     margin-right: -8px;
     border: 1px solid var(--border);
-    border-radius: 3px;
+    border-radius: calc(3px * var(--round, 1));
     background: #000 center / cover no-repeat;
     box-shadow: 1px 0 0 var(--surface-2);
   }
@@ -711,7 +711,7 @@ const scores = [
     width: 120px;
     height: 120px;
     border: 1px solid #556;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--round, 1));
     background: #0d0d10 center / cover no-repeat;
     box-shadow: 1px 1px 3px rgba(0, 0, 0, .25);
   }
@@ -729,7 +729,7 @@ const scores = [
     object-fit: contain;
     background: #000;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
   }
   .scrub {
     width: 100%;
@@ -779,7 +779,7 @@ const scores = [
     overflow: hidden;
     background: #000;
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
   }
   .thumb img {
     width: 100%;
@@ -893,7 +893,7 @@ const scores = [
     overflow: hidden;
     background: #000;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
   }
   .slicebox img {
     width: 100%;
@@ -917,7 +917,7 @@ const scores = [
     color: var(--ink-2);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 7px 12px;
     cursor: pointer;
   }
@@ -948,7 +948,7 @@ const scores = [
     height: 12px;
     overflow: hidden;
     background: var(--surface-2);
-    border-radius: 6px;
+    border-radius: calc(6px * var(--round, 1));
   }
   /* The fill is full width and slides in from the left to show --p %
      (compositor-only); the rounded track clips it. */
@@ -956,7 +956,7 @@ const scores = [
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--round, 1));
     transform: translateX(calc(var(--p, 0) * 1% - 100%));
     transition: transform .5s;
   }
@@ -987,7 +987,7 @@ const scores = [
   .score {
     min-width: 92px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     padding: 9px 13px;
     background: var(--surface-2);
   }
@@ -1006,7 +1006,7 @@ const scores = [
   .bench {
     margin-top: 18px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px 16px;
     background: var(--surface-2);
   }
@@ -1038,7 +1038,7 @@ const scores = [
     display: inline-block;
     width: 11px;
     height: 11px;
-    border-radius: 3px;
+    border-radius: calc(3px * var(--round, 1));
   }
   .stage .note.bench-note {
     margin: 8px 0 0;

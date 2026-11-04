@@ -51,7 +51,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
 <BaseLayout
   jsonLd={jsonLd}
   title="Catching Theft When the Records Lie"
-  description="Catching warehouse theft even when the thief edits the records — attributing loss to people, with a live simulation. Preprint, not peer-reviewed."
+  description="Catching warehouse theft even when the thief edits the records: attributing loss to people, with a live simulation. Preprint, not peer-reviewed."
   type="article"
 >
   <ReadingProgress />
@@ -88,9 +88,9 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
     {/* 2 · the idea */}
     <section class="idea" aria-labelledby="idea-title">
       <h2 class="sec" id="idea-title">The idea, in plain words</h2>
-      <p>A large share of warehouse loss is not burglary or error but the people inside the operation — and the hardest case is someone who both removes stock and edits the record to match the depleted shelf.</p>
+      <p>A large share of warehouse loss is not burglary or error but the people inside the operation, and the hardest case is someone who both removes stock and edits the record to match the depleted shelf.</p>
       <p>That is why auditing fails: when the same person takes the goods and writes the entry, the books stay internally consistent, so inspecting records reveals nothing.</p>
-      <p>The move is to stop auditing records and <b>attribute physical loss to people</b> — comparing each employee against their own baseline access, and producing a ranked shortlist for human review, never an automated accusation.</p>
+      <p>The move is to stop auditing records and <b>attribute physical loss to people</b>, comparing each employee against their own baseline access, and producing a ranked shortlist for human review, never an automated accusation.</p>
     </section>
 
     {/* 3 · dig deeper */}
@@ -100,27 +100,27 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
         <figure class="figure">
           <WarehouseSim />
         </figure>
-        <p class="figcap">Interactive figure — the two culprits are chosen at random each load, so the method has to find them.</p>
+        <p class="figcap">Interactive figure: the two culprits are chosen at random each load, so the method has to find them.</p>
       </Fragment>
 
       <Fragment slot="how">
         <p class="cap">Two channels, one principle: judge each person against their own baseline, not the group.</p>
         <div class="chan-card">
-          <span class="chan-tag">Channel A — physical theft</span>
+          <span class="chan-tag">Channel A: physical theft</span>
           <h3>Exposure-adjusted presence lift</h3>
           <p class="copy">Physical removal lowers the shelf but not the book, so a later cycle count opens a loss window. The thief turns up in those windows more often than their ordinary access predicts. A lift above 1 marks that over-exposure.</p>
         </div>
         <div class="chan-card">
-          <span class="chan-tag">Channel B — record-editing theft</span>
+          <span class="chan-tag">Channel B: record-editing theft</span>
           <h3>Peer-relative write-off anomaly</h3>
-          <p class="copy">Editing the book to match the shelf leaves no window — but it leaves a trace: write-offs. An approver who writes off far more value than peers who hold the same authority stands out, scored robustly against the peer median.</p>
+          <p class="copy">Editing the book to match the shelf leaves no window, but it leaves a trace: write-offs. An approver who writes off far more value than peers who hold the same authority stands out, scored robustly against the peer median.</p>
         </div>
         <button class="mathtoggle" type="button" aria-expanded="false" aria-controls="math">＋ Show the math</button>
         <div class="math" id="math" hidden>
           <div class="eq"><span class="lbl">Discrepancy at a count, and window loss</span>δᵢ = bᵢ − cᵢ &nbsp;&nbsp;·&nbsp;&nbsp; ℓ(w) = max(0, δᵢ − δᵢ₋₁)</div>
-          <div class="eq"><span class="lbl">Positive (loss) window label — otherwise unlabelled</span>y(w) = positive &nbsp;if&nbsp; ℓ(w) ≥ τ &nbsp;or&nbsp; u(w) &gt; 0</div>
-          <div class="eq"><span class="lbl">Channel A — Beta-smoothed posterior presence, then lift over the global rate r₀</span>θ̂ₑ = (α₀ + kₑ) / (α₀ + β₀ + nₑ) &nbsp;&nbsp;·&nbsp;&nbsp; Lₑ = θ̂ₑ / r₀</div>
-          <div class="eq"><span class="lbl">Channel B — robust z-score of write-off value against the approver peer group</span>Zₑ = (Vₑ − median) / max(MAD, ε)</div>
+          <div class="eq"><span class="lbl">Positive (loss) window label, otherwise unlabelled</span>y(w) = positive &nbsp;if&nbsp; ℓ(w) ≥ τ &nbsp;or&nbsp; u(w) &gt; 0</div>
+          <div class="eq"><span class="lbl">Channel A: Beta-smoothed posterior presence, then lift over the global rate r₀</span>θ̂ₑ = (α₀ + kₑ) / (α₀ + β₀ + nₑ) &nbsp;&nbsp;·&nbsp;&nbsp; Lₑ = θ̂ₑ / r₀</div>
+          <div class="eq"><span class="lbl">Channel B: robust z-score of write-off value against the approver peer group</span>Zₑ = (Vₑ − median) / max(MAD, ε)</div>
           <p class="copy pipeline">The pipeline: calibrated honest operations pass a 15-check validation, a theft injector writes every true event to a <b>sealed ground-truth channel</b> used only for scoring, and the two channels read the visible record alone.</p>
         </div>
       </Fragment>
@@ -257,7 +257,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
   .badge {
     flex: 1 1 180px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 13px 15px;
     background: var(--surface);
   }
@@ -304,7 +304,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
   .figure {
     margin: 0;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     overflow: hidden;
     background: #fff;
   }
@@ -318,7 +318,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
 
   .chan-card {
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 15px 16px;
     margin-bottom: 14px;
     background: var(--surface-2);
@@ -359,7 +359,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
     font-size: 14px;
     background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 11px 14px;
     margin: 9px 0;
     overflow-x: auto;
@@ -437,7 +437,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
     color: var(--ink-2);
     background: var(--surface-2);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 13px;
     margin: 0;
     overflow-x: auto;

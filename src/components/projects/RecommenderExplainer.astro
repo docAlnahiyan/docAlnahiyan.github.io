@@ -17,7 +17,7 @@ const START_PERSONA = 'photographer';
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The problem</div>
     <h2 id="s1-title">Too many products, too little attention</h2>
-    <p>A large e-commerce catalogue holds hundreds of thousands of items; a shopper will look at a dozen. Showing everyone the same best-sellers wastes that attention. The job of a recommender is to put the <b>few most relevant items</b> in front of each person — and to update that choice as they move through the site, click by click.</p>
+    <p>A large e-commerce catalogue holds hundreds of thousands of items; a shopper will look at a dozen. Showing everyone the same best-sellers wastes that attention. The job of a recommender is to put the <b>few most relevant items</b> in front of each person, and to update that choice as they move through the site, click by click.</p>
     <div class="viz centered">
       <svg class="scene" data-ref="hero" viewBox="0 0 520 150" width="520" height="150" role="img" aria-label="A large grid of products narrowing down to a few personalised picks"></svg>
     </div>
@@ -26,7 +26,7 @@ const START_PERSONA = 'photographer';
   <section class="stage" id="s2" aria-labelledby="s2-title">
     <div class="kick">Stage 2 · Two signals</div>
     <h2 id="s2-title">Who you are, and what you're doing now</h2>
-    <p>Good recommendations draw on two very different signals. One is <b class="c-cf">long-term history</b> — everything you've bought and rated before, which says who you are as a shopper. The other is <b class="c-acc">the live session</b> — the items you've clicked, searched and viewed in the last few minutes, which says what you want <em>today</em>. This engine uses both, and weighs the fresh signal heavily.</p>
+    <p>Good recommendations draw on two very different signals. One is <b class="c-cf">long-term history</b>: everything you've bought and rated before, which says who you are as a shopper. The other is <b class="c-acc">the live session</b>: the items you've clicked, searched and viewed in the last few minutes, which says what you want <em>today</em>. This engine uses both, and weighs the fresh signal heavily.</p>
     <div class="viz">
       <div class="signals">
         <div class="sig a">
@@ -34,14 +34,14 @@ const START_PERSONA = 'photographer';
           <div class="row"><span class="dot" style="background:var(--photo)"></span>bought a camera last year</div>
           <div class="row"><span class="dot" style="background:var(--photo)"></span>rated two lenses highly</div>
           <div class="row"><span class="dot" style="background:var(--trav)"></span>a travel backpack</div>
-          <div class="note">stable — who you are</div>
+          <div class="note">stable: who you are</div>
         </div>
         <div class="sig b">
           <div class="h">⚡ THIS SESSION</div>
           <div class="row"><span class="dot" style="background:var(--accent)"></span>just viewed a tripod</div>
           <div class="row"><span class="dot" style="background:var(--accent)"></span>searched "low-light"</div>
           <div class="row"><span class="dot" style="background:var(--accent)"></span>added a lens to cart</div>
-          <div class="note">fresh — what you want now</div>
+          <div class="note">fresh: what you want now</div>
         </div>
       </div>
     </div>
@@ -56,14 +56,14 @@ const START_PERSONA = 'photographer';
       <div class="embed-chips" role="group" aria-label="Product">
         {ITEMS.map((it) => <button type="button" class="echip" data-id={it.id} aria-pressed="false">{it.name}</button>)}
       </div>
-      <p class="note center spaced" aria-live="polite" data-ref="embedNote">Distance = learned similarity. The clusters emerge from behaviour alone — no one labelled them.</p>
+      <p class="note center spaced" aria-live="polite" data-ref="embedNote">Distance = learned similarity. The clusters emerge from behaviour alone; no one labelled them.</p>
     </div>
   </section>
 
   <section class="stage" id="s4" aria-labelledby="s4-title">
     <div class="kick">Stage 4 · Content-based filtering</div>
     <h2 id="s4-title">…and "more like what you looked at"</h2>
-    <p>Collaborative filtering has a blind spot: a brand-new item nobody has bought yet has no behaviour to learn from (the <b>cold-start</b> problem). Content-based filtering fills it. Each item carries a feature vector — category, brand, price band, specs, text and image features — and the engine recommends items whose features match what you engaged with. It needs no purchase history, so it works from a shopper's very first click.</p>
+    <p>Collaborative filtering has a blind spot: a brand-new item nobody has bought yet has no behaviour to learn from (the <b>cold-start</b> problem). Content-based filtering fills it. Each item carries a feature vector (category, brand, price band, specs, text and image features), and the engine recommends items whose features match what you engaged with. It needs no purchase history, so it works from a shopper's very first click.</p>
     <div class="viz">
       <svg class="diagram" data-ref="content" viewBox="0 0 520 190" role="img" aria-label="An item's feature vector compared to others by content similarity"></svg>
       <p class="note center spaced">Content-based covers new items and new shoppers; collaborative captures taste that features can't describe. Together they cover each other's gaps.</p>
@@ -73,10 +73,10 @@ const START_PERSONA = 'photographer';
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · The architecture</div>
     <h2 id="s5-title">Two stages: retrieve a few hundred, then rank them</h2>
-    <p>Scoring a million items for every page view is impossible in the milliseconds a page has. So production recommenders split the work. <b class="c-cf">Candidate generation</b> cheaply retrieves a few hundred plausible items — from collaborative neighbours, content matches and what's trending. Then a heavier <b class="c-acc">ranking model</b> scores just those, folding in live session features, and returns the top handful. Served behind a <b>Flask</b> API over a <b>SQL</b> store.</p>
+    <p>Scoring a million items for every page view is impossible in the milliseconds a page has. So production recommenders split the work. <b class="c-cf">Candidate generation</b> cheaply retrieves a few hundred plausible items from collaborative neighbours, content matches and what's trending. Then a heavier <b class="c-acc">ranking model</b> scores just those, folding in live session features, and returns the top handful. Served behind a <b>Flask</b> API over a <b>SQL</b> store.</p>
     <div class="viz">
       <div class="arch2">
-        <div class="acol c1"><div class="h">① CANDIDATE GENERATION</div><div class="d">Narrow a huge catalogue to a few hundred candidates — fast and approximate.</div><div class="sub"><span>collaborative neighbours</span><span>content matches</span><span>trending</span></div></div>
+        <div class="acol c1"><div class="h">① CANDIDATE GENERATION</div><div class="d">Narrow a huge catalogue to a few hundred candidates: fast and approximate.</div><div class="sub"><span>collaborative neighbours</span><span>content matches</span><span>trending</span></div></div>
         <div class="afunnel" aria-hidden="true">→</div>
         <div class="acol c2"><div class="h">② RANKING</div><div class="d">Score each candidate precisely, with live session features, and sort.</div><div class="sub"><span>history ✕ session</span><span>price, recency</span><span>top-N</span></div></div>
       </div>
@@ -87,7 +87,7 @@ const START_PERSONA = 'photographer';
   <section class="stage" id="s6" aria-labelledby="s6-title">
     <div class="kick">Stage 6 · See it recommend</div>
     <h2 id="s6-title">Pick a shopper, then browse</h2>
-    <p>Choose a shopper profile to set the long-term history, then <b>click products to "view" them</b> and watch the recommendation rail re-rank in real time. Each pick shows <em>why</em> it's there — collaborative, content, your profile, or trending. This is the hybrid, two-stage idea in miniature.</p>
+    <p>Choose a shopper profile to set the long-term history, then <b>click products to "view" them</b> and watch the recommendation rail re-rank in real time. Each pick shows <em>why</em> it's there: collaborative, content, your profile, or trending. This is the hybrid, two-stage idea in miniature.</p>
     <div class="viz">
       <div class="personas" role="group" aria-label="Shopper">
         <span class="note">Shopper:</span>
@@ -97,7 +97,7 @@ const START_PERSONA = 'photographer';
       </div>
       <div class="store-grid">
         <div>
-          <div class="note cat-note">The catalogue — click to browse</div>
+          <div class="note cat-note">The catalogue: click to browse</div>
           <div class="catalog" role="group" aria-label="Catalogue">
             {ITEMS.map((it) => (
               <button type="button" class="pcard" data-id={it.id} aria-pressed="false">
@@ -114,7 +114,7 @@ const START_PERSONA = 'photographer';
           <div class="recs" data-ref="recs" aria-live="polite"></div>
         </div>
       </div>
-      <p class="note spaced">Scores and the blend are illustrative — a faithful sketch of how a hybrid ranker behaves, not the production model.</p>
+      <p class="note spaced">Scores and the blend are illustrative: a faithful sketch of how a hybrid ranker behaves, not the production model.</p>
     </div>
   </section>
 </div>
@@ -374,7 +374,7 @@ const START_PERSONA = 'photographer';
   .sig {
     flex: 1 1 240px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 16px;
     background: var(--surface-2);
   }
@@ -400,7 +400,7 @@ const START_PERSONA = 'photographer';
     flex: 0 0 auto;
     width: 8px;
     height: 8px;
-    border-radius: 2px;
+    border-radius: calc(2px * var(--round, 1));
   }
 
   /* Stage 3 */
@@ -439,7 +439,7 @@ const START_PERSONA = 'photographer';
   .acol {
     flex: 1 1 220px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px;
     background: var(--surface-2);
   }
@@ -467,7 +467,7 @@ const START_PERSONA = 'photographer';
     color: var(--ink-3);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: calc(6px * var(--round, 1));
     padding: 3px 7px;
   }
   .afunnel {
@@ -491,7 +491,7 @@ const START_PERSONA = 'photographer';
     color: var(--ink-2);
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 9px;
+    border-radius: calc(9px * var(--round, 1));
     padding: 7px 12px;
     cursor: pointer;
   }
@@ -523,7 +523,7 @@ const START_PERSONA = 'photographer';
     font: inherit;
     color: inherit;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 10px 8px;
     background: var(--surface-2);
     text-align: center;
@@ -565,7 +565,7 @@ const START_PERSONA = 'photographer';
   }
   .rec-rail {
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px;
     background: var(--surface);
   }
@@ -597,7 +597,7 @@ const START_PERSONA = 'photographer';
     align-items: center;
     gap: 12px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     padding: 8px 10px;
     background: var(--surface-2);
   }

@@ -4,6 +4,7 @@ slug: xray-fracture-detection
 one_liner: An image-processing pipeline that highlights likely fractures in X-ray images.
 tags: [Medical imaging, Image processing, X-ray]
 repo_url: ""
+icon: bone
 thumbnail: ""
 metrics:
   - { label: task, value: "Fracture / normal" }

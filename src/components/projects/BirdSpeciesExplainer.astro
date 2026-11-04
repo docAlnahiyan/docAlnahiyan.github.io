@@ -68,7 +68,7 @@ function archSvg(kind: 'vgg' | 'res') {
     arr(500, 512, 93);
     head(512);
     b.tx(380, 26, 'ResNet-18 · 4 stages of residual blocks, then a 20-way head', { fs: 10, fill: col, ff: mono, fw: 600 });
-    b.tx(380, 44, 'dashed arcs are skip connections — gradients flow straight through', { fs: 9, fill: 'var(--ink-3)' });
+    b.tx(380, 44, 'dashed arcs are skip connections: gradients flow straight through', { fs: 9, fill: 'var(--ink-3)' });
   }
   return b.html();
 }
@@ -81,7 +81,7 @@ const mono = 'font-family:var(--font-mono)';
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The task</div>
     <h2 id="s1-title">Which bird is this?</h2>
-    <p>A Blue Jay and an Indigo Bunting are both blue; a House Sparrow and a dozen look-alikes blur together in the field. Telling species apart from a single still photo is a <b>fine-grained</b> recognition problem — the differences are a wing-bar here, an eye-ring there. This project learns to separate <b>20 species</b> drawn from the Caltech-UCSD Birds collection, the standard benchmark for exactly this kind of task.</p>
+    <p>A Blue Jay and an Indigo Bunting are both blue; a House Sparrow and a dozen look-alikes blur together in the field. Telling species apart from a single still photo is a <b>fine-grained</b> recognition problem: the differences are a wing-bar here, an eye-ring there. This project learns to separate <b>20 species</b> drawn from the Caltech-UCSD Birds collection, the standard benchmark for exactly this kind of task.</p>
     <div class="viz">
       <ul class="birdgrid">
         {SPECIES.map((sp, i) => (
@@ -91,14 +91,14 @@ const mono = 'font-family:var(--font-mono)';
           </li>
         ))}
       </ul>
-      <p class="note grid-note">The real dataset is photographs; these six are hand-drawn, field-guide style, for illustration — hover and they preen a little.</p>
+      <p class="note grid-note">The real dataset is photographs; these six are hand-drawn, field-guide style, for illustration. Hover and they preen a little.</p>
     </div>
   </section>
 
   <section class="stage" id="s2" aria-labelledby="s2-title">
     <div class="kick">Stage 2 · The data</div>
     <h2 id="s2-title">A deliberately small dataset</h2>
-    <p>The full CUB-200-2011 set is 11,788 photos across 200 species, each annotated with a bounding box. This project worked small on purpose: a <b>20-species slice</b> — just <b>743 training</b> and <b>372 validation</b> images, roughly <b>37 photos per species</b>. Every image is cropped to the bird's bounding box so the background can't leak in, resized to <b>224 × 224</b>, and normalised to the range the pretrained network expects. With this little data, a deep network trained from scratch would simply memorise the training set — the "curse of dimensionality."</p>
+    <p>The full CUB-200-2011 set is 11,788 photos across 200 species, each annotated with a bounding box. This project worked small on purpose: a <b>20-species slice</b>: just <b>743 training</b> and <b>372 validation</b> images, roughly <b>37 photos per species</b>. Every image is cropped to the bird's bounding box so the background can't leak in, resized to <b>224 × 224</b>, and normalised to the range the pretrained network expects. With this little data, a deep network trained from scratch would simply memorise the training set, the "curse of dimensionality."</p>
     <div class="viz">
       <div class="datarow">
         <div class="photo-col">
@@ -120,12 +120,12 @@ const mono = 'font-family:var(--font-mono)';
   <section class="stage" id="s3" aria-labelledby="s3-title">
     <div class="kick">Stage 3 · Transfer learning</div>
     <h2 id="s3-title">Borrow a network that already knows how to see</h2>
-    <p>A network starting from zero on 743 images has nothing to go on. So the project borrows one that has already studied <b>1.2 million</b>: a backbone pre-trained on ImageNet's 1,000 everyday categories. Its early layers already detect edges, textures and feather-like patterns — vision that transfers straight to birds. Those layers are <b>frozen</b> (their weights locked), and only a fresh final classifier — mapping features to the 20 species — is trained. Far fewer parameters to fit means it converges in a handful of epochs instead of overfitting the tiny set.</p>
+    <p>A network starting from zero on 743 images has nothing to go on. So the project borrows one that has already studied <b>1.2 million</b>: a backbone pre-trained on ImageNet's 1,000 everyday categories. Its early layers already detect edges, textures and feather-like patterns, vision that transfers straight to birds. Those layers are <b>frozen</b> (their weights locked), and only a fresh final classifier (mapping features to the 20 species) is trained. Far fewer parameters to fit means it converges in a handful of epochs instead of overfitting the tiny set.</p>
     <div class="viz">
       <div class="tl">
         <div class="block frozen">
           <div class="t">❄ Pre-trained backbone</div>
-          <div class="s">ImageNet features — kept frozen</div>
+          <div class="s">ImageNet features, kept frozen</div>
           <div class="lockrow" aria-hidden="true">
             {[0, 1, 2, 3, 4].map(() => <svg width="16" height="16" viewBox="0 0 16 16" set:html={lock} />)}
           </div>
@@ -133,17 +133,17 @@ const mono = 'font-family:var(--font-mono)';
         <div class="tl-arrow" aria-hidden="true">→</div>
         <div class="block trainable">
           <div class="t">New classifier head</div>
-          <div class="s">Linear → 20 species — trained</div>
+          <div class="s">Linear → 20 species, trained</div>
         </div>
       </div>
-      <p class="note center spaced">Only the small head learns at first — a few thousand new weights instead of millions.</p>
+      <p class="note center spaced">Only the small head learns at first: a few thousand new weights instead of millions.</p>
     </div>
   </section>
 
   <section class="stage" id="s4" aria-labelledby="s4-title">
     <div class="kick">Stage 4 · Two backbones</div>
     <h2 id="s4-title">VGG-16 or ResNet-18?</h2>
-    <p>Two backbones were tried head-to-head. <b class="c-vgg">VGG-16</b> (the <code>vgg16_bn</code> variant, with batch-norm) is a tall, plain stack — 13 convolution layers in five blocks, then large fully-connected layers. <b class="c-res">ResNet-18</b> is shallower but smarter: its <b>residual skip connections</b> add each block's input back to its output, so gradients flow straight through and the network trains cleanly. In both, only the final layer is swapped for a clean <code>Linear → 20</code>.</p>
+    <p>Two backbones were tried head-to-head. <b class="c-vgg">VGG-16</b> (the <code>vgg16_bn</code> variant, with batch-norm) is a tall, plain stack: 13 convolution layers in five blocks, then large fully-connected layers. <b class="c-res">ResNet-18</b> is shallower but smarter: its <b>residual skip connections</b> add each block's input back to its output, so gradients flow straight through and the network trains cleanly. In both, only the final layer is swapped for a clean <code>Linear → 20</code>.</p>
     <div class="viz">
       <div class="seg" role="group" aria-label="Backbone">
         <button type="button" data-b="vgg" aria-pressed="true">VGG-16</button>
@@ -157,7 +157,7 @@ const mono = 'font-family:var(--font-mono)';
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · Two-phase training</div>
     <h2 id="s5-title">Freeze, then fine-tune</h2>
-    <p>Training ran in two phases. <b class="c-frozen">Phase 1</b> freezes the backbone and trains only the head for 20 epochs at learning rate 0.001 — loss drops from 5.3 to under 1 almost at once, and accuracy leaps from <b>0.5%</b> (random guessing over 20 classes) to <b>79.9% after a single epoch</b>. <b class="c-acc">Phase 2</b> unfreezes everything and fine-tunes the whole network for 20 more epochs at a gentler 0.0001, letting the backbone adapt to birds. Adam optimiser, weight decay 1e-6, gradient clipping at 1.0, on a one-cycle schedule.</p>
+    <p>Training ran in two phases. <b class="c-frozen">Phase 1</b> freezes the backbone and trains only the head for 20 epochs at learning rate 0.001; loss drops from 5.3 to under 1 almost at once, and accuracy leaps from <b>0.5%</b> (random guessing over 20 classes) to <b>79.9% after a single epoch</b>. <b class="c-acc">Phase 2</b> unfreezes everything and fine-tunes the whole network for 20 more epochs at a gentler 0.0001, letting the backbone adapt to birds. Adam optimiser, weight decay 1e-6, gradient clipping at 1.0, on a one-cycle schedule.</p>
     <div class="viz">
       <div class="phases">
         <div class="phase p1"><div class="h">PHASE 1 · FROZEN · 20 epochs</div><div class="d">Only the classifier head learns. lr 0.001.</div></div>
@@ -165,21 +165,21 @@ const mono = 'font-family:var(--font-mono)';
       </div>
       <canvas class="curve" width="760" height="300" role="img" aria-label="Training loss falling from 1.58 to 0.06 over 20 epochs while validation loss flattens near 0.5"></canvas>
       <div class="legend"><span><i style="background:var(--accent)"></i>training loss</span><span><i style="background:var(--vgg)"></i>validation loss</span></div>
-      <p class="note center curve-note">The actual logged loss from the thesis — training loss falls 1.58 → 0.06, while validation loss flattens near 0.5.</p>
+      <p class="note center curve-note">The actual logged loss from the thesis: training loss falls 1.58 → 0.06, while validation loss flattens near 0.5.</p>
       <div class="acc-anchors">
         <div class="anchor"><div class="n">0.5%</div><div class="l">accuracy at init</div></div>
         <div class="anchor"><div class="n">79.9%</div><div class="l">after epoch 1</div></div>
         <div class="anchor"><div class="n">~100%</div><div class="l">training accuracy</div></div>
         <div class="anchor"><div class="n">low-80s%</div><div class="l">validation (plateau)</div></div>
       </div>
-      <p class="note center spaced">Training accuracy climbs toward 100% while validation plateaus in the low-80s — that gap is the small-data ceiling, honestly reported.</p>
+      <p class="note center spaced">Training accuracy climbs toward 100% while validation plateaus in the low-80s. That gap is the small-data ceiling, honestly reported.</p>
     </div>
   </section>
 
   <section class="stage" id="s6" aria-labelledby="s6-title">
     <div class="kick">Stage 6 · The prediction</div>
     <h2 id="s6-title">A top-5 score sheet</h2>
-    <p>For a given photo the model scores every species; the five highest make the score sheet, and the top one is the answer. Pick a bird to see an example — notice the model's doubt lands on genuinely similar species (the two blues, the streaky browns). <span class="note">(Illustrative outputs in the shape of a confident prediction — not live inference.)</span></p>
+    <p>For a given photo the model scores every species; the five highest make the score sheet, and the top one is the answer. Pick a bird to see an example, and notice the model's doubt lands on genuinely similar species (the two blues, the streaky browns). <span class="note">(Illustrative outputs in the shape of a confident prediction, not live inference.)</span></p>
     <div class="viz">
       <div class="pred">
         <div class="leftcol">
@@ -203,7 +203,7 @@ const mono = 'font-family:var(--font-mono)';
       </div>
       <ul class="limits">
         <li>Samples per species were uneven, so the model favoured some birds over others.</li>
-        <li>Accuracy drops at awkward camera angles and with lower-quality photos — a finding noted in the thesis.</li>
+        <li>Accuracy drops at awkward camera angles and with lower-quality photos, a finding noted in the thesis.</li>
         <li>With only ~37 images per species, the low-80s validation accuracy is a small-data result, not a production one.</li>
         <li>Next step the thesis proposes: a phone app (iOS/Android) and camera-trap deployment for wildlife monitoring.</li>
       </ul>
@@ -360,7 +360,7 @@ const mono = 'font-family:var(--font-mono)';
     width: 200px;
     height: 150px;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
     border: 1px solid var(--border);
   }
@@ -400,7 +400,7 @@ const mono = 'font-family:var(--font-mono)';
     flex: 1 1 150px;
     min-width: 150px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px 16px;
     text-align: center;
   }
@@ -431,7 +431,7 @@ const mono = 'font-family:var(--font-mono)';
     gap: 4px;
     padding: 4px;
     margin-bottom: 12px;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
   }
   .seg button {
@@ -440,7 +440,7 @@ const mono = 'font-family:var(--font-mono)';
     color: var(--ink-2);
     background: transparent;
     border: none;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     padding: 7px 14px;
     cursor: pointer;
   }
@@ -459,7 +459,7 @@ const mono = 'font-family:var(--font-mono)';
   .phase {
     flex: 1 1 230px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     padding: 14px;
     background: var(--surface-2);
   }
@@ -495,7 +495,7 @@ const mono = 'font-family:var(--font-mono)';
     display: inline-block;
     width: 14px;
     height: 3px;
-    border-radius: 2px;
+    border-radius: calc(2px * var(--round, 1));
     vertical-align: middle;
     margin-right: 5px;
   }
@@ -510,7 +510,7 @@ const mono = 'font-family:var(--font-mono)';
   .anchor {
     min-width: 120px;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     padding: 8px 12px;
     background: var(--surface);
     text-align: center;

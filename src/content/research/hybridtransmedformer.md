@@ -4,9 +4,9 @@ slug: hybridtransmedformer
 subtitle: A CNN + Transformer model that reads 3D brain scans and flags the disease in its prodromal stage.
 short_summary: >-
   Most models need several types of scan to diagnose Parkinson's. This one works from a
-  single 3D T1-weighted MRI by running two paths at once — a convolutional path for fine
+  single 3D T1-weighted MRI by running two paths at once: a convolutional path for fine
   local detail around the substantia nigra, and a Transformer path for whole-brain
-  context — then fusing them, so it can separate healthy, prodromal and Parkinson's brains.
+  context, then fusing them, so it can separate healthy, prodromal and Parkinson's brains.
 tags: [3D MRI, Thesis]
 status: under-review
 publication: hybridtransmedformer
@@ -25,7 +25,7 @@ order: 1
 Early Parkinson's is hard to catch because the clearest signs appear only after irreversible
 damage. HybridTransMedFormer reads a single 3D T1-weighted MRI and combines local
 convolutional features with global self-attention to separate healthy, prodromal, and
-Parkinson's brains — reaching the prodromal stage 2–3 years before motor symptoms.
+Parkinson's brains, reaching the prodromal stage 2–3 years before motor symptoms.
 
 ## What's new
 

@@ -9,6 +9,8 @@
 // Research entries point at their publication instead of repeating it.
 
 import { defineCollection, reference } from 'astro:content';
+import { ICON_KEYS } from './lib/icons';
+import { FONT_KEYS } from './lib/theme';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { readdirSync } from 'node:fs';
@@ -82,6 +84,8 @@ const projects = defineCollection({
     one_liner: z.string(),
     tags,
     repo_url: optionalUrl,
+    /** Line icon shown in the project list (src/lib/icons.ts). */
+    icon: z.enum(ICON_KEYS).default('code'),
     thumbnail: optionalImage,
     metrics,
     /** Month the work was completed. */
@@ -181,6 +185,40 @@ const site = defineCollection({
   }),
 });
 
+// Site appearance (src/lib/theme.ts); every field is optional so a missing
+// value falls back to the built-in design.
+const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Use a colour like #a8482b');
+const palette = z
+  .object({
+    bg: hex, surface: hex, surface_2: hex, border: hex, ink: hex, ink_2: hex,
+    accent: hex, accent_ink: hex, accent_wash: hex,
+  })
+  .partial();
+const appearance = defineCollection({
+  loader: glob({ pattern: 'theme.yml', base: './src/content/site' }),
+  schema: z.object({
+    use_default: z.boolean().default(false),
+    light: palette.optional(),
+    dark: palette.optional(),
+    hero: z
+      .object({ day_top: hex, day_middle: hex, day_horizon: hex, night_top: hex, night_bottom: hex })
+      .partial()
+      .optional(),
+    fonts: z
+      .object({ heading: z.enum(FONT_KEYS), hero_name: z.enum(FONT_KEYS), body: z.enum(FONT_KEYS), labels: z.enum(FONT_KEYS) })
+      .partial()
+      .optional(),
+    style: z
+      .object({
+        roundness: z.enum(['sharp', 'soft', 'round']),
+        heading_weight: z.coerce.number().int().min(300).max(800),
+        cards: z.enum(['filled', 'outlined']),
+      })
+      .partial()
+      .optional(),
+  }),
+});
+
 const pages = defineCollection({
   loader: glob({ pattern: '*.{md,mdx}', base: './src/content/pages' }),
   schema: z.object({
@@ -191,4 +229,4 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { research, projects, publications, blog, upwork, site, pages };
+export const collections = { research, projects, publications, blog, upwork, site, appearance, pages };

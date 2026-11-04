@@ -70,7 +70,7 @@ function fuseSvg() {
   b.tx(700, 156, 'softmax', { fs: 10.5, fw: 600, fill: 'var(--vit)' });
   b.tx(700, 172, 'emotions', { fs: 8, fill: 'var(--ink-3)', ff: mono });
   arr(640, 160, 660, 160, 'var(--ink-3)', 'mmn-k');
-  b.tx(380, 300, 'Each stream can lean on the other — the weak modality is rescued by the strong one.', { fs: 9.5, fill: 'var(--ink-3)', ff: 'var(--font-display)' });
+  b.tx(380, 300, 'Each stream can lean on the other: the weak modality is rescued by the strong one.', { fs: 9.5, fill: 'var(--ink-3)', ff: 'var(--font-display)' });
   return b.html();
 }
 const fuse = fuseSvg();
@@ -81,7 +81,7 @@ const mono = 'font-family:var(--font-mono)';
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The problem</div>
     <h2 id="s1-title">One modality isn't always enough</h2>
-    <p>A single frame can be ambiguous. A downturned mouth might be sadness — or concentration, or fatigue. Vision-only models feel this most on subtle emotions: in this setting a visual-only method reaches only <b>71%</b> on sadness. The voice carries what the face hides, and the reverse. This model uses both.</p>
+    <p>A single frame can be ambiguous. A downturned mouth might be sadness, or concentration, or fatigue. Vision-only models feel this most on subtle emotions: in this setting a visual-only method reaches only <b>71%</b> on sadness. The voice carries what the face hides, and the reverse. This model uses both.</p>
     <div class="viz centered">
       <svg class="prob" viewBox="0 0 520 130" width="520" height="130" role="img" aria-label="A visually ambiguous sad face next to a sad-sounding voice; together they resolve the emotion">
         <Face expr={FACE.sad} x={22.6} y={15.64} width={86.8} height={93} />
@@ -118,14 +118,14 @@ const mono = 'font-family:var(--font-mono)';
           <p class="note">~3 s speech clip</p>
         </div>
       </div>
-      <p class="note center inputs-note">Both datasets are released to researchers on request and aren't hosted here — the face and waveform are illustrations.</p>
+      <p class="note center inputs-note">Both datasets are released to researchers on request and aren't hosted here; the face and waveform are illustrations.</p>
     </div>
   </section>
 
   <section class="stage" id="s3" aria-labelledby="s3-title">
     <div class="kick">Stage 3 · Visual stream</div>
     <h2 id="s3-title">The face → a CNN–Transformer hybrid</h2>
-    <p>The image passes through convolution blocks that read local detail, then the feature map is cut into patches and run through Transformer blocks that relate parts of the face to each other — the same hybrid design as GlobalFaceNet. The stream ends as one compact <b class="c-vis">visual feature vector</b>.</p>
+    <p>The image passes through convolution blocks that read local detail, then the feature map is cut into patches and run through Transformer blocks that relate parts of the face to each other, the same hybrid design as GlobalFaceNet. The stream ends as one compact <b class="c-vis">visual feature vector</b>.</p>
     <div class="viz">
       <div class="cnn">
         {maps.map((m, i) => (
@@ -178,7 +178,7 @@ const mono = 'font-family:var(--font-mono)';
 
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · Fusion</div>
-    <h2 id="s5-title">Cross-modal attention — each stream weighs the other</h2>
+    <h2 id="s5-title">Cross-modal attention: each stream weighs the other</h2>
     <p>Rather than simply gluing the two vectors together, a <b class="c-acc">cross-modal attention</b> layer lets each modality query the other: the visual features ask "which parts of the voice matter here?", and the voice asks the same of the face. When one modality is uncertain, it leans on the other. The attended features are combined and passed to the classifier.</p>
     <div class="viz">
       <svg
@@ -194,7 +194,7 @@ const mono = 'font-family:var(--font-mono)';
   <section class="stage" id="s6" aria-labelledby="s6-title">
     <div class="kick">Stage 6 · See it decide</div>
     <h2 id="s6-title">Image only · audio only · both</h2>
-    <p>Pick an emotion, then switch the inputs on and off. Watch what happens to the model's confidence when the second modality joins — the jump is largest exactly where a single modality struggles, like sadness. (Illustrative outputs that follow the paper's reported pattern, not live inference.)</p>
+    <p>Pick an emotion, then switch the inputs on and off. Watch what happens to the model's confidence when the second modality joins. The jump is largest exactly where a single modality struggles, like sadness. (Illustrative outputs that follow the paper's reported pattern, not live inference.)</p>
     <div class="viz">
       <div class="pred">
         <div class="leftcol">
@@ -328,7 +328,7 @@ const mono = 'font-family:var(--font-mono)';
   .incard.vis .in-tag { color: var(--ctrl); }
   .incard.aud .in-tag { color: var(--aud); }
   .wavebox {
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
     padding: 10px;
   }
@@ -415,7 +415,7 @@ const mono = 'font-family:var(--font-mono)';
     display: flex;
     gap: 6px;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
   }
   .modsel button {
@@ -424,7 +424,7 @@ const mono = 'font-family:var(--font-mono)';
     color: var(--ink-2);
     background: transparent;
     border: none;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     padding: 7px 12px;
     cursor: pointer;
   }

@@ -4,6 +4,7 @@ slug: multimodal-transformer-net
 one_liner: Emotion recognition that fuses facial images and speech audio with cross-modal attention.
 tags: [Multimodal, Emotion recognition, Audio, PyTorch]
 repo_url: https://github.com/docAlnahiyan/MultimodalTransfomerNet-for-recognition-emotions-from-Audio-and-Image-data
+icon: face-sound
 thumbnail: ""
 metrics:
   - { label: accuracy, value: 99.7% }

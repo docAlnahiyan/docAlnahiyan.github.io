@@ -92,7 +92,7 @@ const items = Astro.props.headings.filter((h) => h.depth === 2);
     padding: 12px 16px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     font-size: 14px;
   }
   .toc-inline summary {

@@ -24,3 +24,6 @@ npm-debug.log*
 # private, unpublished papers: never commit
 source-papers/
 .lighthouseci/
+
+# admin app copied from node_modules at build time (scripts/copy-cms.mjs)
+public/admin/cms/

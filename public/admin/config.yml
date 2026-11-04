@@ -1,4 +1,4 @@
-# Decap CMS configuration — the forms at /admin.
+# Admin (Sveltia CMS) configuration: the forms at /admin.
 # Every save is a commit to main; a GitHub Action rebuilds and publishes the
 # site. Field names here must match src/content.config.ts.
 
@@ -22,14 +22,15 @@ backend:
     uploadMedia: "Admin: upload {{path}}"
     deleteMedia: "Admin: delete {{path}}"
 
-# For testing on your own computer only: `npx decap-server` plus `npm run dev`.
-# Ignored on the live site.
-local_backend: true
+# Local testing: run `npm run dev`, open http://localhost:4321/admin/ and
+# choose "Work with Local Repository" (Chrome or Edge).
 
 media_folder: public/uploads
 public_folder: /uploads
 
-logo_url: /favicon.svg
+app_title: Al-Nahiyan · Admin
+logo:
+  src: /favicon.svg
 site_url: https://docalnahiyan.github.io
 display_url: https://docalnahiyan.github.io
 
@@ -40,6 +41,7 @@ slug:
 collections:
   # ------------------------------------------------------------------ research
   - name: research
+    icon: science
     label: Research
     label_singular: Research entry
     description: Your research. Each entry has a summary on the Research page and its own full page.
@@ -56,7 +58,7 @@ collections:
       - name: slug
         label: Web address
         widget: string
-        hint: "Lowercase letters, numbers and hyphens, e.g. hybridtransmedformer. Becomes /research/<this>/. Don't change it after publishing, or old links break."
+        hint: "Lowercase letters, numbers and hyphens, e.g. hybridtransmedformer. Becomes /research/your-web-address/. Don't change it after publishing, or old links break."
         pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
       - { name: subtitle, label: One-line subtitle, widget: string, hint: "Shown under the title on the Research page." }
       - { name: short_summary, label: Short summary, widget: text, hint: "One paragraph, shown when the entry is expanded." }
@@ -109,6 +111,7 @@ collections:
 
   # ------------------------------------------------------------------ projects
   - name: projects
+    icon: deployed_code
     label: Projects
     label_singular: Project
     folder: src/content/projects
@@ -124,11 +127,35 @@ collections:
       - name: slug
         label: Web address
         widget: string
-        hint: "Lowercase letters, numbers and hyphens. Becomes /projects/<this>/."
+        hint: "Lowercase letters, numbers and hyphens. Becomes /projects/your-web-address/."
         pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
       - { name: one_liner, label: One-line description, widget: string }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: repo_url, label: GitHub repository, widget: string, required: false, hint: "Full URL. Leave empty if there's no public repo." }
+      - name: icon
+        label: Icon
+        widget: select
+        default: code
+        hint: "Shown beside the project in the list. A thumbnail image, if set, is used instead."
+        options:
+          - { label: "Code", value: code }
+          - { label: "Face and sound (multimodal)", value: face-sound }
+          - { label: "Face scan (emotion / face recognition)", value: face-scan }
+          - { label: "Bird", value: bird }
+          - { label: "Face mask", value: mask }
+          - { label: "Shopping cart (recommendation)", value: cart }
+          - { label: "Bone (X-ray)", value: bone }
+          - { label: "Brain", value: brain }
+          - { label: "Scan slices (3D imaging)", value: slices }
+          - { label: "Eye (vision)", value: eye }
+          - { label: "Image", value: image }
+          - { label: "Chart (data analysis)", value: chart }
+          - { label: "Neural network", value: network }
+          - { label: "Microscope (medical)", value: microscope }
+          - { label: "Database", value: database }
+          - { label: "Text (language)", value: text }
+          - { label: "Robot (AI agent)", value: robot }
+          - { label: "Shield (security / fraud)", value: shield }
       - { name: thumbnail, label: Thumbnail image, widget: image, required: false }
       - name: metrics
         label: Key results
@@ -144,6 +171,7 @@ collections:
 
   # -------------------------------------------------------------- publications
   - name: publications
+    icon: menu_book
     label: Publications
     label_singular: Publication
     description: The only place papers are listed. Be exact about status.
@@ -196,6 +224,7 @@ collections:
 
   # ---------------------------------------------------------------------- blog
   - name: blog
+    icon: edit_note
     label: Blog
     label_singular: Post
     folder: src/content/blog
@@ -213,7 +242,7 @@ collections:
       - name: slug
         label: Web address
         widget: string
-        hint: "Lowercase letters, numbers and hyphens. Becomes /blog/<this>/."
+        hint: "Lowercase letters, numbers and hyphens. Becomes /blog/your-web-address/."
         pattern: ['^[a-z0-9]+(-[a-z0-9]+)*$', "Use lowercase letters, numbers and hyphens only"]
       - { name: date, label: Date, widget: datetime, format: "YYYY-MM-DD", date_format: "YYYY-MM-DD", time_format: false, picker_utc: true }
       - { name: excerpt, label: Excerpt, widget: text, hint: "One or two sentences for the blog list and link previews." }
@@ -234,9 +263,10 @@ collections:
 
   # -------------------------------------------------------------------- upwork
   - name: upwork
+    icon: work
     label: Upwork work
     label_singular: Upwork item
-    description: Kind of work only — no client names or confidential details.
+    description: Kind of work only; no client names or confidential details.
     folder: src/content/upwork
     extension: md
     format: frontmatter
@@ -253,8 +283,169 @@ collections:
       - { name: order, label: Sort order, widget: number, value_type: int, default: 100 }
       - { name: draft, label: Draft (hidden from the site), widget: boolean, default: false, required: false }
 
+  # ---------------------------------------------------------------- appearance
+  - name: appearance
+    icon: palette
+    label: Appearance
+    description: Colours, fonts and style for the whole site. Changes go live about two minutes after you save. The preview on the right shows day and night as you edit.
+    files:
+      - name: theme
+        label: Colours, fonts and style
+        file: src/content/site/theme.yml
+        fields:
+          - name: use_default
+            label: Use the built-in design
+            widget: boolean
+            default: false
+            hint: "Turn on to ignore everything below and go back to the original design. Your values stay saved, so you can turn it off again."
+          - name: light
+            label: Day colours
+            widget: object
+            collapsed: true
+            summary: "Background {{fields.bg}} · Cards {{fields.surface}} · Links {{fields.accent_ink}}"
+            hint: "Light mode."
+            fields:
+              - { name: bg, label: "Page background", widget: color, allowInput: true }
+              - { name: surface, label: "Cards", widget: color, allowInput: true, hint: "Fill of cards, the contact form and panels." }
+              - { name: surface_2, label: "Inner boxes", widget: color, allowInput: true, hint: "Boxes inside cards, chart areas." }
+              - { name: border, label: "Borders", widget: color, allowInput: true }
+              - { name: ink, label: "Main text", widget: color, allowInput: true }
+              - { name: ink_2, label: "Secondary text", widget: color, allowInput: true, hint: "Descriptions, captions, notes." }
+              - { name: accent, label: "Accent (marks and hover)", widget: color, allowInput: true, hint: "Hover borders, timeline dots, small marks." }
+              - { name: accent_ink, label: "Links and buttons", widget: color, allowInput: true, hint: "Links, button fills and accent text." }
+              - { name: accent_wash, label: "Tag and highlight background", widget: color, allowInput: true, hint: "Soft fill behind tags and the active menu item." }
+          - name: dark
+            label: Night colours
+            widget: object
+            collapsed: true
+            summary: "Background {{fields.bg}} · Cards {{fields.surface}} · Links {{fields.accent_ink}}"
+            hint: "Dark mode."
+            fields:
+              - { name: bg, label: "Page background", widget: color, allowInput: true }
+              - { name: surface, label: "Cards", widget: color, allowInput: true, hint: "Fill of cards, the contact form and panels." }
+              - { name: surface_2, label: "Inner boxes", widget: color, allowInput: true, hint: "Boxes inside cards, chart areas." }
+              - { name: border, label: "Borders", widget: color, allowInput: true }
+              - { name: ink, label: "Main text", widget: color, allowInput: true }
+              - { name: ink_2, label: "Secondary text", widget: color, allowInput: true, hint: "Descriptions, captions, notes." }
+              - { name: accent, label: "Accent (marks and hover)", widget: color, allowInput: true, hint: "Hover borders, timeline dots, small marks." }
+              - { name: accent_ink, label: "Links and buttons", widget: color, allowInput: true, hint: "Links, button fills and accent text." }
+              - { name: accent_wash, label: "Tag and highlight background", widget: color, allowInput: true, hint: "Soft fill behind tags and the active menu item." }
+          - name: hero
+            label: Hero sky
+            widget: object
+            collapsed: true
+            summary: "Day {{fields.day_top}} → {{fields.day_horizon}} · Night {{fields.night_top}} → {{fields.night_bottom}}"
+            hint: "The sky behind your name on the home page."
+            fields:
+              - { name: day_top, label: "Day: top of the sky", widget: color, allowInput: true }
+              - { name: day_middle, label: "Day: middle", widget: color, allowInput: true }
+              - { name: day_horizon, label: "Day: horizon", widget: color, allowInput: true }
+              - { name: night_top, label: "Night: top of the sky", widget: color, allowInput: true }
+              - { name: night_bottom, label: "Night: horizon", widget: color, allowInput: true }
+          - name: fonts
+            label: Fonts
+            widget: object
+            collapsed: true
+            summary: "Headings {{fields.heading}} · Name {{fields.hero_name}} · Body {{fields.body}} · Labels {{fields.labels}}"
+            fields:
+              - name: heading
+                label: Headings
+                widget: select
+                hint: "Page and section titles, card titles, big numbers."
+                options:
+                  - { label: "Inter (modern sans)", value: inter }
+                  - { label: "IBM Plex Sans (technical sans)", value: ibm-plex-sans }
+                  - { label: "Space Grotesk (techy sans)", value: space-grotesk }
+                  - { label: "Plus Jakarta Sans (friendly sans)", value: plus-jakarta-sans }
+                  - { label: "DM Sans (soft sans)", value: dm-sans }
+                  - { label: "Manrope (geometric sans)", value: manrope }
+                  - { label: "Newsreader (elegant serif)", value: newsreader }
+                  - { label: "Source Serif 4 (academic serif)", value: source-serif-4 }
+                  - { label: "Fraunces (bold serif)", value: fraunces }
+                  - { label: "Lora (book serif)", value: lora }
+                  - { label: "IBM Plex Mono (typewriter)", value: ibm-plex-mono }
+                  - { label: "JetBrains Mono (code)", value: jetbrains-mono }
+              - name: hero_name
+                label: Your name in the hero
+                widget: select
+                options:
+                  - { label: "Inter (modern sans)", value: inter }
+                  - { label: "IBM Plex Sans (technical sans)", value: ibm-plex-sans }
+                  - { label: "Space Grotesk (techy sans)", value: space-grotesk }
+                  - { label: "Plus Jakarta Sans (friendly sans)", value: plus-jakarta-sans }
+                  - { label: "DM Sans (soft sans)", value: dm-sans }
+                  - { label: "Manrope (geometric sans)", value: manrope }
+                  - { label: "Newsreader (elegant serif)", value: newsreader }
+                  - { label: "Source Serif 4 (academic serif)", value: source-serif-4 }
+                  - { label: "Fraunces (bold serif)", value: fraunces }
+                  - { label: "Lora (book serif)", value: lora }
+                  - { label: "IBM Plex Mono (typewriter)", value: ibm-plex-mono }
+                  - { label: "JetBrains Mono (code)", value: jetbrains-mono }
+              - name: body
+                label: Body text
+                widget: select
+                hint: "Paragraphs, menus, buttons."
+                options:
+                  - { label: "Inter (modern sans)", value: inter }
+                  - { label: "IBM Plex Sans (technical sans)", value: ibm-plex-sans }
+                  - { label: "Space Grotesk (techy sans)", value: space-grotesk }
+                  - { label: "Plus Jakarta Sans (friendly sans)", value: plus-jakarta-sans }
+                  - { label: "DM Sans (soft sans)", value: dm-sans }
+                  - { label: "Manrope (geometric sans)", value: manrope }
+                  - { label: "Newsreader (elegant serif)", value: newsreader }
+                  - { label: "Source Serif 4 (academic serif)", value: source-serif-4 }
+                  - { label: "Fraunces (bold serif)", value: fraunces }
+                  - { label: "Lora (book serif)", value: lora }
+                  - { label: "IBM Plex Mono (typewriter)", value: ibm-plex-mono }
+                  - { label: "JetBrains Mono (code)", value: jetbrains-mono }
+              - name: labels
+                label: Small labels and dates
+                widget: select
+                hint: "Tags, dates, the line under your name, the footer."
+                options:
+                  - { label: "Inter (modern sans)", value: inter }
+                  - { label: "IBM Plex Sans (technical sans)", value: ibm-plex-sans }
+                  - { label: "Space Grotesk (techy sans)", value: space-grotesk }
+                  - { label: "Plus Jakarta Sans (friendly sans)", value: plus-jakarta-sans }
+                  - { label: "DM Sans (soft sans)", value: dm-sans }
+                  - { label: "Manrope (geometric sans)", value: manrope }
+                  - { label: "Newsreader (elegant serif)", value: newsreader }
+                  - { label: "Source Serif 4 (academic serif)", value: source-serif-4 }
+                  - { label: "Fraunces (bold serif)", value: fraunces }
+                  - { label: "Lora (book serif)", value: lora }
+                  - { label: "IBM Plex Mono (typewriter)", value: ibm-plex-mono }
+                  - { label: "JetBrains Mono (code)", value: jetbrains-mono }
+          - name: style
+            label: Shape and style
+            widget: object
+            collapsed: true
+            summary: "Corners {{fields.roundness}} · Headings {{fields.heading_weight}} · Cards {{fields.cards}}"
+            fields:
+              - name: roundness
+                label: Corner roundness
+                widget: select
+                options:
+                  - { label: "Sharp", value: sharp }
+                  - { label: "Soft (original)", value: soft }
+                  - { label: "Round", value: round }
+              - name: heading_weight
+                label: Heading boldness
+                widget: select
+                options:
+                  - { label: "Regular", value: "400" }
+                  - { label: "Medium", value: "500" }
+                  - { label: "Semi-bold (original)", value: "600" }
+                  - { label: "Bold", value: "700" }
+              - name: cards
+                label: Card style
+                widget: select
+                options:
+                  - { label: "Filled (original)", value: filled }
+                  - { label: "Outlined: page colour with a border", value: outlined }
+
   # ------------------------------------------------------- profile and pages
   - name: settings
+    icon: person
     label: Profile & pages
     editor: { preview: false }
     files:

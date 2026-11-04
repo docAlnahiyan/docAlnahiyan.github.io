@@ -44,7 +44,7 @@ const [pubs, projects] = await Promise.all([getPublications(), getProjects()]);
       <ul class="cv-list">
         {[...projects].sort((a, b) => +b.data.date - +a.data.date).map((p) => (
           <li>
-            <a href={`/projects/${p.id}/`}>{p.data.title}</a> — {p.data.one_liner}{' '}
+            <a href={`/projects/${p.id}/`}>{p.data.title}</a>: {p.data.one_liner}{' '}
             <span class="status">{monthYear(p.data.date)}</span>
           </li>
         ))}

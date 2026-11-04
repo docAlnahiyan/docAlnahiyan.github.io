@@ -158,7 +158,7 @@ const jsonLd = {
     padding: 14px 16px;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
   }
   .filters[hidden] {
     display: none;
@@ -183,7 +183,7 @@ const jsonLd = {
     color: var(--ink);
     background: var(--bg);
     border: 1px solid var(--border-strong);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 6px 8px;
   }
   .filter-status {

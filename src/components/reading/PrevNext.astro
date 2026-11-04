@@ -45,7 +45,7 @@ const { prev, next, kind } = Astro.props;
     gap: 4px;
     padding: 14px 16px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: calc(12px * var(--round, 1));
     background: var(--surface);
     color: var(--ink);
   }

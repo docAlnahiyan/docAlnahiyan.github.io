@@ -42,8 +42,8 @@ export const CAM_HEAT: [number, number, number] = [88, 128, 58];
 
 export type PreMode = 'raw' | 'clahe' | 'edges';
 export const PRENOTE: Record<PreMode, string> = {
-  raw: 'The original film — faint, grainy, unevenly lit.',
-  clahe: 'CLAHE boosts local contrast — the bone edges and the break stand out.',
+  raw: 'The original film: faint, grainy, unevenly lit.',
+  clahe: 'CLAHE boosts local contrast: the bone edges and the break stand out.',
   edges: 'Edge detection reduces the film to outlines, isolating the cortical breaks.',
 };
 

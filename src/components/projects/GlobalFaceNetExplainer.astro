@@ -77,12 +77,12 @@ const arch = archSvg();
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The task</div>
     <h2 id="s1-title">Seven emotions from one face</h2>
-    <p>Given a single face image, the model picks one of seven expressions from the RAF-DB dataset. No audio, no video — just the still image.</p>
+    <p>Given a single face image, the model picks one of seven expressions from the RAF-DB dataset. No audio, no video: just the still image.</p>
     <div class="viz">
       <ul class="emo-row">
         {CLASSES.map((c) => <li class="emo">{c}</li>)}
       </ul>
-      <p class="note emo-note">RAF-DB is available to researchers on request and isn't hosted here — the faces below are simple drawings, for illustration.</p>
+      <p class="note emo-note">RAF-DB is available to researchers on request and isn't hosted here; the faces below are simple drawings, for illustration.</p>
     </div>
   </section>
 
@@ -99,7 +99,7 @@ const arch = archSvg();
   <section class="stage" id="s3" aria-labelledby="s3-title">
     <div class="kick">Stage 3 · CNN backbone</div>
     <h2 id="s3-title">Convolutions read local structure</h2>
-    <p>Four convolution blocks grow the channels and shrink the map — <b>32 → 64 → 128 → 512</b> — turning pixels into local features (edges, brows, mouth shapes).</p>
+    <p>Four convolution blocks grow the channels and shrink the map (<b>32 → 64 → 128 → 512</b>), turning pixels into local features (edges, brows, mouth shapes).</p>
     <div class="viz">
       <div class="cnn">
         {maps.map((m, i) => (
@@ -132,8 +132,8 @@ const arch = archSvg();
 
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · Predict</div>
-    <h2 id="s5-title">Pick an emotion — watch it classify</h2>
-    <p>Choose an expression; the face shows it and the model's seven-way output updates. (Illustrative example outputs — the shape of a confident prediction.)</p>
+    <h2 id="s5-title">Pick an emotion, watch it classify</h2>
+    <p>Choose an expression; the face shows it and the model's seven-way output updates. (Illustrative example outputs: the shape of a confident prediction.)</p>
     <div class="viz">
       <div class="pred">
         <div class="facebox">

@@ -18,7 +18,7 @@ const milestones = [
   { when: '2022–2025', what: 'MSc, Computer Science and Technology', where: 'Southwest Jiaotong University', whereHref: 'https://en.swjtu.edu.cn/index.jsp', note: 'Thesis: hybrid deep learning for early Parkinson’s disease recognition from 2D and 3D MRI (May 2025)' },
   { when: '2024', what: 'Best Paper Award, IARCE 2024', href: 'https://www.iarce.org/history2024.html', where: 'Hybrid CNN–Transformer for Parkinson’s disease recognition', whereHref: '/research/parkinson-cnn-transformer/' },
   { when: '2025–now', what: 'Software Requirements Research and Publisher', where: 'SoftFlames Ventures LLC', whereHref: 'https://www.softflamesventures.com' },
-  { when: '2026', what: 'HybridTransMedFormer — under review', where: 'Artificial Intelligence in Medicine', whereHref: 'https://www.sciencedirect.com/journal/artificial-intelligence-in-medicine', href: '/research/hybridtransmedformer/' },
+  { when: '2026', what: 'HybridTransMedFormer: under review', where: 'Artificial Intelligence in Medicine', whereHref: 'https://www.sciencedirect.com/journal/artificial-intelligence-in-medicine', href: '/research/hybridtransmedformer/' },
   { when: 'Sep 2026', what: 'Preprint: catching warehouse theft when records lie', where: 'Not peer-reviewed', href: '/research/warehouse-theft-attribution/' },
 ];
 ---
@@ -120,13 +120,13 @@ const milestones = [
       const data = new FormData(form);
       // A filled spam trap: pretend it worked and send nothing.
       if (String(data.get('_gotcha') ?? '').trim()) {
-        setStatus('ok', 'Thanks — your message has been sent.');
+        setStatus('ok', 'Thanks, your message has been sent.');
         form.reset();
         return;
       }
       const endpoint = form.dataset.endpoint;
       if (!endpoint) {
-        const subject = `${data.get('topic')} — from ${data.get('name')}`;
+        const subject = `${data.get('topic')}, from ${data.get('name')}`;
         const body = `${data.get('message')}\n\n${data.get('name')}\n${data.get('email')}`;
         window.location.href = `mailto:${form.dataset.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         setStatus('ok', `Your email app should open with the message filled in. If it didn't, write to ${form.dataset.email}.`);
@@ -137,7 +137,7 @@ const milestones = [
       try {
         const res = await fetch(endpoint, { method: 'POST', body: data, headers: { Accept: 'application/json' } });
         if (!res.ok) throw new Error(String(res.status));
-        setStatus('ok', 'Thanks — your message has been sent. I’ll reply by email.');
+        setStatus('ok', 'Thanks, your message has been sent. I’ll reply by email.');
         form.reset();
       } catch {
         setStatus('error', `Sorry, the message couldn't be sent. Please email ${form.dataset.email} instead.`);
@@ -262,7 +262,7 @@ const milestones = [
   .contact {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: calc(16px * var(--round, 1));
     padding: 22px;
   }
   .direct {
@@ -296,7 +296,7 @@ const milestones = [
     color: var(--ink);
     background: var(--bg);
     border: 1px solid var(--border-strong);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 8px 10px;
     width: 100%;
     min-width: 0;
@@ -329,7 +329,7 @@ const milestones = [
     margin: 12px 0 0;
     font-size: 13.5px;
     padding: 10px 12px;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
   }
   .form-status[data-kind='ok'] {
     color: var(--ink);
