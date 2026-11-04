@@ -21,7 +21,7 @@ const fonts = [
 ];
 
 // Clay tokens (light theme), as in global.css.
-const C = { bg: '#faf7f0', ink: '#201e1a', ink2: '#5c584f', accent: '#c96442', accentInk: '#a8482b' };
+const C = { bg: '#ffffff', ink: '#201e1a', ink2: '#5c584f', accent: '#c96442', accentInk: '#a8482b' };
 
 type Node = { type: string; props: Record<string, unknown> };
 const h = (type: string, style: Record<string, unknown>, children?: unknown): Node => ({ type, props: { style, children } });
