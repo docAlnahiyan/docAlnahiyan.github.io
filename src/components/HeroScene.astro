@@ -116,7 +116,7 @@ const peakLinks = [
 
 <style>
   /* Sky (spec §4.1): a day and a night gradient stacked, with the night one
-     shown in the dark theme. During a theme switch it fades over 180 ms
+     shown in the dark theme. Day: clear blue sky warming to a golden horizon. During a theme switch it fades over 180 ms
      (see .theme-anim below); the drawing itself redraws at once. */
   .scene {
     --sky-night: 0;
@@ -137,7 +137,7 @@ const peakLinks = [
     z-index: 0;
   }
   .scene::before {
-    background: linear-gradient(180deg, #fbeede, #f6ead5);
+    background: linear-gradient(180deg, #9fd3f7 0%, #cfe9fb 55%, #fff1c9 100%);
   }
   .scene::after {
     background: linear-gradient(180deg, #141821, #1f2430);
