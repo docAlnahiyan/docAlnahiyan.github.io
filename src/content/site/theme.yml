@@ -1,0 +1,39 @@
+# Site appearance, edited in the admin under "Appearance".
+# Colours are hex values (#rrggbb). Turn on use_default to ignore everything
+# below and use the built-in design.
+use_default: false
+light:
+  bg: "#ffffff"
+  surface: "#efefef"
+  surface_2: "#e5e5e5"
+  border: "#d6d6d6"
+  ink: "#201e1a"
+  ink_2: "#5c584f"
+  accent: "#c96442"
+  accent_ink: "#a8482b"
+  accent_wash: "#f6e9e1"
+dark:
+  bg: "#0c0c0c"
+  surface: "#161616"
+  surface_2: "#1c1c1c"
+  border: "#242424"
+  ink: "#efeae1"
+  ink_2: "#b7b1a4"
+  accent: "#e08a6a"
+  accent_ink: "#ea9c7e"
+  accent_wash: "#3a2a22"
+hero:
+  day_top: "#9fd3f7"
+  day_middle: "#cfe9fb"
+  day_horizon: "#fff1c9"
+  night_top: "#03060c"
+  night_bottom: "#111a28"
+fonts:
+  heading: inter
+  hero_name: newsreader
+  body: ibm-plex-sans
+  labels: ibm-plex-mono
+style:
+  roundness: soft
+  heading_weight: "600"
+  cards: filled

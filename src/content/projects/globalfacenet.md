@@ -4,6 +4,7 @@ slug: globalfacenet
 one_liner: A CNN–Transformer hybrid for recognising emotion from facial expressions.
 tags: [Emotion recognition, CNN-Transformer, RAF-DB, TensorFlow/Keras]
 repo_url: https://github.com/docAlnahiyan/Global-Face-Net-Facial-for-expression-Recognition
+icon: face-scan
 thumbnail: ""
 metrics:
   - { label: accuracy on RAF-DB, value: 85.0% }

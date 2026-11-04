@@ -47,7 +47,7 @@ const { text, label, fallbackLabel = label } = Astro.props;
     white-space: pre-wrap;
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     padding: 12px;
   }
 </style>

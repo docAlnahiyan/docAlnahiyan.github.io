@@ -5,10 +5,10 @@ export const SITE = {
   name: 'Al-Nahiyan Khushbu',
   shortName: 'Al-Nahiyan',
   description:
-    'Al-Nahiyan Khushbu — researcher in artificial intelligence, working on medical imaging and computer vision.',
+    'Al-Nahiyan Khushbu, researcher in artificial intelligence, working on medical imaging and computer vision.',
   locale: 'en_US',
   ogImage: '/og-image.png',
-  ogImageAlt: 'Al-Nahiyan Khushbu — researcher in artificial intelligence, medical imaging and computer vision',
+  ogImageAlt: 'Al-Nahiyan Khushbu, researcher in artificial intelligence, medical imaging and computer vision',
 };
 
 export const NAV = [

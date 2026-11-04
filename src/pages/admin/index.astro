@@ -1,0 +1,178 @@
+---
+// The admin at /admin: Sveltia CMS (self-hosted, copied from node_modules by
+// scripts/copy-cms.mjs), configured by public/admin/config.yml. Its look
+// follows the site's Appearance settings, so the editor and the portfolio
+// stay in step: same fonts, same clay accent, same neutral greys.
+import FontFaces from '../../components/FontFaces.astro';
+import { FONTS, getTheme, themeCss } from '../../lib/theme';
+// The site stylesheet is only loaded into the editor preview, never into the
+// admin page itself.
+import globalCssUrl from '../../styles/global.css?url';
+
+const theme = await getTheme();
+const siteThemeCss = themeCss(theme);
+const body = FONTS[theme.fonts.body].stack;
+const heading = FONTS[theme.fonts.heading].stack;
+const mono = FONTS[theme.fonts.labels].stack;
+
+// Sveltia's interface is built on --sui-* custom properties. Its greys are
+// tinted with a base hue; these replace them with neutral greys and swap its
+// blue accent for the portfolio's clay.
+const neutral = (l: number) => `0 0% ${l}%`;
+const uiVars = (mode: 'light' | 'dark') => {
+  const p = theme[mode];
+  const bg = mode === 'light' ? [100, 97, 94, 90, 80] : [5, 8, 11, 15, 28];
+  const fg = mode === 'light' ? [8, 22, 33, 45, 60] : [95, 85, 72, 60, 45];
+  const bd = mode === 'light' ? [55, 72, 84] : [45, 30, 20];
+  const accent = mode === 'light' ? p.accent_ink : p.accent;
+  return [
+    ...bg.map((l, i) => `--sui-background-color-${i + 1}-hsl:${neutral(l)}`),
+    ...fg.map((l, i) => `--sui-foreground-color-${i + 1}-hsl:${neutral(l)}`),
+    ...bd.map((l, i) => `--sui-border-color-${i + 1}-hsl:${neutral(l)}`),
+    `--sui-primary-accent-color:${accent}`,
+    `--sui-primary-accent-color-light:${p.accent}`,
+    `--sui-primary-accent-color-dark:${p.accent_ink}`,
+    `--sui-primary-accent-color-text:${accent}`,
+    `--sui-primary-accent-color-inverted:${mode === 'light' ? '#ffffff' : '#141414'}`,
+  ].join(';');
+};
+const adminCss =
+  `html:root{--sui-font-family-default:${body};--sui-control-font-family:${body};--sui-textbox-font-family:${body};--sui-font-family-monospace:${mono}}` +
+  `html:root,html:root[data-theme="light"]{${uiVars('light')}}` +
+  `html:root[data-theme="dark"]{${uiVars('dark')}}` +
+  `@media (prefers-color-scheme: dark){html:root:not([data-theme="light"]){${uiVars('dark')}}}` +
+  `h1,h2,h3,h4,[role="heading"]{font-family:${heading}}`;
+
+// Passed to the browser for the Appearance preview and the editor preview.
+const clientData = { siteThemeCss, fonts: FONTS, globalCssUrl };
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Admin · Al-Nahiyan Khushbu</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <FontFaces />
+    <style is:inline set:html={adminCss}></style>
+  </head>
+  <body>
+    <script is:inline src="/admin/cms/sveltia-cms.js"></script>
+    <script is:inline define:vars={{ clientData }}>
+      (function () {
+        // ---- Editor preview: the site's own stylesheets and Appearance colours,
+        // so a post or project previews in the portfolio's fonts and colours.
+        // Font faces (the page's own stylesheet links) and the site stylesheet.
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(function (l) {
+          CMS.registerPreviewStyle(l.href);
+        });
+        CMS.registerPreviewStyle(clientData.globalCssUrl);
+        CMS.registerPreviewStyle(
+          clientData.siteThemeCss +
+            'body{background:var(--bg);color:var(--ink);font-family:var(--font-body);padding:24px 28px;line-height:1.6}' +
+            'h1,h2,h3{font-family:var(--font-display);font-weight:var(--heading-weight)}a{color:var(--accent-ink)}' +
+            'img{max-width:100%;border-radius:calc(10px * var(--round, 1))}figcaption{color:var(--ink-2);font-size:14px}',
+          { raw: true },
+        );
+
+        // ---- "Figure" in the blog editor's + menu: inserts an MDX <Figure />
+        // that the site renders with a caption, optionally beside the text
+        // (src/components/blog/Figure.astro).
+        var esc = function (v) { return String(v == null ? '' : v).replace(/"/g, '&quot;'); };
+        var unesc = function (v) { return String(v).replace(/&quot;/g, '"'); };
+        var attr = function (s, name) {
+          var m = s.match(new RegExp('\\b' + name + '="([^"]*)"'));
+          if (m) return unesc(m[1]);
+          var n = s.match(new RegExp('\\b' + name + '=\\{(\\d+)\\}'));
+          return n ? Number(n[1]) : undefined;
+        };
+        CMS.registerEditorComponent({
+          id: 'figure',
+          label: 'Figure',
+          fields: [
+            { name: 'src', label: 'Image', widget: 'image' },
+            { name: 'alt', label: 'Description (alt text)', widget: 'string' },
+            { name: 'caption', label: 'Caption', widget: 'string', required: false },
+            { name: 'float', label: 'Position', widget: 'select', default: 'none', options: [
+              { label: 'Full width', value: 'none' },
+              { label: 'Beside the text, right', value: 'right' },
+              { label: 'Beside the text, left', value: 'left' },
+            ] },
+            { name: 'width', label: 'Width beside the text (px)', widget: 'number', value_type: 'int', required: false, hint: 'Default 280' },
+          ],
+          pattern: /^<Figure\s([^]*?)\/>$/m,
+          fromBlock: function (m) {
+            return { src: attr(m[1], 'src'), alt: attr(m[1], 'alt'), caption: attr(m[1], 'caption'), float: attr(m[1], 'float') || 'none', width: attr(m[1], 'width') };
+          },
+          toBlock: function (d) {
+            var out = '<Figure src="' + esc(d.src) + '" alt="' + esc(d.alt) + '"';
+            if (d.caption) out += ' caption="' + esc(d.caption) + '"';
+            if (d.float && d.float !== 'none') out += ' float="' + d.float + '"';
+            if (d.width) out += ' width={' + Number(d.width) + '}';
+            return out + ' />';
+          },
+          toPreview: function (d) {
+            return '<figure><img src="' + esc(d.src) + '" alt="' + esc(d.alt) + '" style="max-width:100%"/>' + (d.caption ? '<figcaption>' + esc(d.caption) + '</figcaption>' : '') + '</figure>';
+          },
+        });
+
+        // ---- Appearance: a live sample of the site in day and night, built
+        // from the values being edited, so a change shows before it's saved.
+        var get = function (entry, path, fallback) {
+          var v = entry.getIn(['data'].concat(path));
+          return v == null || v === '' ? fallback : v;
+        };
+        var ROUND = { sharp: 0.3, soft: 1, round: 1.6 };
+        var KEYS = ['bg', 'surface', 'surface_2', 'border', 'ink', 'ink_2', 'accent', 'accent_ink', 'accent_wash'];
+        var AppearancePreview = createClass({
+          render: function () {
+            var entry = this.props.entry;
+            var fontStack = function (key, fallback) {
+              var k = get(entry, ['fonts', key], fallback);
+              return (clientData.fonts[k] || clientData.fonts[fallback]).stack;
+            };
+            var heading = fontStack('heading', 'inter');
+            var heroName = fontStack('hero_name', 'newsreader');
+            var body = fontStack('body', 'ibm-plex-sans');
+            var mono = fontStack('labels', 'ibm-plex-mono');
+            var weight = get(entry, ['style', 'heading_weight'], 600);
+            var round = ROUND[get(entry, ['style', 'roundness'], 'soft')] || 1;
+            var outlined = get(entry, ['style', 'cards'], 'filled') === 'outlined';
+            var r = function (px) { return px * round + 'px'; };
+            var pane = function (mode, label) {
+              var c = {};
+              KEYS.forEach(function (k) { c[k] = get(entry, [mode, k], '#888888'); });
+              var sky = mode === 'light'
+                ? 'linear-gradient(180deg,' + get(entry, ['hero', 'day_top'], '#9fd3f7') + ' 0%,' + get(entry, ['hero', 'day_middle'], '#cfe9fb') + ' 55%,' + get(entry, ['hero', 'day_horizon'], '#fff1c9') + ' 100%)'
+                : 'linear-gradient(180deg,' + get(entry, ['hero', 'night_top'], '#03060c') + ',' + get(entry, ['hero', 'night_bottom'], '#111a28') + ')';
+              var card = outlined ? c.bg : c.surface;
+              return h('div', { style: { background: c.bg, color: c.ink, fontFamily: body, border: '1px solid ' + c.border, borderRadius: r(12), overflow: 'hidden', marginBottom: '18px' } },
+                h('div', { style: { background: sky, padding: '28px 22px 22px' } },
+                  h('div', { style: { fontFamily: mono, fontSize: '11px', letterSpacing: '.08em', textTransform: 'uppercase', color: mode === 'light' ? '#5c584f' : '#b7b1a4', marginBottom: '10px' } }, label),
+                  h('div', { style: { fontFamily: heroName, fontSize: '34px', fontWeight: 500, letterSpacing: '-.02em', color: c.ink } }, 'Al-Nahiyan Khushbu'),
+                  h('div', { style: { fontFamily: mono, fontSize: '12px', color: c.ink_2, marginTop: '4px' } }, 'Researcher in Artificial Intelligence')),
+                h('div', { style: { padding: '20px 22px 22px' } },
+                  h('div', { style: { fontFamily: heading, fontWeight: weight, fontSize: '22px', marginBottom: '6px' } }, 'Work with me'),
+                  h('p', { style: { color: c.ink_2, margin: '0 0 14px', fontSize: '14px', lineHeight: 1.55 } }, 'Secondary text looks like this. ',
+                    h('a', { href: '#', style: { color: c.accent_ink, textDecoration: 'none' } }, 'A link')),
+                  h('div', { style: { background: card, border: '1px solid ' + c.border, borderLeft: '3px solid ' + c.accent, borderRadius: r(10), padding: '14px 16px', marginBottom: '14px' } },
+                    h('div', { style: { fontFamily: heading, fontWeight: weight, fontSize: '16px', marginBottom: '4px' } }, 'A card title'),
+                    h('div', { style: { fontSize: '13px', color: c.ink_2, marginBottom: '10px' } }, 'Cards, inner boxes and borders use these colours.'),
+                    h('div', { style: { background: c.surface_2, borderRadius: r(8), padding: '8px 10px', fontSize: '12px', color: c.ink_2 } }, 'Inner box')),
+                  h('span', { style: { display: 'inline-block', background: c.accent_ink, color: mode === 'light' ? '#ffffff' : c.bg, padding: '8px 14px', borderRadius: r(8), fontSize: '13px', fontWeight: 600, marginRight: '8px' } }, 'Button'),
+                  h('span', { style: { display: 'inline-block', background: c.accent_wash, color: c.accent_ink, padding: '5px 11px', borderRadius: '999px', fontFamily: mono, fontSize: '11px', letterSpacing: '.06em', textTransform: 'uppercase' } }, 'Tag')));
+            };
+            if (get(entry, ['use_default'], false)) {
+              return h('div', { style: { fontFamily: body, padding: '24px', color: '#444' } },
+                h('p', {}, 'Using the built-in design. Turn off "Use the built-in design" to apply the values on the left.'));
+            }
+            return h('div', { style: { padding: '18px', background: 'transparent' } }, pane('light', 'Day'), pane('dark', 'Night'));
+          },
+        });
+        CMS.registerPreviewTemplate('theme', AppearancePreview);
+      })();
+    </script>
+  </body>
+</html>

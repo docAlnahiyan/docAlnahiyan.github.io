@@ -24,7 +24,7 @@ const projects = await getProjects();
         href={`/projects/${p.id}/`}
         title={p.data.title}
         subtitle={p.data.one_liner}
-        icon="code"
+        icon={p.data.icon}
         thumbnail={p.data.thumbnail}
       >
         <span slot="tags" class="tags">

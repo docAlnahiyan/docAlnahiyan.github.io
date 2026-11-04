@@ -1,9 +1,10 @@
 ---
 title: E-Commerce Recommendation Engine
 slug: ecommerce-recommendation-engine
-one_liner: Internship project — product recommendations from purchase history and browsing behaviour.
+one_liner: "Internship project: product recommendations from purchase history and browsing behaviour."
 tags: [Internship, Recommender systems, Python, Flask, SQL]
 repo_url: ""
+icon: cart
 thumbnail: ""
 metrics:
   - { label: approach, value: "Hybrid (CF + content)" }

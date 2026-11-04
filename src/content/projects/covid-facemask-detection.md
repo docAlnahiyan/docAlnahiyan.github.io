@@ -4,6 +4,7 @@ slug: covid-facemask-detection
 one_liner: A CNN that detects whether people are wearing face masks in images and video.
 tags: [CNN, OpenCV, Real-time]
 repo_url: ""
+icon: mask
 thumbnail: ""
 metrics:
   - { label: classes, value: "Mask / No-mask" }

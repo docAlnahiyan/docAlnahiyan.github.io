@@ -31,8 +31,8 @@ const repo = entry.data.repo_url;
       <li class="chip">RAF-DB + RAVDESS</li>
     </ul>
     <h1 class="title">MultimodalTransformerNet</h1>
-    <p class="plain">A face can be read two ways — what it looks like, and what it sounds like. Using both settles the hard cases.</p>
-    <p class="meta">Two streams — a CNN–Transformer that reads the face, a deep network that reads the voice — meet in a cross-modal attention layer that lets each modality weigh the other before deciding.</p>
+    <p class="plain">A face can be read two ways: what it looks like, and what it sounds like. Using both settles the hard cases.</p>
+    <p class="meta">Two streams (a CNN–Transformer that reads the face, a deep network that reads the voice) meet in a cross-modal attention layer that lets each modality weigh the other before deciding.</p>
     {repo && (
       <div class="actions head-actions">
         <a class="btn" href={repo} {...ext(repo)}>View code</a>
@@ -40,7 +40,7 @@ const repo = entry.data.repo_url;
     )}
     <ul class="badges">
       <li class="badge"><span class="n">99.7%</span><span class="l">Accuracy on balanced RAF-DB + RAVDESS</span></li>
-      <li class="badge"><span class="n">0.9996</span><span class="l">AUC — near-perfect separation</span></li>
+      <li class="badge"><span class="n">0.9996</span><span class="l">AUC: near-perfect separation</span></li>
       <li class="badge"><span class="n">+14.7 pts</span><span class="l">Over the best single-modality model</span></li>
     </ul>
 

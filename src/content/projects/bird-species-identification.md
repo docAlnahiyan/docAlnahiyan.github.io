@@ -1,9 +1,10 @@
 ---
 title: Bird Species Identification
 slug: bird-species-identification
-one_liner: Bachelor's thesis — identifying bird species from photos with transfer learning.
+one_liner: "Bachelor's thesis: identifying bird species from photos with transfer learning."
 tags: [Bachelor's thesis, Transfer learning, VGG-16, ResNet18]
 repo_url: ""
+icon: bird
 thumbnail: ""
 metrics:
   - { label: species, value: "20" }

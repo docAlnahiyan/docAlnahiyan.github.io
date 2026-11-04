@@ -13,7 +13,7 @@ const samples = [
 <section class="stage live" id="s-live" aria-labelledby="s-live-title">
   <div class="kick">Try it · Runs in your browser</div>
   <h2 id="s-live-title">A real face detector, live on this page</h2>
-  <p>The diagrams above are illustrations. This one is not: it runs <b>BlazeFace</b>, a small pre-trained face detector from Google, inside your browser with TensorFlow.js — the same job as the project's first stage, finding every face and boxing it. It is a <b>stand-in</b>: the project's own trained models were lost, so faces are found but <b>not classified</b> as masked or unmasked here.</p>
+  <p>The diagrams above are illustrations. This one is not: it runs <b>BlazeFace</b>, a small pre-trained face detector from Google, inside your browser with TensorFlow.js, the same job as the project's first stage, finding every face and boxing it. It is a <b>stand-in</b>: the project's own trained models were lost, so faces are found but <b>not classified</b> as masked or unmasked here.</p>
   <div class="viz">
     <div class="live-controls">
       <div class="seg" role="group" aria-label="Sample photo">
@@ -36,7 +36,7 @@ const samples = [
       <p class="cam-note"><b>Use your own camera instead?</b> Video stays on your device: frames are processed in this tab and nothing is uploaded or stored. The camera turns off when you press Stop or leave the page.</p>
       <button type="button" class="btn ghost" data-ref="cam" aria-pressed="false">Turn on my camera</button>
     </div>
-    <p class="note spaced">Boxes and scores are the detector's own output on that image — a demonstration of the method, not a measured accuracy. Small, turned or partly hidden faces can be missed. Sample photos: U.S. Army, NASA and U.S. Navy, public domain (<a href="/projects/facemask/samples/CREDITS.txt">credits</a>).</p>
+    <p class="note spaced">Boxes and scores are the detector's own output on that image: a demonstration of the method, not a measured accuracy. Small, turned or partly hidden faces can be missed. Sample photos: U.S. Army, NASA and U.S. Navy, public domain (<a href="/projects/facemask/samples/CREDITS.txt">credits</a>).</p>
   </div>
 </section>
 
@@ -161,7 +161,7 @@ const samples = [
       video.hidden = false;
       camBtn.textContent = 'Stop camera';
       camBtn.setAttribute('aria-pressed', 'true');
-      status.textContent = 'Camera on — detecting faces on your device. Nothing is uploaded.';
+      status.textContent = 'Camera on, detecting faces on your device. Nothing is uploaded.';
       const loop = async () => {
         if (!stream) return;
         if (video.readyState >= 2 && video.videoWidth) draw(video, await l.detect(video));
@@ -190,7 +190,7 @@ const samples = [
     flex-wrap: wrap;
     gap: 4px;
     padding: 4px;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
   }
   .seg button {
@@ -199,7 +199,7 @@ const samples = [
     color: var(--ink-2);
     background: transparent;
     border: none;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     padding: 7px 12px;
     cursor: pointer;
   }
@@ -210,7 +210,7 @@ const samples = [
   .stagebox {
     position: relative;
     overflow: hidden;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     border: 1px solid var(--border);
     background: #11141a;
     line-height: 0;
@@ -250,7 +250,7 @@ const samples = [
     margin-top: 16px;
     padding: 12px 14px;
     border: 1px dashed var(--border-strong);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
   }
   .cam-note {
     flex: 1 1 280px;

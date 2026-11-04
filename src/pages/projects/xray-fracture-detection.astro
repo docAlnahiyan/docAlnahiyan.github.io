@@ -11,7 +11,7 @@ import '../../components/projects/explainer.css';
 
 <BaseLayout
   title="Bone Fracture Detection in X-rays"
-  description="An assistive pipeline that reads an X-ray, flags a possible fracture and highlights it with Grad-CAM for a clinician to review — the method, step by step."
+  description="An assistive pipeline that reads an X-ray, flags a possible fracture and highlights it with Grad-CAM for a clinician to review: the method, step by step."
   type="article"
 >
   <article class="wrap view xp" data-pagefind-body>
@@ -25,8 +25,8 @@ import '../../components/projects/explainer.css';
       <li class="chip">X-ray</li>
     </ul>
     <h1 class="title">Bone Fracture Detection in X-rays</h1>
-    <p class="plain">A hairline crack on an X-ray is easy to miss on a busy shift. Can a model catch it — and point to exactly where?</p>
-    <p class="meta">A deep-learning pipeline that reads a radiograph, decides whether a bone is fractured, and highlights the region that drove its decision — built to support a clinician's read, not replace it.</p>
+    <p class="plain">A hairline crack on an X-ray is easy to miss on a busy shift. Can a model catch it, and point to exactly where?</p>
+    <p class="meta">A deep-learning pipeline that reads a radiograph, decides whether a bone is fractured, and highlights the region that drove its decision, built to support a clinician's read, not replace it.</p>
     <p class="disclaimer" role="note">
       <span aria-hidden="true">⚠</span>
       <span>This is an <b>assistive</b> concept: it highlights <b>potential</b> fractures for a clinician to review. It is not a diagnostic device, and every flag needs expert confirmation.</span>
@@ -52,7 +52,7 @@ import '../../components/projects/explainer.css';
     color: var(--accent-ink);
     background: var(--accent-wash);
     border: 1px solid var(--accent);
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
   }
   .disclaimer b {
     font-weight: 600;

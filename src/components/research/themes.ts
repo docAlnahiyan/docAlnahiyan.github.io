@@ -17,7 +17,7 @@ export const THEMES: Theme[] = [
   {
     title: 'Catching theft when the records lie',
     summary:
-      'Finding the people behind warehouse loss, even when the thief edits the records to hide it — with a live simulation to try.',
+      'Finding the people behind warehouse loss, even when the thief edits the records to hide it, with a live simulation to try.',
     tags: ['Insider fraud', 'PU learning'],
     href: '/research/warehouse-theft-attribution/',
     publication: 'inventory-shrinkage-attribution',

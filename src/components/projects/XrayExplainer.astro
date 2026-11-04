@@ -35,7 +35,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
   <section class="stage" id="s1" aria-labelledby="s1-title">
     <div class="kick">Stage 1 · The data</div>
     <h2 id="s1-title">Radiographs from across the body, labelled fracture or normal</h2>
-    <p>Training starts from X-ray images of many regions — wrist, ankle, knee, hand — each labelled by radiologists as <b class="c-norm">normal</b> or <b class="c-frac">fractured</b>, often with the fracture's location marked. Real fracture datasets are imbalanced and subtle: most films are normal, and a break can be a single faint line.</p>
+    <p>Training starts from X-ray images of many regions (wrist, ankle, knee, hand), each labelled by radiologists as <b class="c-norm">normal</b> or <b class="c-frac">fractured</b>, often with the fracture's location marked. Real fracture datasets are imbalanced and subtle: most films are normal, and a break can be a single faint line.</p>
     <div class="viz">
       <div class="gal">
         {GALLERY.map(([part, name, label, st]) => (
@@ -47,14 +47,14 @@ const prob = EXAMPLE_PROB.toFixed(2);
           </figure>
         ))}
       </div>
-      <p class="note center spaced">Synthetic radiographs generated for this page — no patient images are used. Two of the four carry a fracture.</p>
+      <p class="note center spaced">Synthetic radiographs generated for this page; no patient images are used. Two of the four carry a fracture.</p>
     </div>
   </section>
 
   <section class="stage" id="s2" aria-labelledby="s2-title">
     <div class="kick">Stage 2 · One radiograph</div>
     <h2 id="s2-title">What a fracture looks like to a pixel</h2>
-    <p>An X-ray is a grayscale map of density: dense bone stops more radiation and shows bright, soft tissue shows dark. A fracture breaks that smooth bright cortex — a thin <b>dark lucent line</b>, a step in the bone's edge, or a change in texture. Here, a transverse break crosses the <b>distal radius</b> at the wrist, the most common fracture site of all.</p>
+    <p>An X-ray is a grayscale map of density: dense bone stops more radiation and shows bright, soft tissue shows dark. A fracture breaks that smooth bright cortex: a thin <b>dark lucent line</b>, a step in the bone's edge, or a change in texture. Here, a transverse break crosses the <b>distal radius</b> at the wrist, the most common fracture site of all.</p>
     <div class="viz centered">
       <span class="xframe"><canvas class="xr xr-md" data-ref="one" width="440" height="600" role="img" aria-label="A wrist X-ray with a distal radius fracture marked"></canvas></span>
       <p class="note spaced-sm">The arrow marks the break across the distal radius.</p>
@@ -72,14 +72,14 @@ const prob = EXAMPLE_PROB.toFixed(2);
         <button type="button" data-m="edges" aria-pressed="false">Edges</button>
       </div>
       <div><span class="xframe"><canvas class="xr xr-md" data-ref="pre" width="440" height="600" role="img" aria-label="The wrist X-ray under different preprocessing steps"></canvas></span></div>
-      <p class="note spaced-sm" data-ref="preNote" aria-live="polite">The original film — faint, grainy, unevenly lit.</p>
+      <p class="note spaced-sm" data-ref="preNote" aria-live="polite">The original film: faint, grainy, unevenly lit.</p>
     </div>
   </section>
 
   <section class="stage" id="s4" aria-labelledby="s4-title">
     <div class="kick">Stage 4 · CNN</div>
     <h2 id="s4-title">A CNN reads structure, coarse to fine</h2>
-    <p>The prepared image flows through a deep <b>convolutional network</b>. Early layers fire on edges and gradients; middle layers assemble them into bone outlines and joint spaces; deep layers respond to the abnormal patterns of a break — a discontinuity in the cortex, an unexpected lucency. Each block shrinks the map and grows the channels, distilling the film into features a classifier can judge.</p>
+    <p>The prepared image flows through a deep <b>convolutional network</b>. Early layers fire on edges and gradients; middle layers assemble them into bone outlines and joint spaces; deep layers respond to the abnormal patterns of a break: a discontinuity in the cortex, an unexpected lucency. Each block shrinks the map and grows the channels, distilling the film into features a classifier can judge.</p>
     <div class="viz">
       <div class="cnn">
         {CNN_MAPS.map((m, i) => (
@@ -92,14 +92,14 @@ const prob = EXAMPLE_PROB.toFixed(2);
           </>
         ))}
       </div>
-      <p class="note center spaced">conv → pool, repeated — local detail becomes abstract "fracture-ness."</p>
+      <p class="note center spaced">conv → pool, repeated: local detail becomes abstract "fracture-ness."</p>
     </div>
   </section>
 
   <section class="stage" id="s5" aria-labelledby="s5-title">
     <div class="kick">Stage 5 · Localise</div>
-    <h2 id="s5-title">Grad-CAM — not just "yes", but "here"</h2>
-    <p>A yes/no answer isn't enough for a clinician; they need to know <em>where</em>. <b>Grad-CAM</b> traces the "fracture" decision back through the final convolutional layer to produce a <b>heatmap</b> over the image — warm where the evidence is strongest. Overlaid on the film, it turns a label into a pointer, drawing the eye straight to the suspected break for confirmation.</p>
+    <h2 id="s5-title">Grad-CAM: not just "yes", but "here"</h2>
+    <p>A yes/no answer isn't enough for a clinician; they need to know <em>where</em>. <b>Grad-CAM</b> traces the "fracture" decision back through the final convolutional layer to produce a <b>heatmap</b> over the image, warm where the evidence is strongest. Overlaid on the film, it turns a label into a pointer, drawing the eye straight to the suspected break for confirmation.</p>
     <div class="viz centered">
       <button type="button" class="toggle" role="switch" aria-checked="false" data-ref="camToggle"><span class="switch" aria-hidden="true"></span> Show Grad-CAM heatmap</button>
       <div class="spaced"><span class="xframe"><canvas class="xr xr-lg" data-ref="cam" width="440" height="600" role="img" aria-label="The wrist X-ray with an optional Grad-CAM heatmap over the fracture"></canvas></span></div>
@@ -109,7 +109,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
 
   <section class="stage" id="s6" aria-labelledby="s6-title">
     <div class="kick">Stage 6 · The verdict</div>
-    <h2 id="s6-title">Reading the output — and choosing how cautious to be</h2>
+    <h2 id="s6-title">Reading the output, and choosing how cautious to be</h2>
     <p>The classifier returns a <b>fracture probability</b>. Turning that into a flag means picking a <b>threshold</b>, and that choice is a trade-off: lower it and you catch more fractures (high <b class="c-frac">sensitivity</b>) at the cost of more false alarms (lower <b class="c-norm">specificity</b>). For a triage tool meant to catch missed breaks, you lean toward sensitivity and let the clinician rule out the extras. Drag the threshold to feel the trade-off.</p>
     <div class="viz">
       <div class="verdict-wrap">
@@ -122,7 +122,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
           <input type="range" id="xray-thr" data-ref="thr" min="5" max="95" value={TH} />
           <div class="opbar sens"><span class="nm">Sensitivity</span><span class="track"><span class="fill" data-ref="sensFill" style={`--p:${op.sens}`}></span></span><span class="pct" data-ref="sensPct">{op.sens}%</span></div>
           <div class="opbar spec"><span class="nm">Specificity</span><span class="track"><span class="fill" data-ref="specFill" style={`--p:${op.spec}`}></span></span><span class="pct" data-ref="specPct">{op.spec}%</span></div>
-          <p class="note spaced-sm">Illustrative operating curve — the shape of the sensitivity/specificity trade-off, not measured values. The p(fracture) of {prob} is an example output, also illustrative.</p>
+          <p class="note spaced-sm">Illustrative operating curve: the shape of the sensitivity/specificity trade-off, not measured values. The p(fracture) of {prob} is an example output, also illustrative.</p>
         </div>
       </div>
       <p class="note center spaced">However it's tuned, the output is a <b>flag for a radiologist</b>, never a final diagnosis.</p>
@@ -225,14 +225,14 @@ const prob = EXAMPLE_PROB.toFixed(2);
     max-width: 100%;
     padding: 3px;
     line-height: 0;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     background: #05070a;
   }
   .xr {
     display: block;
     max-width: 100%;
     height: auto;
-    border-radius: 6px;
+    border-radius: calc(6px * var(--round, 1));
   }
   .xr-sm { width: 124px; }
   .xr-sm2 { width: 158px; }
@@ -267,7 +267,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
     gap: 4px;
     padding: 4px;
     margin-bottom: 12px;
-    border-radius: 10px;
+    border-radius: calc(10px * var(--round, 1));
     background: var(--surface-2);
   }
   .seg button {
@@ -276,7 +276,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
     color: var(--ink-2);
     background: transparent;
     border: none;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     padding: 7px 12px;
     cursor: pointer;
   }
@@ -369,7 +369,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
     flex: 1;
     height: 13px;
     overflow: hidden;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     background: var(--surface-2);
   }
   /* Full width, slid left to show --p % (compositor-only); the track clips it. */
@@ -377,7 +377,7 @@ const prob = EXAMPLE_PROB.toFixed(2);
     display: block;
     width: 100%;
     height: 100%;
-    border-radius: 7px;
+    border-radius: calc(7px * var(--round, 1));
     transform: translateX(calc(var(--p, 0) * 1% - 100%));
     transition: transform .3s;
   }

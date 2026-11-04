@@ -38,7 +38,7 @@ const floated = float !== 'none' && !bleed;
     display: block;
     width: 100%;
     height: auto;
-    border-radius: 8px;
+    border-radius: calc(8px * var(--round, 1));
     border: 1px solid var(--border);
     background: var(--surface-2);
   }
