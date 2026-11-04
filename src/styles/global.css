@@ -6,7 +6,7 @@
    Light palette on :root; the dark palette applies either from the OS
    preference (unless the visitor chose light) or from an explicit choice. */
 :root {
-  --bg: #faf7f0;
+  --bg: #ffffff;
   --surface: #fffdf9;
   --surface-2: #f2ece0;
   --ink: #201e1a;
@@ -45,7 +45,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #211f1c;
+    --bg: #000000;
     --surface: #2a2824;
     --surface-2: #32302b;
     --ink: #efeae1;
@@ -75,7 +75,7 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #211f1c;
+  --bg: #000000;
   --surface: #2a2824;
   --surface-2: #32302b;
   --ink: #efeae1;
