@@ -4,6 +4,7 @@
 // CONTACT_FORM_ENDPOINT (src/site.ts) when one is set; otherwise sending it
 // opens the visitor's email app with the message filled in.
 import { CONTACT_FORM_ENDPOINT } from '../site';
+import { ext } from '../lib/links';
 
 interface Props {
   email: string;
@@ -12,12 +13,12 @@ interface Props {
 const { email } = Astro.props;
 
 const milestones = [
-  { when: '2017–2021', what: 'BEng, Software Engineering', where: 'Sichuan University', note: 'Thesis: bird species identification with deep neural networks', href: '/projects/bird-species-identification/' },
-  { when: '2020–2021', what: 'Software Engineer Intern', where: 'Chengdu Suncape Data Co., Ltd' },
-  { when: '2022–2025', what: 'MSc, Computer Science and Technology', where: 'Southwest Jiaotong University', note: 'Thesis: hybrid deep learning for early Parkinson’s disease recognition from 2D and 3D MRI (May 2025)' },
-  { when: '2024', what: 'Best Paper Award, IARCE 2024', where: 'Hybrid CNN–Transformer for Parkinson’s disease recognition', href: '/research/parkinson-cnn-transformer/' },
-  { when: '2025–now', what: 'Software Requirements Research and Publisher', where: 'SoftFlames Ventures LLC' },
-  { when: '2026', what: 'HybridTransMedFormer — under review', where: 'Artificial Intelligence in Medicine', href: '/research/hybridtransmedformer/' },
+  { when: '2017–2021', what: 'BEng, Software Engineering', where: 'Sichuan University', whereHref: 'https://en.scu.edu.cn', note: 'Thesis: bird species identification with deep neural networks', href: '/projects/bird-species-identification/' },
+  { when: '2020–2021', what: 'Software Engineer Intern', where: 'Chengdu Suncape Data Co., Ltd', whereHref: 'http://www.suncaper.net/index' },
+  { when: '2022–2025', what: 'MSc, Computer Science and Technology', where: 'Southwest Jiaotong University', whereHref: 'https://en.swjtu.edu.cn/index.jsp', note: 'Thesis: hybrid deep learning for early Parkinson’s disease recognition from 2D and 3D MRI (May 2025)' },
+  { when: '2024', what: 'Best Paper Award, IARCE 2024', href: 'https://www.iarce.org/history2024.html', where: 'Hybrid CNN–Transformer for Parkinson’s disease recognition', whereHref: '/research/parkinson-cnn-transformer/' },
+  { when: '2025–now', what: 'Software Requirements Research and Publisher', where: 'SoftFlames Ventures LLC', whereHref: 'https://www.softflamesventures.com' },
+  { when: '2026', what: 'HybridTransMedFormer — under review', where: 'Artificial Intelligence in Medicine', whereHref: 'https://www.sciencedirect.com/journal/artificial-intelligence-in-medicine', href: '/research/hybridtransmedformer/' },
   { when: 'Sep 2026', what: 'Preprint: catching warehouse theft when records lie', where: 'Not peer-reviewed', href: '/research/warehouse-theft-attribution/' },
 ];
 ---
@@ -34,8 +35,8 @@ const milestones = [
           <li>
             <span class="when">{m.when}</span>
             <div class="what">
-              {m.href ? <a href={m.href}>{m.what}</a> : <span>{m.what}</span>}
-              <span class="where">{m.where}</span>
+              {m.href ? <a href={m.href} {...ext(m.href)}>{m.what}</a> : <span>{m.what}</span>}
+              {m.whereHref ? <a class="where" href={m.whereHref} {...ext(m.whereHref)}>{m.where}</a> : <span class="where">{m.where}</span>}
               {m.note && <span class="note">{m.note}</span>}
             </div>
           </li>
@@ -224,6 +225,19 @@ const milestones = [
   .where {
     font-size: 13.5px;
     color: var(--ink-2);
+  }
+  /* A linked company / university / paper: same quiet text, with a clay
+     underline so it reads as clickable. */
+  a.where {
+    align-self: flex-start;
+    text-decoration: underline;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+  a.where:hover,
+  a.where:focus-visible {
+    color: var(--accent-ink);
   }
   .note {
     font-size: 12.5px;
