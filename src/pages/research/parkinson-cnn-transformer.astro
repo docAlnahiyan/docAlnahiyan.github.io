@@ -33,7 +33,7 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
       <a href="/research/">Research</a> <span aria-hidden="true">›</span> <span aria-current="page">Parkinson's from brain MRI</span>
     </nav>
     <ul class="chips">
-      <li class="chip award">Best Paper · IARCE 2024</li>
+      <li class="chip award"><a href="https://www.iarce.org/history2024.html" {...ext('https://www.iarce.org/history2024.html')}>Best Paper · IARCE 2024</a></li>
       <li class="chip">Medical imaging</li>
       <li class="chip">CNN + Transformer</li>
       <li class="chip">PPMI</li>
@@ -115,6 +115,9 @@ const { prev, next } = neighbours(await researchSequence(), Astro.url.pathname);
     border-color: transparent;
     color: var(--accent-ink);
     font-weight: 500;
+  }
+  .chip.award a {
+    color: inherit;
   }
   .title {
     font-weight: 600;

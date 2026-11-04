@@ -20,7 +20,7 @@ function clean<T extends Json>(o: T): T {
   ) as T;
 }
 
-const UNIVERSITY = { '@type': 'CollegeOrUniversity', name: 'Southwest Jiaotong University' };
+const UNIVERSITY = { '@type': 'CollegeOrUniversity', name: 'Southwest Jiaotong University', url: 'https://en.swjtu.edu.cn/index.jsp' };
 
 /** The site owner, as referenced from papers and posts. */
 export function authorRef(profile: Profile): Json {
@@ -39,9 +39,9 @@ export function personLd(profile: Profile): Json {
     image: profile.photo ? abs(profile.photo) : undefined,
     jobTitle: profile.role,
     affiliation: UNIVERSITY,
-    alumniOf: [UNIVERSITY, { '@type': 'CollegeOrUniversity', name: 'Sichuan University' }],
+    alumniOf: [UNIVERSITY, { '@type': 'CollegeOrUniversity', name: 'Sichuan University', url: 'https://en.scu.edu.cn' }],
     knowsAbout: [profile.research_area, profile.methods].filter(Boolean).flatMap((s) => s!.split(' · ')),
-    sameAs: [links.orcid, links.github, links.linkedin, links.scholar].filter(Boolean),
+    sameAs: [links.orcid, links.github, links.linkedin, links.scholar, links.upwork].filter(Boolean),
   });
 }
 
