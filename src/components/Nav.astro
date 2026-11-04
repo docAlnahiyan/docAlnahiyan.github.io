@@ -33,12 +33,29 @@ const isActive = (href: string) =>
     </button>
   </div>
   <dialog class="search-dialog" id="search-dialog" aria-label="Search the site">
-    <div class="search-head">
-      <p class="search-title">Search research, projects and posts</p>
-      <button type="button" class="search-close" aria-label="Close search">Esc</button>
+    <div class="search-bar">
+      <svg class="search-glass" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search-input" class="search-input" type="search" placeholder="Search research, projects and posts" autocomplete="off" spellcheck="false" aria-label="Search" aria-controls="search-results" aria-autocomplete="list" />
+      <button type="button" class="search-close" aria-label="Close search"><kbd>Esc</kbd></button>
     </div>
-    <div id="search-ui"></div>
-    <p class="search-fallback" hidden>Search isn't available right now. Try the <a href="/research/">Research</a>, <a href="/projects/">Projects</a> or <a href="/blog/">Blog</a> pages.</p>
+    <div class="search-body">
+      <p class="search-status" id="search-status" aria-live="polite"></p>
+      <ul class="search-results" id="search-results" role="listbox" aria-label="Results"></ul>
+      <div class="search-empty" id="search-empty">
+        <p class="search-hint-title">Jump to</p>
+        <div class="search-quick">
+          <a href="/research/">Research</a><a href="/publications/">Publications</a><a href="/projects/">Projects</a><a href="/blog/">Blog</a><a href="/cv/">CV</a>
+        </div>
+        <p class="search-hint-title">Try</p>
+        <div class="search-quick search-try">
+          <button type="button">Parkinson's</button><button type="button">MRI</button><button type="button">emotion recognition</button><button type="button">transformer</button>
+        </div>
+      </div>
+      <p class="search-fallback" hidden>Search isn't available right now. Try the <a href="/research/">Research</a>, <a href="/projects/">Projects</a> or <a href="/blog/">Blog</a> pages.</p>
+    </div>
+    <div class="search-foot" aria-hidden="true">
+      <span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>Esc</kbd> close</span>
+    </div>
   </dialog>
 </nav>
 
@@ -91,30 +108,85 @@ const isActive = (href: string) =>
   const searchDialog = document.getElementById('search-dialog') as HTMLDialogElement | null;
   if (searchBtn && searchDialog) {
     searchBtn.hidden = false;
-    let loaded: Promise<void> | undefined;
-    const loadUi = () =>
-      (loaded ??= new Promise<void>((resolve, reject) => {
-        const css = document.createElement('link');
-        css.rel = 'stylesheet';
-        css.href = '/pagefind/pagefind-ui.css';
-        document.head.append(css);
-        const js = document.createElement('script');
-        js.src = '/pagefind/pagefind-ui.js';
-        js.onload = () => {
-          // @ts-expect-error PagefindUI is a global from the script above.
-          new PagefindUI({ element: '#search-ui', showSubResults: true, showImages: false, resetStyles: false });
-          resolve();
-        };
-        js.onerror = () => reject(new Error('search unavailable'));
-        document.head.append(js);
-      }));
+    // Pagefind's search API (built into /pagefind/ after the site is built),
+    // loaded the first time the dialog opens; results are drawn here so they
+    // match the site rather than Pagefind's stock widget.
+    type Sub = { title: string; url: string; excerpt: string };
+    type Hit = { url: string; excerpt: string; meta: { title?: string }; sub_results?: Sub[] };
+    type Pagefind = { init: () => Promise<void>; debouncedSearch: (q: string, o?: object, ms?: number) => Promise<{ results: { data: () => Promise<Hit> }[] } | null> };
+    const input = searchDialog.querySelector<HTMLInputElement>('#search-input')!;
+    const list = searchDialog.querySelector<HTMLUListElement>('#search-results')!;
+    const status = searchDialog.querySelector<HTMLElement>('#search-status')!;
+    const empty = searchDialog.querySelector<HTMLElement>('#search-empty')!;
+    const SECTIONS: [RegExp, string][] = [[/^\/research\//, 'Research'], [/^\/projects\//, 'Project'], [/^\/blog\//, 'Blog'], [/^\/publications\//, 'Publications'], [/^\/cv\//, 'CV'], [/^\/upwork\//, 'Upwork']];
+    const section = (url: string) => SECTIONS.find(([re]) => re.test(url))?.[1] ?? 'Page';
+    const clean = (url: string) => url.replace(/\.html$/, '/').replace(/\/index\/$/, '/');
+    let loaded: Promise<Pagefind> | undefined;
+    const loadPagefind = () =>
+      (loaded ??= (async () => {
+        const url = '/pagefind/pagefind.js';
+        const pf = (await import(/* @vite-ignore */ url)) as Pagefind;
+        await pf.init();
+        return pf;
+      })());
+    let active = -1;
+    const items = () => [...list.querySelectorAll<HTMLAnchorElement>('a.sr-main, a.sr-sub')];
+    const setActive = (i: number) => {
+      const all = items();
+      if (!all.length) return;
+      active = (i + all.length) % all.length;
+      all.forEach((a, k) => a.classList.toggle('is-active', k === active));
+      all[active].scrollIntoView({ block: 'nearest' });
+    };
+    let seq = 0;
+    const run = async () => {
+      const q = input.value.trim();
+      const mine = ++seq;
+      if (!q) {
+        list.replaceChildren();
+        status.textContent = '';
+        empty.hidden = false;
+        return;
+      }
+      empty.hidden = true;
+      const pf = await loadPagefind();
+      const res = await pf.debouncedSearch(q, {}, 120);
+      if (!res || mine !== seq) return;
+      const hits = await Promise.all(res.results.slice(0, 8).map((r) => r.data()));
+      if (mine !== seq) return;
+      status.textContent = res.results.length
+        ? `${res.results.length} result${res.results.length === 1 ? '' : 's'}`
+        : `No results for "${q}"`;
+      list.innerHTML = hits
+        .map((h) => {
+          const subs = (h.sub_results ?? []).filter((s) => clean(s.url) !== clean(h.url)).slice(0, 2);
+          return `<li role="option"><a class="sr-main" href="${clean(h.url)}"><span class="sr-kind">${section(clean(h.url))}</span><span class="sr-title">${h.meta.title ?? clean(h.url)}</span><span class="sr-excerpt">${h.excerpt}</span></a>${
+            subs.length ? `<div class="sr-subs">${subs.map((s) => `<a class="sr-sub" href="${s.url}"><span class="sr-sub-title">${s.title}</span><span class="sr-excerpt">${s.excerpt}</span></a>`).join('')}</div>` : ''
+          }</li>`;
+        })
+        .join('');
+      active = -1;
+      setActive(0);
+    };
+    input.addEventListener('input', run);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); setActive(active + 1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(active - 1); }
+      else if (e.key === 'Enter') { const a = items()[active]; if (a) { e.preventDefault(); a.click(); } }
+      else if (e.key === 'Escape') { e.preventDefault(); searchDialog.close(); }
+    });
+    searchDialog.querySelectorAll<HTMLButtonElement>('.search-try button').forEach((b) =>
+      b.addEventListener('click', () => { input.value = b.textContent ?? ''; input.focus(); run(); }),
+    );
     const open = async () => {
       if (!searchDialog.open) searchDialog.showModal();
+      input.focus();
+      input.select();
       try {
-        await loadUi();
-        searchDialog.querySelector<HTMLInputElement>('input')?.focus();
+        await loadPagefind();
       } catch {
         searchDialog.querySelector<HTMLElement>('.search-fallback')!.hidden = false;
+        empty.hidden = true;
       }
     };
     searchBtn.addEventListener('click', open);
@@ -247,73 +319,232 @@ const isActive = (href: string) =>
     display: none;
   }
 
-  /* Search dialog, themed through Pagefind's own CSS variables. */
+  /* Search dialog: a site-styled palette over Pagefind's search API. */
   .search-dialog {
-    width: min(680px, calc(100vw - 32px));
-    max-height: min(80vh, 760px);
-    margin: 10vh auto auto;
-    padding: 18px 20px 20px;
+    width: min(640px, calc(100vw - 32px));
+    max-height: min(76vh, 680px);
+    margin: 12vh auto auto;
+    padding: 0;
     border: 1px solid var(--border);
-    border-radius: calc(14px * var(--round, 1));
-    background: var(--surface);
+    border-radius: calc(16px * var(--round, 1));
+    background: var(--bg);
     color: var(--ink);
-    --pagefind-ui-scale: .9;
-    --pagefind-ui-primary: var(--accent-ink);
-    --pagefind-ui-text: var(--ink);
-    --pagefind-ui-background: var(--bg);
-    --pagefind-ui-border: var(--border-strong);
-    --pagefind-ui-tag: var(--surface-2);
-    --pagefind-ui-border-width: 1px;
-    --pagefind-ui-border-radius: calc(8px * var(--round, 1));
-    --pagefind-ui-font: var(--font-body);
+    font-family: var(--font-body);
+    box-shadow: 0 24px 60px -12px rgb(0 0 0 / .35), 0 2px 6px rgb(0 0 0 / .08);
+    overflow: hidden;
+  }
+  .search-dialog[open] {
+    display: flex;
+    flex-direction: column;
   }
   .search-dialog::backdrop {
-    background: rgb(0 0 0 / .45);
+    background: rgb(10 10 10 / .38);
+    backdrop-filter: blur(3px);
   }
-  .search-head {
+  .search-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    margin-bottom: 12px;
+    padding: 14px 16px 14px 20px;
+    border-bottom: 1px solid var(--border);
   }
-  .search-title {
-    margin: 0;
+  .search-glass {
+    flex: none;
+    color: var(--accent);
+  }
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    font-size: 17px;
+    padding: 6px 0;
+  }
+  .search-input::placeholder {
+    color: var(--ink-3);
+  }
+  .search-input::-webkit-search-cancel-button {
+    display: none;
+  }
+  .search-close {
+    flex: none;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+  }
+  .search-dialog kbd {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom-width: 2px;
+    border-radius: calc(5px * var(--round, 1));
+    padding: 2px 6px;
+  }
+  .search-body {
+    overflow-y: auto;
+    padding: 8px 10px 12px;
+    flex: 1;
+  }
+  .search-status {
+    margin: 6px 10px 8px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
     letter-spacing: .06em;
     text-transform: uppercase;
     color: var(--ink-3);
   }
-  .search-close {
-    font-family: var(--font-mono);
-    font-size: 12px;
-    color: var(--ink-2);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: calc(6px * var(--round, 1));
-    padding: 4px 8px;
-    cursor: pointer;
+  .search-status:empty {
+    display: none;
   }
-  .search-fallback {
-    color: var(--ink-2);
+  .search-results {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 4px;
   }
-  .search-dialog :global(.pagefind-ui__result-link) {
-    color: var(--accent-ink);
+  .search-results :global(a) {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border-radius: calc(10px * var(--round, 1));
+    border: 1px solid transparent;
   }
-  .search-dialog :global(.pagefind-ui__search-clear) {
-    color: var(--ink-2);
-    background: var(--surface-2);
-    border-radius: calc(6px * var(--round, 1));
+  .search-results :global(a.sr-main) {
+    padding: 10px 12px;
   }
-  .search-dialog :global(.pagefind-ui__button) {
-    color: var(--ink);
-    background: var(--surface-2);
+  .search-results :global(a:hover),
+  .search-results :global(a.is-active) {
+    background: var(--surface);
     border-color: var(--border);
   }
-  .search-dialog :global(mark) {
+  .search-results :global(a.is-active) {
+    box-shadow: inset 3px 0 0 var(--accent);
+  }
+  .search-results :global(.sr-kind) {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
     background: var(--accent-wash);
+    border-radius: 999px;
+    padding: 2px 8px;
+    margin-bottom: 6px;
+  }
+  .search-results :global(.sr-title) {
+    display: block;
+    font-family: var(--font-display);
+    font-weight: var(--heading-weight);
+    font-size: 16px;
+    line-height: 1.3;
     color: var(--ink);
+  }
+  .search-results :global(.sr-excerpt) {
+    display: block;
+    margin-top: 3px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--ink-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .search-results :global(mark) {
+    background: var(--accent-wash);
+    color: var(--accent-ink);
+    border-radius: 3px;
+    padding: 0 2px;
+  }
+  .search-results :global(.sr-subs) {
+    margin: 2px 0 6px 22px;
+    padding-left: 12px;
+    border-left: 2px solid var(--border);
+    display: grid;
+    gap: 2px;
+  }
+  .search-results :global(a.sr-sub) {
+    padding: 6px 10px;
+  }
+  .search-results :global(.sr-sub-title) {
+    display: block;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .search-results :global(a.sr-sub .sr-excerpt) {
+    font-size: 12.5px;
+    -webkit-line-clamp: 1;
+  }
+  .search-empty {
+    padding: 6px 10px 4px;
+  }
+  .search-empty[hidden] {
+    display: none;
+  }
+  .search-hint-title {
+    margin: 8px 0 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+  .search-quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .search-quick a,
+  .search-quick button {
+    font: inherit;
+    font-size: 13.5px;
+    color: var(--ink);
+    text-decoration: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 13px;
+    cursor: pointer;
+  }
+  .search-quick a:hover,
+  .search-quick button:hover {
+    border-color: var(--accent);
+    color: var(--accent-ink);
+  }
+  .search-fallback {
+    margin: 12px 10px;
+    color: var(--ink-2);
+  }
+  .search-foot {
+    display: flex;
+    gap: 16px;
+    padding: 10px 18px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+  .search-foot kbd {
+    margin-right: 3px;
+  }
+  @media (max-width: 560px) {
+    .search-dialog {
+      margin-top: 4vh;
+      max-height: 86vh;
+    }
+    .search-foot {
+      display: none;
+    }
   }
 
   /* Show the icon for the theme the button switches TO. */
