@@ -3,6 +3,8 @@
 // layers in one box: decorative SVG for the sketch, real HTML for the name,
 // bio and (later) the road signposts, so text and links work for search,
 // keyboard and screen readers without the drawing.
+// The name keeps the Newsreader serif (headings elsewhere use Inter).
+import '@fontsource-variable/newsreader/opsz.css';
 interface Props {
   name: string;
   /** One line under the name; the only place the university is named in the hero. */
@@ -322,6 +324,8 @@ const peakLinks = [
     content: attr(data-ch);
   }
   .name {
+    font-family: "Newsreader Variable", "Newsreader", Georgia, "Times New Roman", serif;
+    font-weight: 500;
     font-size: var(--name-size, clamp(34px, 4.6vw, 64px));
     letter-spacing: -.02em;
     line-height: 1.05;
