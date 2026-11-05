@@ -18,9 +18,16 @@ const isActive = (href: string) =>
     <ul class="nav-links" id="nav-menu">
       {NAV.map((item) => (
         <li>
-          <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
-            {item.label}
-          </a>
+          {item.external ? (
+            <a class="ext" href={item.href} target="_blank" rel="noopener noreferrer" aria-label={`${item.label} (opens in a new tab)`}>
+              {item.label}
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            </a>
+          ) : (
+            <a href={item.href} aria-current={isActive(item.href) ? 'page' : undefined}>
+              {item.label}
+            </a>
+          )}
         </li>
       ))}
     </ul>
@@ -232,7 +239,7 @@ const isActive = (href: string) =>
     document.addEventListener('click', (e) => {
       if (nav.hasAttribute('data-open') && !nav.contains(e.target as Node)) setOpen(false);
     });
-    window.matchMedia('(min-width: 721px)').addEventListener('change', (e) => {
+    window.matchMedia('(min-width: 761px)').addEventListener('change', (e) => {
       if (e.matches) setOpen(false);
     });
   }
@@ -268,6 +275,7 @@ const isActive = (href: string) =>
     font-weight: 600;
     color: var(--ink);
     letter-spacing: -.01em;
+    white-space: nowrap;
   }
   .brand:hover {
     text-decoration: none;
@@ -294,6 +302,34 @@ const isActive = (href: string) =>
     color: var(--ink);
     background: var(--surface-2);
     text-decoration: none;
+  }
+  /* Tablets: eight items still fit on one row. */
+  @media (min-width: 761px) and (max-width: 1000px) {
+    .nav-links {
+      gap: 0;
+    }
+    .nav-links a {
+      padding: 6px 7px;
+      font-size: 13px;
+    }
+  }
+  /* "Ask Folio": same as the other items, plus a small external-link arrow. */
+  .nav-links a.ext {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav-links a.ext svg {
+    flex: none;
+    opacity: .75;
+    transition: transform .15s ease;
+  }
+  .nav-links a.ext:hover {
+    color: var(--accent-ink);
+  }
+  .nav-links a.ext:hover svg {
+    opacity: 1;
+    transform: translate(1px, -1px);
   }
   .nav-links a[aria-current='page'] {
     color: var(--accent-ink);
@@ -571,7 +607,7 @@ const isActive = (href: string) =>
   }
 
   /* Without JavaScript, narrow screens wrap the links onto a second row. */
-  @media (max-width: 720px) {
+  @media (max-width: 760px) {
     .nav-inner {
       flex-wrap: wrap;
       row-gap: 8px;

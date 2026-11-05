@@ -41,9 +41,10 @@ const { Content } = await render(entry);
 
     <Metrics items={d.metrics} />
 
-    {d.repo_url && (
+    {(d.demo_url || d.repo_url) && (
       <div class="actions">
-        <a class="btn ghost" href={d.repo_url} {...ext(d.repo_url)}>Code on GitHub</a>
+        {d.demo_url && <a class="btn" href={d.demo_url} {...ext(d.demo_url)}>Try it</a>}
+        {d.repo_url && <a class="btn ghost" href={d.repo_url} {...ext(d.repo_url)}>{d.demo_url ? 'View code' : 'Code on GitHub'}</a>}
       </div>
     )}
   </article>

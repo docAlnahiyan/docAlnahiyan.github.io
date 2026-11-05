@@ -9,6 +9,11 @@ export const ICONS = {
     label: 'Code',
     paths: '<path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14"/>',
   },
+  'doc-chat': {
+    label: 'Document chat (AI assistant)',
+    paths:
+      '<path d="M13.5 3H6.5A1.5 1.5 0 0 0 5 4.5v15A1.5 1.5 0 0 0 6.5 21H10"/><path d="M13.5 3 18 7.5V10"/><path d="M8 8h4M8 11.5h6"/><path d="M13 14h7a1 1 0 0 1 1 1v4.2a1 1 0 0 1-1 1h-3.6L14 22v-1.8h-1a1 1 0 0 1-1-1V15a1 1 0 0 1 1-1Z"/>',
+  },
   'face-sound': {
     label: 'Face and sound (multimodal)',
     paths:
