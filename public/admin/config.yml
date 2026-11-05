@@ -132,7 +132,7 @@ collections:
       - { name: one_liner, label: One-line description, widget: string }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: repo_url, label: GitHub repository, widget: string, required: false, hint: "Full URL. Leave empty if there's no public repo." }
-      - { name: demo_url, label: Live demo, widget: string, required: false, hint: "Full URL of a working version people can try. Adds a \"Try the live demo\" button." }
+      - { name: demo_url, label: Live demo, widget: string, required: false, hint: "Full URL of a working version people can try. Adds a \"Try it\" button." }
       - name: icon
         label: Icon
         widget: select

@@ -34,7 +34,7 @@ const projects = await getProjects();
         {firstParagraph(p.body) && <p>{firstParagraph(p.body)}</p>}
         <Metrics items={p.data.metrics} />
         {p.data.demo_url && (
-          <a slot="actions" class="btn" href={p.data.demo_url} {...ext(p.data.demo_url)}>Try the live demo</a>
+          <a slot="actions" class="btn" href={p.data.demo_url} {...ext(p.data.demo_url)}>Try it</a>
         )}
         {p.data.repo_url && (
           <a slot="actions" class="btn ghost" href={p.data.repo_url} {...ext(p.data.repo_url)}>{p.data.demo_url ? 'View code' : 'Code on GitHub'}</a>

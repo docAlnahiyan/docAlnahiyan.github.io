@@ -3,7 +3,7 @@ title: Folio
 slug: folio
 one_liner: "Ask your documents anything: cited, fact-checked answers from PDF, Word, Excel and PowerPoint files."
 tags: [Python, FastAPI, FAISS, Hybrid retrieval, Llama/GPT-OSS]
-repo_url: https://github.com/docAlnahiyan/folio
+repo_url: ""
 demo_url: https://docnahi-folio.hf.space
 icon: doc-chat
 thumbnail: ""
@@ -14,8 +14,8 @@ order: 0
 A document assistant for answers you can trust. Every factual sentence carries a numbered
 citation that opens the source passage with the supporting sentence highlighted, and each
 answer is checked claim by claim against the passages before you rely on it. When the
-documents don't cover part of a question, Folio says so instead of guessing. The live demo
-runs on this portfolio's own content, so you can ask it about my research, papers and
+documents don't cover part of a question, Folio says so instead of guessing. Folio runs
+on this portfolio's own content, so you can ask it about my research, papers and
 projects, or upload a file of your own.
 
 **How it works.** Files are parsed into located sections (page, sheet or slide), split into
