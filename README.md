@@ -62,7 +62,7 @@ The previous React version of the site is kept as the tag `archive/old-react-sit
 
 ## Licence
 
-The code is released under the [MIT License](LICENSE). The content (the
-text, CV, papers, photos and other material in `src/content/`, `public/cv/`
-and `public/uploads/`) is © Al-Nahiyan Khushbu, all rights reserved, and is
-not covered by the MIT License.
+© 2026 Al-Nahiyan Khushbu. All rights reserved: the code, design and content
+(text, CV, papers, photos and everything else in this repository). You're
+welcome to read the code and learn from it; copying, modifying or reusing any
+of it requires written permission. See [LICENSE](LICENSE).
