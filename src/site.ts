@@ -11,7 +11,13 @@ export const SITE = {
   ogImageAlt: 'Al-Nahiyan Khushbu, researcher in artificial intelligence, medical imaging and computer vision',
 };
 
-export const NAV = [
+/**
+ * FOLIO — the live demo of Folio (a document-chat app) on Hugging Face Spaces.
+ * Change it here and the menu item and the Folio project follow.
+ */
+export const FOLIO_URL = 'https://docnahi-folio.hf.space';
+
+export const NAV: readonly { href: string; label: string; external?: boolean }[] = [
   { href: '/', label: 'Home' },
   // A section of the home page, so it is never marked as the current page.
   { href: '/#about', label: 'About' },
@@ -20,7 +26,9 @@ export const NAV = [
   { href: '/projects/', label: 'Projects' },
   { href: '/blog/', label: 'Blog' },
   { href: '/cv/', label: 'CV' },
-] as const;
+  // Opens the Folio demo in a new tab.
+  { href: FOLIO_URL, label: 'Ask Folio', external: true },
+];
 
 /**
  * CONTACT FORM — the "Work with me" form on the home page.

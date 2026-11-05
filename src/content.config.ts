@@ -84,6 +84,8 @@ const projects = defineCollection({
     one_liner: z.string(),
     tags,
     repo_url: optionalUrl,
+    /** A live, working version people can try (e.g. a Hugging Face Space). */
+    demo_url: optionalUrl,
     /** Line icon shown in the project list (src/lib/icons.ts). */
     icon: z.enum(ICON_KEYS).default('code'),
     thumbnail: optionalImage,

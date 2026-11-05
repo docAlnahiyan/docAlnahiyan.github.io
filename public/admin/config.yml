@@ -132,6 +132,7 @@ collections:
       - { name: one_liner, label: One-line description, widget: string }
       - { name: tags, label: Tags, widget: list, required: false }
       - { name: repo_url, label: GitHub repository, widget: string, required: false, hint: "Full URL. Leave empty if there's no public repo." }
+      - { name: demo_url, label: Live demo, widget: string, required: false, hint: "Full URL of a working version people can try. Adds a \"Try the live demo\" button." }
       - name: icon
         label: Icon
         widget: select
@@ -139,6 +140,7 @@ collections:
         hint: "Shown beside the project in the list. A thumbnail image, if set, is used instead."
         options:
           - { label: "Code", value: code }
+          - { label: "Document chat (AI assistant)", value: doc-chat }
           - { label: "Face and sound (multimodal)", value: face-sound }
           - { label: "Face scan (emotion / face recognition)", value: face-scan }
           - { label: "Bird", value: bird }
